@@ -24,8 +24,8 @@ class MarketModel(Model):
 
     def step(self):
         self.round += 1 # next round of simulation -- price of ETH needs to be updated
-        print (self.currencies.getEuthereumPrice())
-
+        print ("ETH: ", self.currencies.getEuthereumPrice())
+        print ("USDT: ", self.currencies.getTetherPrice())
         # self.schedule.step() # runs the step method for all Agents
 
         # for i in range(self.num_agents):
@@ -131,10 +131,14 @@ class Currencies:
     def __init__(self, model : MarketModel) -> None:
         self.model = model
         self.euthereumPrice = pd.read_csv('cleanedEuthereumData.csv')['USD/ETH'].values
+        self.tetherPrice = pd.read_csv('cleanedTetherData.csv')['USD/USDT'].values
         pass
     
     def getEuthereumPrice(self):
         return self.euthereumPrice[self.model.round]
+
+    def getTetherPrice(self):
+        return self.tetherPrice[self.model.round]
 
     def refreshPrices():
         return {a:1, b:2, c:3} 
