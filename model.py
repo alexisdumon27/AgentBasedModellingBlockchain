@@ -1,4 +1,5 @@
-from mesa import Agent, Model
+from enum import unique
+from mesa import Agent, Model, agent
 from mesa.time import RandomActivation
 from mesa.datacollection import DataCollector
 import pandas as pd
@@ -7,8 +8,13 @@ from agents import ModelAgent, MarketAgent
 import random
 
 def getNumberOfTransactions(model) :
-        return model.numOfTransactions
-        # return random.randint(0, 27)
+    return model.numOfTransactions
+
+def getNumberOfTetherTransactions(model):
+    return model.numOfTetherTransactions
+
+def getNumberOfEthereumTransactions(model):
+    return model.numOfEthereumTransactions
 
 class MarketModel(Model):
     def __init__(self, num_agents = 10):
@@ -16,16 +22,26 @@ class MarketModel(Model):
         
         self.num_agents = num_agents
         self.numOfTransactions = 0
+        self.numOfTetherTransactions = 0
+        self.numOfEthereumTransactions = 0
 
         self.schedule = RandomActivation(self)
         self.datacollector = DataCollector(
-            model_reporters = {"num_of_transactions" : getNumberOfTransactions}
+            model_reporters = {"num_of_transactions" : getNumberOfTransactions,
+                                "num_of_tether_transactions": getNumberOfTetherTransactions,
+                                "num_of_ethereum_transactions": getNumberOfEthereumTransactions
+                            },
+            agent_reporters= {
+                "Wallets" : "wallet"
+            }
         )
 
         self.sellers = None
         self.buyers = None
 
         self.currencyMarket = CurrencyMarket(self)
+
+        self.agents = []
 
         self.createAgents(num_agents)
     
@@ -36,34 +52,38 @@ class MarketModel(Model):
     def createAgents(self, num_agents):
         for i in range(self.num_agents): 
             a = MarketAgent(i, self, self.currencyMarket) # does nothing for now... 
+
             self.schedule.add(a)
+            self.agents.append(a)
 
     def step(self):
         self.round += 1
 
-        self.currencyMarket.getCurrentPrices(self.round)
+        # self.currencyMarket.getCurrentPrices(self.round)
 
-        self.sellers = [x for x in self.schedule.agents if x.currentObjective == "SELL"]
-        self.buyers = [x for x in self.schedule.agents if x.currentObjective == "BUY"]
+        # self.sellers = [x for x in self.schedule.agents if x.currentObjective == "SELL"]
+        # self.buyers = [x for x in self.schedule.agents if x.currentObjective == "BUY"]
+        # make agents aware of who sells and who buys?
 
         self.schedule.step() # runs the step method for all Agents
 
-        for potentialBuyer in self.buyers:
-
-            if len(self.sellers) > 0:
-
-                chosenSeller = self.sellers[:len(self.sellers)][0]
-                potentialBuyer.amountOfGoods -= 1
-                # potentialBuyer.wallet -= 1
-
-                chosenSeller.amountOfGoods += 1
-                # chosenSeller.wallet += 1
-                self.sellers = self.sellers[1:]
-
-                self.numOfTransactions += 1
+        # for i in self.agents:
+        #     print("id: ", i.unique_id, ", wallet: ", i.getWallet())
 
         self.datacollector.collect(self)
         print ("-------- A step has happened -------------")
+
+    def addTetherTransaction(self):
+        self.numOfTetherTransactions += 1
+        return self.numOfTetherTransactions
+
+    def addEthereumTransaction(self):
+        self.numOfEthereumTransactions += 1
+        return self.numOfEthereumTransactions
+    
+    def addTransaction(self):
+        self.numOfTransactions += 1
+        return self.numOfTransactions
 
 # --------------------------------------------------------------------------
 
@@ -102,7 +122,7 @@ class CurrencyMarket:
         prices['ethereum'] = euthereum['USD/ETH'].values[round]
         prices['tether'] = tether['USD/USDT'].values[round]
 
-        print (prices)
+        # print (prices)
         return prices
 
 class Currency:
@@ -125,11 +145,6 @@ class Currency:
     def getName(self):
         return self.name
 
-# currencyMarket = CurrencyMarket(MarketModel)
-# print(currencyMarket.getCurrency1().getData())
-# print(currencyMarket.getCurrency2().getData())
-
-
 model = MarketModel(3)
-for i in range(2):
+for i in range(3):
     model.step()

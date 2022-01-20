@@ -15,9 +15,6 @@ class ModelAgent(Agent):
     
     def step(self):
         return 27
-    
-    def createWallet(self):
-        return {"euthereum": 1, "tether": 1}
 
 
 class MarketAgent(ModelAgent):
@@ -35,6 +32,14 @@ class MarketAgent(ModelAgent):
 
         self.amountOfGoods = random.randint(-1, 2)
     
+
+    def createWallet(self):
+        wallet = {}
+        for currency in self.currencyMarket.getAvailableCurrencies():
+            wallet[currency.getName()] = 2.7 # for now fixed amount of both currencies!!!
+
+        return wallet
+
     def setCurrentObjective(self):
         """ every round market agents are randomly assigned a new current object BUY or SELL """
         self.currentObjective = random.choice(['BUY', 'SELL'])
@@ -47,7 +52,36 @@ class MarketAgent(ModelAgent):
 
         return None
 
+
     # what happens during one round of the simulation for one agent
     def step(self):
+        """ for now it chooses a random agent and currency, and goes ahead with the transaction all
+        buyers and all sellers do it """
         self.setCurrentObjective()
+        other = random.choice(self.model.schedule.agents) # choose a random agent
+        currency = random.choice(self.currencyMarket.getAvailableCurrencies()).name # choose a random currency
+        # print (currency)
+        if self.currentObjective == "BUY":
+            self.wallet[currency] -= 1
+            self.amountOfGoods -= 1
+
+            other.wallet[currency] += 1
+            other.amountOfGoods += 1
+        else:
+            self.wallet[currency] += 1
+            self.amountOfGoods += 1
+
+            other.wallet[currency] -= 1
+            other.amountOfGoods -= 1
+        
+        print (currency)
+        if currency == "ethereum":
+            self.model.addEthereumTransaction()
+        elif currency == "tether":
+            self.model.addTetherTransaction()
+        
+        self.model.addTransaction()
+
+        
+
 

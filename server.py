@@ -5,7 +5,13 @@ from mesa.visualization.modules import CanvasGrid, ChartModule
 
 from model import MarketModel
 
-chart = ChartModule([{"Label": "num_of_transactions", "Color":"#00000"}], data_collector_name="datacollector") 
+chart = ChartModule(
+    [{"Label": "num_of_transactions", "Color":"#00000"},
+    {"Label": "num_of_tether_transactions", "Color":"#99ffcc"},
+    {"Label": "num_of_ethereum_transactions", "Color":"#6600cc"}
+    ]
+    
+    , data_collector_name="datacollector") 
 
 model_params = {
     "num_agents": UserSettableParameter(
