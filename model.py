@@ -2,6 +2,7 @@ from mesa import Agent, Model
 from mesa.time import RandomActivation
 from mesa.datacollection import DataCollector
 import pandas as pd
+from tornado.autoreload import _reload_on_update
 from agents import ModelAgent, MarketAgent
 import random
 
@@ -24,22 +25,23 @@ class MarketModel(Model):
         self.sellers = None
         self.buyers = None
 
-        self.currencies = Currencies(self)
+        self.currencyMarket = CurrencyMarket(self)
 
-        for i in range(self.num_agents): 
-            a = MarketAgent(i, self)
-            self.schedule.add(a)
-        
+        self.createAgents(num_agents)
+    
         self.running = True
 
         self.datacollector.collect(self)
 
-    
+    def createAgents(self, num_agents):
+        for i in range(self.num_agents): 
+            a = MarketAgent(i, self, self.currencyMarket) # does nothing for now... 
+            self.schedule.add(a)
 
     def step(self):
-        self.round += 1 # next round of simulation -- price of ETH needs to be updated
-        # print ("ETH: ", self.currencies.getEuthereumPrice())
-        # print ("USDT: ", self.currencies.getTetherPrice())
+        self.round += 1
+
+        self.currencyMarket.getCurrentPrices(self.round)
 
         self.sellers = [x for x in self.schedule.agents if x.currentObjective == "SELL"]
         self.buyers = [x for x in self.schedule.agents if x.currentObjective == "BUY"]
@@ -52,10 +54,10 @@ class MarketModel(Model):
 
                 chosenSeller = self.sellers[:len(self.sellers)][0]
                 potentialBuyer.amountOfGoods -= 1
-                potentialBuyer.wallet -= 1
+                # potentialBuyer.wallet -= 1
 
                 chosenSeller.amountOfGoods += 1
-                chosenSeller.wallet += 1
+                # chosenSeller.wallet += 1
                 self.sellers = self.sellers[1:]
 
                 self.numOfTransactions += 1
@@ -63,29 +65,71 @@ class MarketModel(Model):
         self.datacollector.collect(self)
         print ("-------- A step has happened -------------")
 
-# class that defines the currency market
-# has methods to get information about the different currencies in the market
-# like: how much they have changed by, their value compared to the fiat-currency
-class Currencies:
-    
-    def __init__(self, model : MarketModel) -> None:
+# --------------------------------------------------------------------------
+
+euthereum = pd.read_csv('cleanedEuthereumData.csv')
+tether = pd.read_csv('cleanedTetherData.csv')
+
+class CurrencyMarket:
+
+    def __init__(self, model):
         self.model = model
-        self.euthereumPrice = pd.read_csv('cleanedEuthereumData.csv')['USD/ETH'].values
-        self.tetherPrice = pd.read_csv('cleanedTetherData.csv')['USD/USDT'].values
-        pass
+        
+        self.currency1 = Currency("ethereum", "crypto", 100, euthereum)
+        self.currency2 = Currency("tether", "fiat-backed", 100, tether)
+        
+        self.currencies = []
+        self.currencies.append(self.getCurrency1())
+        self.currencies.append(self.getCurrency2())
     
-    def getEuthereumPrice(self):
-        return self.euthereumPrice[self.model.round]
+    def getAvailableCurrencies(self):
+        return self.currencies
 
-    def getTetherPrice(self):
-        return self.tetherPrice[self.model.round]
+    def getCurrency1(self):
+        return self.currency1
 
-    def refreshPrices():
-        return {a:1, b:2, c:3} 
+    def getCurrency2(self):
+        return self.currency2
+
+    def calculateCurrencyFluctuations(self, currency, timeFrame):
+        return 1.01
+    
+    def getCurrentRound(self):
+        return self.model.round
+
+    def getCurrentPrices(self, round):
+        prices = {}
+        prices['ethereum'] = euthereum['USD/ETH'].values[round]
+        prices['tether'] = tether['USD/USDT'].values[round]
+
+        print (prices)
+        return prices
+
+class Currency:
+
+    def __init__(self, name, type, amountInCirculation, data):
+        self.name = name
+        self.type = type
+        self.amountInCirculation = amountInCirculation
+        self.data = data
+    
+    def getCurrentPriceInUSD(self, round):
+        return self.data[round]    
+    
+    def totalValueOfCirulatingAmount(self, round):
+        return self.amountInCirculation * self.getCurrentPriceInUSD(round)
+
+    def getData(self):
+        return self.data
+    
+    def getName(self):
+        return self.name
+
+# currencyMarket = CurrencyMarket(MarketModel)
+# print(currencyMarket.getCurrency1().getData())
+# print(currencyMarket.getCurrency2().getData())
 
 
-
-model = MarketModel(20)
-for i in range(10):
+model = MarketModel(3)
+for i in range(2):
     model.step()
-    getNumberOfTransactions(model)
