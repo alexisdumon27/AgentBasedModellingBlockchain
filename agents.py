@@ -22,8 +22,7 @@ class MarketAgent(ModelAgent):
     def __init__(self, unique_id, model, currencyMarket):
         super().__init__(unique_id, model, currencyMarket)
         
-        self.currentModel = model
-        
+        self.model = model
         self.currentObjective = None
         self.setCurrentObjective()
         
@@ -54,7 +53,7 @@ class MarketAgent(ModelAgent):
         return None
 
     def hasEnoughOfCurrency(self, currency):
-        return self.wallet[currency] > 1
+        return self.wallet[currency.getName()] > 1
 
 
     # what happens during one round of the simulation for one agent
@@ -66,22 +65,19 @@ class MarketAgent(ModelAgent):
             other = self.model.sellers[0] # choose a random seller agent
             self.model.sellers = self.model.sellers[1:] # remove it from the list of available
             
-            currency = self.currencyMarket.leastFluctuatingCurrency(self.model.round) # choose a random currency
+            currency = self.currencyMarket.leastFluctuatingCurrency(self.model.round) # chooses least fluctuating currency
+
             if self.hasEnoughOfCurrency(currency) and other.amountOfGoods >= 1: # if agent has enough of the currency and other has enough goods
                 # do the exchange using the random currency
-                self.wallet[currency] -= 1
+                currencyName = currency.getName()
+                self.wallet[currencyName] -= 1
                 self.amountOfGoods -= 1
 
-                other.wallet[currency] += 1
+                other.wallet[currencyName] += 1
                 other.amountOfGoods += 1
-
-                if currency == "ethereum":
-                    self.model.addEthereumTransaction()
-                elif currency == "tether":
-                    self.model.addTetherTransaction()
                 
-                self.model.addTransaction()
-        
+                currency.addTransaction()
+
         # after finished step find new objective // could put this in model's step method... 
         self.setCurrentObjective()
 
