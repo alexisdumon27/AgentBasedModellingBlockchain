@@ -30,7 +30,7 @@ class MarketAgent(ModelAgent):
         """ set everyone off with a fixed amount in their wallets """
         self.wallet = self.createWallet()
 
-        self.amountOfGoods = random.randint(-1, 2)
+        self.amountOfGoods = random.randint(0, 2)
     
 
     def createWallet(self):
@@ -45,42 +45,45 @@ class MarketAgent(ModelAgent):
         self.currentObjective = random.choice(['BUY', 'SELL'])
         # print (self.currentObjective)
 
-    def bestCurrencyForObjective(self):
+    def chooseCurrencyForTransaction(self):
         """ depending on current objective agent will want to buy a good or sell a good """
         # get data for the different currencies INSTEAD OF HAVING each agent calculate make CURRENCYmARKET calculate 
         # have agents QUERY for the processed data
 
+        # ASSUME best currency for BUYER is best for SELLER
         return None
+
+    def hasEnoughOfCurrency(self, currency):
+        return self.wallet[currency] > 1
 
 
     # what happens during one round of the simulation for one agent
     def step(self):
-        """ for now it chooses a random agent and currency, and goes ahead with the transaction all
-        buyers and all sellers do it """
+        """ for now it chooses a random agent and least fluctuating currency, and goes ahead with the transaction only
+        buyers """
+
+        if self.currentObjective == "BUY" and len(self.model.sellers) > 0: # if agent's objective is to BUY and there are available SELLERS
+            other = self.model.sellers[0] # choose a random seller agent
+            self.model.sellers = self.model.sellers[1:] # remove it from the list of available
+            
+            currency = self.currencyMarket.leastFluctuatingCurrency(self.model.round) # choose a random currency
+            if self.hasEnoughOfCurrency(currency) and other.amountOfGoods >= 1: # if agent has enough of the currency and other has enough goods
+                # do the exchange using the random currency
+                self.wallet[currency] -= 1
+                self.amountOfGoods -= 1
+
+                other.wallet[currency] += 1
+                other.amountOfGoods += 1
+
+                if currency == "ethereum":
+                    self.model.addEthereumTransaction()
+                elif currency == "tether":
+                    self.model.addTetherTransaction()
+                
+                self.model.addTransaction()
+        
+        # after finished step find new objective // could put this in model's step method... 
         self.setCurrentObjective()
-        other = random.choice(self.model.schedule.agents) # choose a random agent
-        currency = random.choice(self.currencyMarket.getAvailableCurrencies()).name # choose a random currency
-        # print (currency)
-        if self.currentObjective == "BUY":
-            self.wallet[currency] -= 1
-            self.amountOfGoods -= 1
-
-            other.wallet[currency] += 1
-            other.amountOfGoods += 1
-        else:
-            self.wallet[currency] += 1
-            self.amountOfGoods += 1
-
-            other.wallet[currency] -= 1
-            other.amountOfGoods -= 1
-        
-        print (currency)
-        if currency == "ethereum":
-            self.model.addEthereumTransaction()
-        elif currency == "tether":
-            self.model.addTetherTransaction()
-        
-        self.model.addTransaction()
 
         
 

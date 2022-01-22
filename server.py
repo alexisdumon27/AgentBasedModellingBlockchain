@@ -5,12 +5,17 @@ from mesa.visualization.modules import CanvasGrid, ChartModule
 
 from model import MarketModel
 
-chart = ChartModule(
+transactionChart = ChartModule(
     [{"Label": "num_of_transactions", "Color":"#00000"},
     {"Label": "num_of_tether_transactions", "Color":"#99ffcc"},
     {"Label": "num_of_ethereum_transactions", "Color":"#6600cc"}
     ]
-    
+    , data_collector_name="datacollector") 
+
+priceChart = ChartModule(
+    [{"Label": "tether_price", "Color":"#00000"},
+    {"Label": "ethereum_price", "Color":"#99ffcc"},
+    ]
     , data_collector_name="datacollector") 
 
 model_params = {
@@ -19,4 +24,4 @@ model_params = {
     )
 }
 
-server = ModularServer(MarketModel, [chart], "Crypto Market" , model_params)
+server = ModularServer(MarketModel, [transactionChart, priceChart], "Crypto Market" , model_params)
