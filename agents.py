@@ -65,18 +65,19 @@ class MarketAgent(ModelAgent):
             other = self.model.sellers[0] # choose a random seller agent
             self.model.sellers = self.model.sellers[1:] # remove it from the list of available
             
-            currency = self.currencyMarket.leastFluctuatingCurrency(self.model.round) # chooses least fluctuating currency
-
-            if self.hasEnoughOfCurrency(currency) and other.amountOfGoods >= 1: # if agent has enough of the currency and other has enough goods
-                # do the exchange using the random currency
-                currencyName = currency.getName()
+            currency = self.currencyMarket.getLeastFluctuatingCurrency() # chooses least fluctuating currency
+            
+            chosenCurrency = self.currencyMarket.getProbabilisticCurrencyChoice(currency)
+            if self.hasEnoughOfCurrency(chosenCurrency) and other.amountOfGoods >= 1: # if agent has enough of the currency and other has enough goods
+                # do the exchange using the chosen currency
+                currencyName = chosenCurrency.getName()
                 self.wallet[currencyName] -= 1
                 self.amountOfGoods -= 1
 
                 other.wallet[currencyName] += 1
                 other.amountOfGoods += 1
                 
-                currency.addTransaction()
+                chosenCurrency.addTransaction()
 
         # after finished step find new objective // could put this in model's step method... 
         self.setCurrentObjective()

@@ -8,6 +8,7 @@ from pandas.io.formats.format import TextAdjustment
 from tornado.autoreload import _reload_on_update
 from agents import ModelAgent, MarketAgent
 import random
+import copy
 
 def getNumberOfTetherTransactions(model) :
     return model.listOfCurrencies[1].getNumOfTransactions()
@@ -87,7 +88,8 @@ class MarketModel(Model):
 
         self.sellers = [x for x in self.agents if x.currentObjective == "SELL"]
         self.buyers = [x for x in self.agents if x.currentObjective == "BUY"]
-
+        self.currencyMarket.findLeastFluctuatingCurrency(self.round)
+        
         self.schedule.step() # runs the step method for all Agents
 
         self.datacollector.collect(self)
@@ -101,26 +103,40 @@ class CurrencyMarket:
     def __init__(self, model, listOfCurrencies):
         self.model = model
         self.currencies = listOfCurrencies
+        self.leastFluctuatingCurrency = None
+        self.findLeastFluctuatingCurrency(0)
 
     def getAvailableCurrencies(self):
         return self.currencies
     
-    # will need to be refactored AF
-    def leastFluctuatingCurrency(self, round):
+    # will need to be refactored AF (does two things )
+    def getLeastFluctuatingCurrency(self):
         """ returns currency object """
+        return self.leastFluctuatingCurrency
+
+    # REFACTOR
+    def getProbabilisticCurrencyChoice(self, currency):
+        indices = []
+        index = self.currencies.index(currency)
+        for i in range(len(self.currencies)):
+            if (index == i):
+                indices.append(i)
+                indices.append(i)
+            indices.append(i)
+        randomIndex = random.choice(indices)
+        return self.currencies[randomIndex]
+
+
+    def findLeastFluctuatingCurrency(self, round):
         smallestDiff = Infinity
-        leastFluctuatingCurrency = None
         for currency in self.currencies:
             initPrice = currency.getPriceAtRound(0)
             currPrice = currency.getPriceAtRound(round)
             diff = abs(currPrice - initPrice)
             if (diff < smallestDiff):
-                leastFluctuatingCurrency = currency
+                self.leastFluctuatingCurrency = currency
                 smallestDiff = diff
-
-        return leastFluctuatingCurrency
-
-
+        
     def getCurrentRound(self):
         return self.model.round
 
@@ -152,14 +168,7 @@ class Currency:
     def addTransaction(self):
         self.transactions += 1
 
-# market = CurrencyMarket(MarketModel)
-# currency1 = Currency("ethereum", "USD/ETH", "crypto", 100, ethereumData)
-# currency2 = Currency("tether", "USD/USDT", "crypto", 100, tetherData)
-# market = CurrencyMarket(MarketModel, [currency1, currency2])
 
-# print (market.leastFluctuatingCurrency(27).getName())
-
-# print (test.getPriceAtRound(0))
 model = MarketModel(10)
 for i in range(5):
     model.step()
