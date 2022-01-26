@@ -4,7 +4,7 @@ from mesa.time import RandomActivation
 from mesa.datacollection import DataCollector
 from numpy import Infinity
 import pandas as pd
-from agents import MarketAgent, Currency, CurrencyMarket
+# from agents import MarketAgent, Currency, CurrencyMarket
 import random
 import copy
 
