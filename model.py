@@ -4,7 +4,7 @@ from mesa.time import RandomActivation
 from mesa.datacollection import DataCollector
 from numpy import Infinity
 import pandas as pd
-# from agents import MarketAgent, Currency, CurrencyMarket
+from agents import MarketAgent, Currency, CurrencyMarket, Strategy
 import random
 import copy
 
@@ -31,17 +31,15 @@ def getEthereumPrice(model):
 ethereumData = pd.read_csv('cleanedEuthereumData.csv')
 tetherData = pd.read_csv('cleanedTetherData.csv')
 
-# listOfDataOfCurrencies = []
-# listOfDataOfCurrencies.append(ethereumData)
-
 class MarketModel(Model):
     def __init__(self, num_agents = 10):
         self.round = 0 # what round we are at in the simulation
 
         ethereum = Currency("ethereum", "USD/ETH", "crypto", 100, ethereumData)
-
+        tether = Currency('tether', "USD/USDT", "fiat-backed", 100, tetherData)
         self.listOfCurrencies = []
         self.listOfCurrencies.append(ethereum)
+        self.listOfCurrencies.append(tether)
 
         self.currencyMarket = CurrencyMarket(self.listOfCurrencies)
 
@@ -61,9 +59,6 @@ class MarketModel(Model):
             }
         )
 
-        self.sellers = None
-        self.buyers = None
-
         self.agents = {}
 
         self.createAgents(num_agents)
@@ -74,9 +69,8 @@ class MarketModel(Model):
 
     def createAgents(self, num_agents):
         strategy = Strategy()
-        wallet = { "ethereum" : 27 }
         for i in range(self.num_agents): 
-            a = MarketAgent(i, strategy, self, self.currencyMarket, wallet) # does nothing for now... 
+            a = MarketAgent(i, self, strategy, self.currencyMarket) # does nothing for now... 
 
             self.schedule.add(a)
             self.agents[i] = a
@@ -85,15 +79,20 @@ class MarketModel(Model):
         self.round += 1
         
         self.schedule.step() # runs the step method for all Agents
+        self.currencyMarket.getOrderBook().printOrderBook()
+        self.currencyMarket.overseeTransactions()
+        for i in self.schedule.agents:
+            print(i.wallet)
 
-        orders = self.currencyMarket.getOrderBook().getOrders()
-        print (orders)
         self.datacollector.collect(self)
         print ("-------- A step has happened -------------")
 
 # --------------------------------------------------------------------------
 
 
-model = MarketModel(10)
-for i in range(1):
+model = MarketModel(2)
+for i in range(10):
     model.step()
+
+print("")
+print("END RESULT:")

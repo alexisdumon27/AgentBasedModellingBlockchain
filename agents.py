@@ -1,12 +1,13 @@
+from re import S
 from mesa import Agent
 import random
+import copy
 import pandas as pd
 
 # from model import MarketModel
 
-# from model import MarketModel
-
-ethereumData = pd.read_csv('cleanedEuthereumData.csv')
+# ethereumData = pd.read_csv('cleanedEuthereumData.csv')
+# tetherData = pd.read_csv('cleanedTetherData.csv')
 
 # should be updated at every turn
 marketIndicators = {
@@ -47,29 +48,57 @@ class CurrencyMarket:
         moving_average = total / spread
         return moving_average
 
-    # very HARDCODED FOR NOW !!!! 
-    def overseeTransaction(self):
-        openOrders = self.orderBook.getOpenOrders()
-        closeOrders = self.orderBook.getCloseOrders()
+    # NEEDS HEAVVVYYYY REFACTORING !!!!!!!!!!!!! 
+    def overseeTransactions(self):
+        """ matches oldest open orders with oldest close orders with the same currency """
+        print("enters the function")
+        orders = self.getOrderBook().getOrders()
+        for i in range(len(orders)):
+            print ("Loop: ", i)
+            if (len(orders) == 0): break
 
-        if 'ethereum' in list(closeOrders.keys()) and 'ethereum' in list(openOrders.keys()):
-            ethereumOpenOrders = openOrders["ethereum"]
-            for openOrder in ethereumOpenOrders:
-                if len(closeOrders['ethereum']) > 0:
-                    closingOrder = closeOrders["ethereum"][0]
-                    amount = openOrder["amount"]
-                    openOrderAgent = openOrder["agent"]
-                    closeOrderAgent = closingOrder["agent"] # will always get earliest closing order
-                    openOrderAgent.wallet['ethereum'] += amount
-                    closeOrderAgent.wallet['ethereum'] -= amount
+            order1 = orders[i].getOrder()
+            order1Object = orders[i]
+            agent1 = order1[6] 
+            order1Buying = order1[1]
+            order1Selling = order1[2]   
+            order1AmountBuying = order1[3]
+            order1AmountSelling = order1[4]
 
-                    openOrders['ethereum'].remove(openOrder)
-                    closeOrders["ethereum"].remove(closingOrder)
+            for j in range(len(orders)):
+                if (i == j): continue
+                print("Loop 2: ", j)
+                order2 = orders[j].getOrder()
+                order2Object = orders[j]
+                order2Buying = order2[1]
+                order2Selling = order2[2]
+                order2AmountBuying = order2[3]
+                order2AmountSelling = order2[4]
+                if (order1Buying == order2Selling and order1Selling == order2Buying and order1AmountBuying == order2AmountSelling 
+                    and order1AmountSelling == order2AmountBuying):
+                    print("Loop 2 IF-clause")
+                    agent2 = order2[6]
+                    
+                    # add / remove from the wallets
+                    agent1.wallet[order1Buying] += order1AmountBuying
+                    agent1.wallet[order1Selling] -= order1AmountSelling
+                    print("Agent 1 wallet: ", agent1.wallet)
 
-                    openOrderAgent.hasMadeOrder = False
-                    closeOrderAgent.hasMadeOrder = False
+                    agent2.wallet[order2Buying] += order2AmountBuying
+                    agent2.wallet[order2Selling] -= order2AmountSelling
+                    print("Agent 2 wallet: ", agent2.wallet)
 
-        return 27
+                    # remove both orders from orderbook
+                    self.getOrderBook().getOrders().remove(order1Object)
+                    self.getOrderBook().getOrders().remove(order2Object)
+
+                    # make successfultransaction true
+                    if order1[0] == "OPEN":
+                        agent1.openTransactionWasSuccessfull = True
+                    else: agent1.closingTransactionWasSuccessfull = True
+                    if order2[0] == "OPEN":
+                        agent2.openTransactionWasSuccessfull = True
+                    else: agent2.closingTransactionWasSuccessfull = True
 
 class Currency:
 
@@ -103,28 +132,60 @@ class Strategy:
     def __init__(self):
         self.order_id = 0
         pass
+
+    # HARD refactor needed later :)  
+    def makeOpenOrder(self, agent, round):
+        """ wishes to exchange X for Y """
+        agentWallet = agent.wallet
+        currencies = copy.copy(agent.currencyMarket.getAvailableCurrencies())
+        randomCurrency = random.choice(currencies)
+
+        buyCurrency =  randomCurrency # currency agent uses to invest
+        currencies.remove(randomCurrency)
+
+        sellCurrency = random.choice(currencies) # currency agent invests in
+
+        self.order_id += 1
+
+        exchangeRate = 1
+        amountOfSellingCurrency = 10 # will need to be calculated
+        amountOfBuyingCurrency = 10 * exchangeRate # will need to be calculated
+
+        return Order("OPEN", buyCurrency, sellCurrency, amountOfBuyingCurrency, amountOfSellingCurrency, round, agent, self.order_id) # creates an ORDER
+
+
+    def closingConditionMet(self, agent, round):
+        return True
+
+    def makeCloseOrder(self, agent, round):
+        """ wishes to exchange Y for X """
+        self.order_id += 1
+
+        investmentToClose = agent.currentInvestment # close current investment // investment is an Order object
         
-    def getOrder(self, agent, round, availableCurrencies, amountOfCurrency):
-        """ returns a random order with random currency for a specific agent """
-        if agent.hasMadeOrder == False:
-            self.order_id += 1
-            orderType = random.choice(['OPEN', 'CLOSE'])
-            chosenCurrency = random.choice(availableCurrencies)
-            return Order(orderType, chosenCurrency, round, self.order_id, agent, amountOfCurrency) # creates an ORDER
-        else: None
+        exchangeRate = 1 # will be given by a function exchange(currency1, currency2)
+
+        buyCurrency = investmentToClose[1]
+        sellCurrency = investmentToClose[0]
+        amountOfSellingCurrency = investmentToClose[2]
+        amountOfBuyingCurrency = investmentToClose[3] * exchangeRate
+        return Order("CLOSE", buyCurrency, sellCurrency, amountOfBuyingCurrency, amountOfSellingCurrency, round, agent, self.order_id)
 
 class Order:
     """
         a data structure containing all the relevant information for the order request of an agent
     """
-    def __init__(self, orderType, currency, round, order_id, agent, amount ):
-        self.orderType = orderType
-        self.currency = currency
-        self.timestep = round
+    def __init__(self, orderType, buyCurrency, sellCurrency, amountOfBuyingCurrency, amountOfSellingCurrency, round, agent, order_id):
+        self.order_type = orderType
+        self.buyCurrency = buyCurrency # currency agent wants to buy
+        self.sellCurrency = sellCurrency # currency agent will sell in order to buy
+        # self.buyPrice = buyPrice # current price of buy currency
+        self.amountOfBuyingCurrency = amountOfBuyingCurrency # amount of buy currency agent wants to own :: DEPEND ON EXCHANGE_RATE
+        self.amountOfSellingCurrency = amountOfSellingCurrency # amount of sell currency agents needs to sell
+        self.timestep = round # 
+        self.agent = agent #
         self.order_id = order_id
-        self.agent = agent
-        self.amount = amount
-        self.order = [self.orderType, self.currency, self.timestep, self.agent, amount, self.order_id]
+        self.order = [self.order_type, self.buyCurrency, self.sellCurrency, self.amountOfBuyingCurrency, self.amountOfSellingCurrency, self.timestep, self.agent, self.order_id]
 
     def getOrder(self):
         return self.order
@@ -132,115 +193,79 @@ class Order:
 class OrderBook:
     """ 
         data structure which assembles order objects into a useful dictionary
-        dict = { 
-            "OPEN" :  {"ethereum" : 
-                [ 
-                    { "timestep" : 1, "agent" : MarketAgent, "amount" : 2, "order_id" : 1 },
-                    { "timestep" : 1, "agent" : MarketAgent, "amount" : 2, "order_id" : 2 },
-                    { "timestep" : 2, "agent" : MarketAgent, "amount" : 2, "order_id" : 3 }
-                ]
-            },
-            "CLOSE" :  {"ethereum" : 
-                [ 
-                    { "timestep" : 1, "agent" : MarketAgent, "amount" : 2, "order_id" : 4 },
-                    { "timestep" : 1, "agent" : MarketAgent, "amount" : 2, "order_id" : 5 },
-                    { "timestep" : 2, "agent" : MarketAgent, "amount" : 2, "order_id" : 6 }
-                ]
-            }
-        }
+        orders = []
+        will be refactored
     """
     def __init__(self) -> None:
-        self.orders = {"OPEN" : {}, "CLOSE" : {}}
+        self.orders = []
 
     def addOrder(self, order):
         """
-            adds an order object into the dictionary (['CLOSE', 'ethereum', 1, 2, 1, 2])
+            adds an order object into self.orders []
         """
-        type = order.orderType
-        currency = order.currency
-        timestep = order.timestep
-        order_id = order.order_id
-        agent = order.agent
-        amount = order.amount
-
-        if currency in self.orders[type].keys():
-            self.orders[type][currency].append({"timestep" : timestep, "agent" : agent, "amount" : amount, "order_id": order_id})
-        else:
-            self.orders[type][currency] = []
-            self.orders[type][currency].append({"timestep" : timestep, "agent" : agent, "amount" : amount, "order_id": order_id})
-
-    def removeOrder(self, order):
-        return 27
+        self.orders.append(order)
 
     def getOrders(self):
         return self.orders
     
-    def getOpenOrders(self):
-        return self.orders["OPEN"]
-
-    def getCloseOrders(self):
-        return self.orders["CLOSE"]
-
+    def printOrderBook(self):
+        """ visual representation of order book """
+        for order in self.orders:
+            print(order.getOrder())
 
 class MarketAgent:
 
-    def __init__(self, unique_id, strategy, currencyMarket):
+    def __init__(self, unique_id, model, strategy, currencyMarket):
         self.unique_id = unique_id
-        # self.model = model
+        self.model = model
         self.currencyMarket = currencyMarket
 
         # randomly initialised fields
         self.strategy = strategy
-        self.hasMadeOrder = False    # this one can remain unrandomised for a bit
-        self.currentOrder = None    
-        self.wallet = {'ethereum' : 27}
+
+        self.hasMadeOpenOrder = False
+        self.hasMadeClosingOrder = False
+        self.openTransactionWasSuccessfull = False
+        self.closingTransactionWasSuccessfull = False
+
+        self.currentInvestment = None
+        self.currentOrder = None
+
+        self.wallet = {}
+        self.createWallet()
     
     def createWallet(self):
-        wallet = {}
-        for currency in self.currencyMarket.getAvailableCurrencies().getName():
-            wallet[currency] = 2.7 # for now fixed amount of both currencies!!!
-        return wallet
+        for currency in self.currencyMarket.getAvailableCurrencies():
+            self.wallet[currency] = 27 
 
     # what happens during one round of the simulation for one agent
     ## a limited amount of agents get to perform their step actions per turn 
     def step(self):
         """ if it was chosen as a trading agent this turn; then it adds an order to the order book list """
-
-        newOrder = self.strategy.getOrder(self, 1, list(self.wallet.keys()), 27)
-        if not newOrder == None:
-            self.hasMadeOrder = True
-            self.currentOrder = newOrder.orderType
-            self.currencyMarket.getOrderBook().addOrder(newOrder)
         
+        if not self.hasMadeOpenOrder:
+            self.makeOrder("OPEN")
+            # currentOrder is also updated
+            self.hasMadeOpenOrder = True
+        elif self.hasMadeOpenOrder and self.openTransactionWasSuccessfull:
+            self.currentInvestment = self.currentOrder # the order was fullfilled it has become an investment (agents wallet updated)
+            if not self.hasMadeClosingOrder: # if you have still not made an order to close your investment
+                if self.strategy.closingConditionMet(self, self.model.round): # check if conditions to close are met (enough time has elapse / price is right / stop loss etc...)
+                    self.makeOrder(" CLOSE") # make the order (should be selling exact amount bought)
+            elif self.closingTransactionWasSuccessfull: # if you have made a closing order and it was successful (ie. transaction happened)
+                    self.hasMadeOpenOrder = False
+                    self.hasMadeClosingOrder = False
+                    self.openTransactionWasSuccessfull = False
+                    self.closingTransactionWasSuccessfull = False
+                    self.currentInvestment = None
+                    self.currentOrder = None
+                    # ^ reinitialise all parameters -- restart loop
 
-strategy = Strategy()
-
-listOfDataCurrencies = []
-ethereum = Currency('ethereum', "USD/ETH", "crypto", 100, ethereumData)
-listOfDataCurrencies.append(ethereum)
-currencyMarket = CurrencyMarket(listOfDataCurrencies)
-
-agent1 = MarketAgent(1, strategy, currencyMarket)
-agent2 = MarketAgent(2, strategy, currencyMarket)
-agent3 = MarketAgent(3, strategy, currencyMarket)
-agent4 = MarketAgent(4, strategy, currencyMarket)
-
-agent1.step()
-agent2.step()
-agent3.step()
-
-print ("First ROUND: ")
-print("OPEN: ", currencyMarket.getOrderBook().getOpenOrders())
-print("CLOSE: ", currencyMarket.getOrderBook().getCloseOrders())
-
-currencyMarket.overseeTransaction()
-currencyMarket.overseeTransaction()
-
-# agent1.step()
-# agent2.step()
-# agent3.step()
-
-print ("Second ROUND: ")
-
-print("OPEN: ", currencyMarket.getOrderBook().getOpenOrders())
-print("CLOSE: ", currencyMarket.getOrderBook().getCloseOrders())
+    def makeOrder(self, orderType):
+        # looks at what strategy returns // will be abstracted by currencyMarket and strategy object
+        if orderType == "OPEN":
+            self.currentOrder = self.strategy.makeOpenOrder(self, 1)
+        else:
+            self.currentOrder = self.strategy.makeCloseOrder(self, 1)
+        
+        self.currencyMarket.getOrderBook().addOrder(self.currentOrder)
