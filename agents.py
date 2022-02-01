@@ -1,18 +1,29 @@
-from re import S
+# from re import S
 from mesa import Agent
 import random
 import copy
 import pandas as pd
 
-# from model import MarketModel
-
-# ethereumData = pd.read_csv('cleanedEuthereumData.csv')
-# tetherData = pd.read_csv('cleanedTetherData.csv')
-
 # should be updated at every turn
 marketIndicators = {
                 "ethereum" : { 'moving_average_1' : 10, 'moving_average_5' : 5, 'moving_average_10' : 2 },
             }
+
+currencyPairs = {
+    "ethereum" : {
+        "tether": "ETH/USDT",
+        "direction": "buy" # if you have ethereum to tether then you are buying eth and selling usdt
+    },
+    "tether": {
+        "ethereum" : "ETH/USDT",
+        "direction": "sell" # you are buying tether with ethereum
+    }
+}
+
+inverseCurrencyPair = {
+    "ETH/USDT" : ["tether", "ethereum"]
+}
+
 
 class CurrencyMarket:
     """
@@ -52,52 +63,74 @@ class CurrencyMarket:
     # this is the worst function ever written
     def overseeTransactions(self):
         """ matches oldest open orders with oldest close orders with the same currency """
-        print("enters the function")
-        orders = self.getOrderBook().getOrders()
-        
-        for i in range(len(orders)):
-            if (len(orders) == 0): break
+        orderbook = self.getOrderBook()
 
-            order1 = orders[i].getOrder()
-            order1Object = orders[i]
-            agent1 = order1[6] 
-            order1Buying = order1[1]
-            order1Selling = order1[2]   
-            order1AmountBuying = order1[3]
-            order1AmountSelling = order1[4]
+        for currencyPairs in orderbook.getOrders():
+            orders = orderbook.getOrders()[currencyPairs]
+            buyOrders = orders["buy"]
+            sellOrders = orders["sell"]
+            
+            primaryKeysToDelete = [] # lists of the keys of the orders to delete
+            secondaryKeysToDelete = []
+            orders_checked = [] # list of order_id of orders already checked for a match
 
-            for j in range(len(orders)):
-                if (i == j): continue
-                order2 = orders[j].getOrder()
-                order2Object = orders[j]
+            # see if there is a match ...
+            for order in buyOrders.items():
+                agentKey = order[0]
+                value = order[1]
 
-                order2Buying = order2[1]
-                order2Selling = order2[2]
-                order2AmountBuying = order2[3]
-                order2AmountSelling = order2[4]
-                if (order1Buying == order2Selling and order1Selling == order2Buying and order1AmountBuying == order2AmountSelling 
-                    and order1AmountSelling == order2AmountBuying):
-                    agent2 = order2[6]
+                amount = value[0]
+                order_id = value[1]
+                currency_wanted = value[2]
+                currency_selling = value[3]
+                order_type = value[4]
+
+                for otherOrder in sellOrders.items():
+                    otherAgentKey = otherOrder[0]
+                    otherValue = otherOrder[1]
+
+                    otherAmount = otherValue[0]
+                    otherId = otherValue[1]
+                    other_currency_wanted = value[2]
+                    other_currency_selling = value[3]
+                    other_order_type = value[4]
+
+                    print("hello 3")
+                    if amount == otherAmount and order_id not in orders_checked and otherId not in orders_checked:
+                        print("hello 2")
+                        orders_checked.append(order_id)
+                        orders_checked.append(otherId)
+                        primaryKeysToDelete.append(agentKey)
+                        secondaryKeysToDelete.append(otherAgentKey)
+
+                        # update the wallets of the respective agents !!!
+                        print ("What happens befpre: ", amount, ", ", agentKey.wallet)
+                        print (currency_wanted, " : ", other_currency_wanted)
+
+                        agentKey.wallet[currency_wanted] += amount
+                        agentKey.wallet[currency_selling] -= amount
+                        print ("What happens after: ", amount, ", ", agentKey.wallet)
+                        otherAgentKey.wallet[other_currency_wanted] += otherAmount
+                        otherAgentKey.wallet[other_currency_selling] -= otherAmount
+
+                        # make successfultransaction true
+                        if order_type == "OPEN":
+                            agentKey.openTransactionWasSuccessfull = True
+                        else: agentKey.closingTransactionWasSuccessfull = True
+                        if other_order_type == "OPEN":
+                            otherAgentKey.openTransactionWasSuccessfull = True
+                        else: otherAgentKey.closingTransactionWasSuccessfull = True
+                        # how to keep which to delete
+
+            for i in primaryKeysToDelete:
+                del buyOrders[i]
+
+            for i in secondaryKeysToDelete:
+                del sellOrders[i]
+
+        print ("after: ", orderbook.getOrders()) 
                     
-                    # add / remove from the wallets
-                    agent1.wallet[order1Buying] += order1AmountBuying
-                    agent1.wallet[order1Selling] -= order1AmountSelling
-
-                    agent2.wallet[order2Buying] += order2AmountBuying
-                    agent2.wallet[order2Selling] -= order2AmountSelling
-
-                    # remove both orders from orderbook
-                    self.getOrderBook().getOrders().remove(order1Object)
-                    self.getOrderBook().getOrders().remove(order2Object)
-
-                    # make successfultransaction true
-                    if order1[0] == "OPEN":
-                        agent1.openTransactionWasSuccessfull = True
-                    else: agent1.closingTransactionWasSuccessfull = True
-                    if order2[0] == "OPEN":
-                        agent2.openTransactionWasSuccessfull = True
-                    else: agent2.closingTransactionWasSuccessfull = True
-
+                    
 class Currency:
 
     def __init__(self, name, conversionSymbol, type, amountInCirculation, data):
@@ -145,7 +178,7 @@ class Strategy:
 
         self.order_id += 1
 
-        exchangeRate = 1
+        exchangeRate = 1 # will be given as a function
         amountOfSellingCurrency = 10 # will need to be calculated
         amountOfBuyingCurrency = 10 * exchangeRate # will need to be calculated
         expiration_time = random.choice([2,3,4,5])
@@ -164,8 +197,8 @@ class Strategy:
         
         exchangeRate = 1 # will be given by a function exchange(currency1, currency2)
 
-        buyCurrency = investmentToClose[1]
-        sellCurrency = investmentToClose[0]
+        buyCurrency = investmentToClose[2]
+        sellCurrency = investmentToClose[1]
         amountOfSellingCurrency = investmentToClose[2]
         amountOfBuyingCurrency = investmentToClose[3] * exchangeRate
         
@@ -195,28 +228,19 @@ class Order:
     def getExpirationTime(self):
         return self.order[8]
 
-currencyPairs = {
-    "ethereum" : {
-        "tether": "ETH/USDT", "direction": "buy" # if you have ethereum to tether then you are buying eth and selling usdt
-    },
-    "tether": {
-        "ethereum" : "ETH/USDT", "direction": "sell" # you are buying tether with ethereum
-    }
-}
-
 class OrderBook:
     """ 
         data structure which assembles order objects into a useful dictionary
         orderbook = { 
             "ETH/USDT" : 
                 {
-                    "buy": { "agent1": [10, 1027], "agent2": [12, 1027] },
-                    "sell" : { "agent3": [10, 1027], "agent4": [12, 1027] }
+                    "buy": { "agent1": [10, 1027, ethereum], "agent2": [12, 1027, ethereum] },
+                    "sell" : { "agent3": [10, 1027, tether], "agent4": [12, 1027, tether] }
                 },
             "BTC/ETH" :
                 {
-                    "buy": { "agent1": [10, 1027], "agent2": [12, 1027]},
-                    "sell" : { "agent3": [10, 1027], "agent4": [12, 1027] }
+                    "buy": { "agent1": [10, 1027, bitcoin], "agent2": [12, 1027, bitcoin]},
+                    "sell" : { "agent3": [10, 1027, ethereum], "agent4": [12, 1027, ethereum] }
                 },
         }
     """
@@ -230,19 +254,19 @@ class OrderBook:
         """
         order = order.getOrder()
         # find what currency pair the order is for ie. X/Y
+        orderType = order[0]
         buyCurrency = order[1]
         sellCurrency = order[2]
         amount = order[3]
         agent = order[6]
         order_id = order[-1]
 
-        currencyPair = currencyPairs[buyCurrency][sellCurrency]
-        exchangeSymbol = currencyPair # what is the exchange symbol "ETH/USDT"
-        exchangeDirection = currencyPairs[buyCurrency]["direction"] # is it a buy or sell with respect to first currency
+        currencyPair = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]
+        exchangeSymbol = currencyPair # what is the exchange symbol e.g. "ETH/USDT"
+        exchangeDirection = currencyPairs[buyCurrency.getName()]["direction"] # is it a buy or sell with respect to first currency
 
         # append it as a key-value pair
-        self.orders[exchangeSymbol][exchangeDirection][agent] = [amount, order_id] # later will add price
-        # self.orders.append(order)
+        self.orders[exchangeSymbol][exchangeDirection][agent] = [amount, order_id, buyCurrency, sellCurrency, orderType] # later will add price
 
     def getOrders(self):
         return self.orders
@@ -250,73 +274,6 @@ class OrderBook:
     def printOrderBook(self):
         """ visual representation of order book """
         print(self.orders.items())
-
-
-orderbook = OrderBook()
-
-orderbook.addOrder(Order("CLOSE", "ethereum", "tether", 10, 10, 1, "agent1", 2, 1))
-orderbook.addOrder(Order("CLOSE", "tether", "ethereum", 10, 10, 1, "agent2", 2, 2))
-orderbook.addOrder(Order("OPEN", "ethereum", "tether", 10, 10, 1, "agent3", 2, 3))
-orderbook.addOrder(Order("OPEN", "tether", "ethereum", 10, 10, 1, "agent4", 2, 4))
-orderbook.addOrder(Order("OPEN", "ethereum", "tether", 10, 10, 1, "agent5", 2, 5))
-orderbook.addOrder(Order("OPEN", "ethereum", "tether", 10, 10, 1, "agent6", 2, 6))
-
-orderbook.printOrderBook()
-
-
-
-
-
-for currencyPairs in orderbook.getOrders():
-    print ("currency pair: ", currencyPairs)
-    orders = orderbook.getOrders()[currencyPairs]
-    buyOrders = orders["buy"]
-    sellOrders = orders["sell"]
-
-    # see if there is a match ...
-    primaryOrderList = buyOrders
-    secondaryOrderList = sellOrders
-    if len(buyOrders) <= len(sellOrders):
-        primaryOrderList = sellOrders
-        secondaryOrderList = buyOrders
-    
-    primaryKeysToDelete = []
-    secondaryKeysToDelete = []
-
-    orders_checked = []
-    for order in primaryOrderList.items():
-        key = order[0]
-        value = order[1]
-
-        amount = value[0]
-        order_id = value[1]
-        print ("WHAT: ", value)
-        for otherOrder in secondaryOrderList.items():
-            otherKey = otherOrder[0]
-            otherValue = otherOrder[1]
-            otherAmount = otherValue[0]
-            otherId = otherValue[1]
-
-            if amount == otherAmount and order_id not in orders_checked and otherId not in orders_checked:
-                orders_checked.append(order_id)
-                orders_checked.append(otherId)
-                primaryKeysToDelete.append(key)
-                secondaryKeysToDelete.append(otherKey)
-                # how to keep which to delete
-                
-
-    print (primaryKeysToDelete)
-    print (secondaryKeysToDelete)
-    print("before: ", orderbook.getOrders())
-
-    print (buyOrders.keys())
-    for i in primaryKeysToDelete:
-        del primaryOrderList[i]
-
-    for i in secondaryKeysToDelete:
-        del secondaryOrderList[i]
-
-    print ("after: ", orderbook.getOrders())    
 
 class MarketAgent:
 
@@ -356,15 +313,17 @@ class MarketAgent:
             self.currentInvestment = self.currentOrder # the order was fullfilled it has become an investment (agents wallet updated)
             if not self.hasMadeClosingOrder: # if you have still not made an order to close your investment
                 if self.strategy.closingConditionMet(self, self.model.round): # check if conditions to close are met (enough time has elapse / price is right / stop loss etc...)
-                    self.makeOrder(" CLOSE") # make the order (should be selling exact amount bought)
+                    self.makeOrder("CLOSE") # make the order (should be selling exact amount bought)
             elif self.closingTransactionWasSuccessfull: # if you have made a closing order and it was successful (ie. transaction happened)
                     self.initialiseParameters()
                     # ^ reinitialise all parameters -- restart loop
         elif self.hasMadeOpenOrder and not self.openTransactionWasSuccessfull:
+            
             timeLeft = self.currentOrder.getExpirationTime()
             if timeLeft > 0:
                 timeLeft -= 1
             else: # they made an order to close then stay ... 
+                print ("PPPPOOOOOOPPPPPP")
                 self.initialiseParameters()
 
     def initialiseParameters(self):
