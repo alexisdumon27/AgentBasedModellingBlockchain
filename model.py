@@ -78,11 +78,13 @@ class MarketModel(Model):
     def step(self):
         self.round += 1
         
+        self.currencyMarket.updateExchangeRates(self.round)
+
         self.schedule.step() # runs the step method for all Agents
         self.currencyMarket.getOrderBook().printOrderBook()
         self.currencyMarket.overseeTransactions()
         for i in self.schedule.agents:
-            print(i.wallet)
+            print("agent: ", i, " : ", i.wallet)
 
         self.datacollector.collect(self)
         print ("-------- A step has happened -------------")
@@ -90,7 +92,7 @@ class MarketModel(Model):
 # --------------------------------------------------------------------------
 
 
-model = MarketModel(5)
+model = MarketModel(3)
 for i in range(3):
     model.step()
 
