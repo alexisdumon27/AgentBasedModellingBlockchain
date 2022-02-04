@@ -21,7 +21,8 @@ currencyPairs = {
 }
 
 inverseCurrencyPair = {
-    "ETH/USDT" : ["ethereum", "tether"]
+    "ETH/USDT" : ["ethereum", "tether"],
+    "USDT/ETH" : ["tether", "ethereum"]
 }
 
 
@@ -32,7 +33,7 @@ class CurrencyMarket:
     def __init__(self, listOfCurrencies):
         self.marketIndicators = marketIndicators # hard coded as fuck 
         self.currencies = listOfCurrencies
-        self.exchange_rates = {"ETH/USDT" : 0}
+        self.exchange_rates = {"ETH/USDT" : 0, "USDT/ETH" : 0}
         self.orderBook = OrderBook()
         
     def getAvailableCurrencies(self):
@@ -62,8 +63,6 @@ class CurrencyMarket:
                     currency2 = currency
 
             self.exchange_rates[symbols] = self.getExchangeRate(currency1, currency2, round)
-
-        return "27"
     
     def getAllExchangeRates(self):
         return self.exchange_rates
@@ -86,7 +85,7 @@ class CurrencyMarket:
         return moving_average
 
     # NEEDS HEAVVVYYYY REFACTORING !!!!!!!!!!!!! 
-    # this is the worst function ever written
+    # this is the worst function ever written in the history of programming :(((((((
     def overseeTransactions(self):
         """ matches oldest open orders with oldest close orders with the same currency """
         orderbook = self.getOrderBook()
@@ -122,36 +121,78 @@ class CurrencyMarket:
                     other_currency_selling = otherValue[2]
                     other_order_type = otherValue[4]
                     other_exchange_rate = otherValue[5]
-                    
-                    print ("currency wanted: ", currency_wanted, ", currency_selling: ", currency_selling)
-                    print ("OTHER, currency wanted: ", other_currency_wanted, ", currency_selling: ", other_currency_selling)
+
                     # PROBLEM WITH IF condition amount == other_amount
-                    if (currency_wanted == other_currency_selling and currency_selling == other_currency_wanted
-                            and other_exchange_rate == exchangeRate 
-                            and order_id not in orders_checked and otherId not in orders_checked):
-                        orders_checked.append(order_id)
-                        orders_checked.append(otherId)
-                        primaryKeysToDelete.append(agentKey)
-                        secondaryKeysToDelete.append(otherAgentKey)
-
-                        # update the wallets of the respective agents !!!
-                        # this is where exchange rate should come into play ... 
-                        # exchangeRate = 2
+                    if ( other_exchange_rate == exchangeRate and order_id not in orders_checked and otherId not in orders_checked):
                         
-                        # at the moment amount and other_amount always equal 10
-                        agentKey.wallet[currency_wanted] += 10
-                        agentKey.wallet[currency_selling] -= 10 * exchangeRate 
-                        
-                        otherAgentKey.wallet[other_currency_selling] -= 10
-                        otherAgentKey.wallet[other_currency_wanted] += 10 * exchangeRate
+                        """
+                            they have agreed on a price to exchange --> they now have to agree on an amount of exchange ...
+                            both agents have a desired amount of the currency they want to buy
+                            agentKey: wants 10 ETH --> 7730 USDT
+                            otherAgentKey: wants 10 USDT --> 0.12 ETH
+                            Will not match agentKey will need to sell more Tethers to fulfill their order // wait for other agents
+                        """
+                        # NEED TO CHECK IF THESE ARE TRUE
+                        amountOfOtherCurrencyRequiredToSell = amount * exchangeRate 
+                        otherAmountOfOtherCurrencyRequiredToSell = otherAmount / other_exchange_rate
 
-                        # make successfultransaction true
-                        if order_type == "OPEN":
-                            agentKey.openTransactionWasSuccessfull = True
-                        else: agentKey.closingTransactionWasSuccessfull = True
-                        if other_order_type == "OPEN":
-                            otherAgentKey.openTransactionWasSuccessfull = True
-                        else: otherAgentKey.closingTransactionWasSuccessfull = True
+                        # agentKey buys == otherAgent required to sell and agentKey required to sell == otheragent buys
+                        if amount == otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell == otherAmount:
+                            # everything matched -- perfect exchange
+                            agentKey.wallet[currency_wanted] += amount
+                            agentKey.wallet[currency_selling] -= amountOfOtherCurrencyRequiredToSell
+
+                            otherAgentKey.wallet[other_currency_wanted] += otherAmount
+                            otherAgentKey.wallet[other_currency_selling] -= otherAmountOfOtherCurrencyRequiredToSell
+                            
+                            orders_checked.append(order_id)
+                            orders_checked.append(otherId)
+                            primaryKeysToDelete.append(agentKey)
+                            secondaryKeysToDelete.append(otherAgentKey)
+                            
+                            if order_type == "OPEN":
+                                agentKey.openTransactionWasSuccessfull = True
+                            else: agentKey.closingTransactionWasSuccessfull = True
+                            if other_order_type == "OPEN":
+                                otherAgentKey.openTransactionWasSuccessfull = True
+                            else: otherAgentKey.closingTransactionWasSuccessfull = True
+
+                        # agentKey -- wants a bigger exchange; otherAgentKey satisfied but not AgentKey
+                        elif amount > otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell > otherAmount: 
+                            agentKey.wallet[currency_wanted] += otherAmountOfOtherCurrencyRequiredToSell
+                            agentKey.wallet[currency_selling] -= otherAmount
+
+                            otherAgentKey.wallet[other_currency_wanted] += otherAmount
+                            otherAgentKey.wallet[other_currency_selling] -= otherAmountOfOtherCurrencyRequiredToSell
+                            
+                            amount -= otherAmountOfOtherCurrencyRequiredToSell
+                            order[1][0] -= otherAmountOfOtherCurrencyRequiredToSell
+                            agentKey.currentOrder.getOrder()[3] = amount - otherAmountOfOtherCurrencyRequiredToSell
+                            
+                            orders_checked.append(otherId)
+                            secondaryKeysToDelete.append(otherAgentKey)
+                            if other_order_type == "OPEN":
+                                otherAgentKey.openTransactionWasSuccessfull = True
+                            else: otherAgentKey.closingTransactionWasSuccessfull = True
+
+
+                        # otherAgentKey -- wants a bigger exchange; agentKey satisfied but not otherAgentKey
+                        elif amount < otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell < otherAmount:
+                            agentKey.wallet[currency_wanted] += amount
+                            agentKey.wallet[currency_selling] -= amountOfOtherCurrencyRequiredToSell
+
+                            otherAgentKey.wallet[other_currency_wanted] += amountOfOtherCurrencyRequiredToSell
+                            otherAgentKey.wallet[other_currency_selling] -= amount
+
+                            otherAmount -= amountOfOtherCurrencyRequiredToSell
+                            otherOrder[1][0] -= amountOfOtherCurrencyRequiredToSell
+                            otherAgentKey.currentOrder.getOrder[3] = otherAmount - amountOfOtherCurrencyRequiredToSell
+                            
+                            orders_checked.append(order_id)
+                            secondaryKeysToDelete.append(agentKey)
+                            if order_type == "OPEN":
+                                agentKey.openTransactionWasSuccessfull = True
+                            else: agentKey.closingTransactionWasSuccessfull = True
 
             for i in primaryKeysToDelete:
                 del buyOrders[i]
@@ -159,7 +200,6 @@ class CurrencyMarket:
             for i in secondaryKeysToDelete:
                 del sellOrders[i]
                     
-
 
 class Currency:
 
@@ -190,6 +230,10 @@ class Currency:
         self.transactions += 1
 
 class Strategy:
+    """
+        this will eventually be a superclass whose children have different implementations of the four methods
+        each children will therefore represent a different type of strategy
+    """
     def __init__(self):
         self.order_id = 0
         pass
@@ -211,16 +255,14 @@ class Strategy:
         
         self.order_id += 1
 
-        symbol = currencyPairs[buyCurrency][sellCurrency]
+        symbol = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]
         exchange_rate = agent.currencyMarket.getAllExchangeRates()[symbol]
-
-        amountOfSellingCurrency = 10 # How much does it need to sell in order to get 10 of other currency
+        amountOfSellingCurrency = exchange_rate  # How much does it need to sell in order to get 10 of other currency
         amountOfBuyingCurrency = 10 # AGENT WANTS TO BUY 10 of currency
 
         expiration_time = random.choice([2,3,4,5])
 
         return Order("OPEN", buyCurrency, sellCurrency, amountOfBuyingCurrency, amountOfSellingCurrency, round, agent, exchange_rate, expiration_time, self.order_id) # creates an ORDER
-
 
     def closingConditionMet(self, agent, round):
         """" Agent's strategy for when to close the position """
@@ -237,11 +279,28 @@ class Strategy:
         amountOfSellingCurrency = investmentToClose[2] # 
         amountOfBuyingCurrency = investmentToClose[3] #
         
-        symbol = currencyPairs[buyCurrency][sellCurrency]
+        symbol = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]
         exchange_rate = agent.currencyMarket.getAllExchangeRates()[symbol]
 
         expiration_time = random.choice([2,3,4,5])
         return Order("CLOSE", buyCurrency, sellCurrency, amountOfBuyingCurrency, amountOfSellingCurrency, round, agent, exchange_rate, expiration_time, self.order_id)
+
+    """ agent will have to change the desired exchange_rate of their order if it did not go through """
+    def updateOrder(self, order):
+        order = order.getOrder()
+        # find what currency pair the order is for ie. X/Y
+        buyCurrency = order[1]
+        sellCurrency = order[2]
+        agent = order[6]
+
+        exchange_rate = agent.currencyMarket.getExchangeRate(buyCurrency, sellCurrency, agent.model.round)
+
+        currencyPair = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]
+        exchangeSymbol = currencyPair # what is the exchange symbol e.g. "ETH/USDT"
+        exchangeDirection = currencyPairs[buyCurrency.getName()]["direction"] # is it a buy or sell with respect to first currency
+
+        # append it as a key-value pair
+        self.orders[exchangeSymbol][exchangeDirection][agent][5] = exchange_rate 
 
 class Order:
     """
@@ -343,11 +402,15 @@ class MarketAgent:
     ## a limited amount of agents get to perform their step actions per turn 
     def step(self):
         """ if it was chosen as a trading agent this turn; then it adds an order to the order book list """
-        
         if not self.hasMadeOpenOrder:
             self.makeOrder("OPEN")
             # currentOrder is also updated
             self.hasMadeOpenOrder = True
+            if self.currentOrder.expiration_time > 0:
+                self.currentOrder.expiration_time -= 1
+                # self.currencyMarket.getOrderBook().updateOrder(self.currentOrder)
+            else:
+                self.initialiseParameters()
         elif self.hasMadeOpenOrder and self.openTransactionWasSuccessfull:
             self.currentInvestment = self.currentOrder # the order was fullfilled it has become an investment (agents wallet updated)
             if not self.hasMadeClosingOrder: # if you have still not made an order to close your investment
@@ -355,12 +418,10 @@ class MarketAgent:
                     self.makeOrder("CLOSE") # make the order (should be selling exact amount bought)
             elif self.closingTransactionWasSuccessfull: # if you have made a closing order and it was successful (ie. transaction happened)
                     self.initialiseParameters()
-                    # ^ reinitialise all parameters -- restart loop
-        elif self.hasMadeOpenOrder and not self.openTransactionWasSuccessfull:
-            timeLeft = self.currentOrder.getExpirationTime()
-            print("time left: ", timeLeft)
-            if timeLeft > 0:
-                timeLeft -= 1
+        elif self.hasMadeOpenOrder and not self.openTransactionWasSuccessfull:            
+            if self.currentOrder.expiration_time > 0:
+                self.currentOrder.expiration_time -= 1
+                # self.currencyMarket.getOrderBook().updateOrder(self.currentOrder)
             else: # they made an order to close then stay ... 
                 self.initialiseParameters()
 
@@ -376,21 +437,7 @@ class MarketAgent:
         # looks at what strategy returns // will be abstracted by currencyMarket and strategy object
         if orderType == "OPEN":
             self.currentOrder = self.strategy.makeOpenOrder(self, 1)
-        else:
+        elif orderType == "CLOSE":
             self.currentOrder = self.strategy.makeCloseOrder(self, 1)
         
         self.currencyMarket.getOrderBook().addOrder(self.currentOrder)
-
-# ethereumData = pd.read_csv('cleanedEuthereumData.csv')
-# tetherData = pd.read_csv('cleanedTetherData.csv')
-# ethereum = Currency("ethereum", "USD/ETH", "crypto", 100, ethereumData)
-# tether = Currency('tether', "USD/USDT", "fiat-backed", 100, tetherData)
-# listOfCurrencies = []
-# listOfCurrencies.append(ethereum)
-# listOfCurrencies.append(tether)
-
-# currencyMarket = CurrencyMarket(listOfCurrencies)
-# print("exchange rate at round 1: ",currencyMarket.getExchangeRate(ethereum, tether, 1))
-# print("exchange rate at round 33: ",currencyMarket.getExchangeRate(ethereum, tether, 33))
-# print("exchange rate at round 227: ",currencyMarket.getExchangeRate(ethereum, tether, 227))
-# print ("oops")

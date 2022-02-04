@@ -83,6 +83,8 @@ class MarketModel(Model):
         self.schedule.step() # runs the step method for all Agents
         self.currencyMarket.getOrderBook().printOrderBook()
         self.currencyMarket.overseeTransactions()
+
+
         for i in self.schedule.agents:
             print("agent: ", i, " : ", i.wallet)
 
@@ -93,7 +95,7 @@ class MarketModel(Model):
 
 
 model = MarketModel(3)
-for i in range(3):
+for i in range(200):
     model.step()
 
 print("")
