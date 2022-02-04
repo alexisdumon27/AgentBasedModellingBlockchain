@@ -94,7 +94,7 @@ class MarketModel(Model):
 # --------------------------------------------------------------------------
 
 
-model = MarketModel(3)
+model = MarketModel(100)
 for i in range(200):
     model.step()
 

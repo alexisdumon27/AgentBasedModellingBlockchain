@@ -167,8 +167,9 @@ class CurrencyMarket:
                             
                             amount -= otherAmountOfOtherCurrencyRequiredToSell
                             order[1][0] -= otherAmountOfOtherCurrencyRequiredToSell
-                            agentKey.currentOrder.getOrder()[3] = amount - otherAmountOfOtherCurrencyRequiredToSell
-                            
+                            currentOrderAgentKey = agentKey.currentOrder.getOrder()
+                            currentOrderAgentKey[3] = amount - otherAmountOfOtherCurrencyRequiredToSell
+
                             orders_checked.append(otherId)
                             secondaryKeysToDelete.append(otherAgentKey)
                             if other_order_type == "OPEN":
@@ -186,10 +187,11 @@ class CurrencyMarket:
 
                             otherAmount -= amountOfOtherCurrencyRequiredToSell
                             otherOrder[1][0] -= amountOfOtherCurrencyRequiredToSell
-                            otherAgentKey.currentOrder.getOrder[3] = otherAmount - amountOfOtherCurrencyRequiredToSell
-                            
+                            otherAgentKeyCurrentOrder = otherAgentKey.currentOrder.getOrder()
+                            otherAgentKeyCurrentOrder[3] = otherAmount - amountOfOtherCurrencyRequiredToSell
+
                             orders_checked.append(order_id)
-                            secondaryKeysToDelete.append(agentKey)
+                            primaryKeysToDelete.append(agentKey)
                             if order_type == "OPEN":
                                 agentKey.openTransactionWasSuccessfull = True
                             else: agentKey.closingTransactionWasSuccessfull = True
@@ -258,7 +260,7 @@ class Strategy:
         symbol = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]
         exchange_rate = agent.currencyMarket.getAllExchangeRates()[symbol]
         amountOfSellingCurrency = exchange_rate  # How much does it need to sell in order to get 10 of other currency
-        amountOfBuyingCurrency = 10 # AGENT WANTS TO BUY 10 of currency
+        amountOfBuyingCurrency = random.choice(range(2,10)) # AGENT WANTS TO BUY 10 of currency
 
         expiration_time = random.choice([2,3,4,5])
 
