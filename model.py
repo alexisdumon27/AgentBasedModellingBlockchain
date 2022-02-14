@@ -1,6 +1,6 @@
 from enum import unique
 from mesa import Agent, Model, agent
-from mesa.time import RandomActivation
+from mesa.time import RandomActivation, BaseScheduler
 from mesa.datacollection import DataCollector
 from numpy import Infinity
 import pandas as pd
@@ -10,8 +10,6 @@ import copy
 
 from agents import Strategy
 
-# def getNumberOfTetherTransactions(model) :
-#     return model.listOfCurrencies[1].getNumOfTransactions()
 
 def getNumberOfEthereumTransactions(model) :
     return model.listOfCurrencies[0].getNumOfTransactions()
@@ -43,7 +41,7 @@ class MarketModel(Model):
 
         self.currencyMarket = CurrencyMarket(self.listOfCurrencies)
 
-        self.schedule = RandomActivation(self)
+        self.schedule = RandomActivation(self) # changed from RandomActivation
 
         self.num_agents = num_agents
 
@@ -82,7 +80,7 @@ class MarketModel(Model):
 
         self.schedule.step() # runs the step method for all Agents
         self.currencyMarket.getOrderBook().printOrderBook()
-        self.currencyMarket.overseeTransactions()
+        self.currencyMarket.price_clearing_mechanism()
 
 
         for i in self.schedule.agents:
@@ -94,8 +92,8 @@ class MarketModel(Model):
 # --------------------------------------------------------------------------
 
 
-model = MarketModel(100)
-for i in range(200):
+model = MarketModel(3)
+for i in range(2):
     model.step()
 
 print("")

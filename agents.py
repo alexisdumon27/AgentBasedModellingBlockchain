@@ -1,5 +1,5 @@
 # from re import S
-from mesa import Agent
+from mesa import Agent, agent
 import random
 import copy
 import pandas as pd
@@ -84,123 +84,112 @@ class CurrencyMarket:
         moving_average = total / spread
         return moving_average
 
-    # NEEDS HEAVVVYYYY REFACTORING !!!!!!!!!!!!! 
-    # this is the worst function ever written in the history of programming :(((((((
-    def overseeTransactions(self):
-        """ matches oldest open orders with oldest close orders with the same currency """
+    def matchBuyAndSellOrders(self, buyOrders, sellOrders):
+        primaryKeysToDelete = [] # lists of the keys of the orders to delete
+        secondaryKeysToDelete = []
+        orders_checked = [] # list of order_id of orders already checked for a match
+
+        # see if there is a match in the order Book
+        # a match is two Orders with same currency pair where the amount that can exchaged is the same
+        for order in buyOrders.items():
+            agentKey = order[0]
+            value = order[1]
+
+            amount = value[0]
+            order_id = value[1]
+            currency_wanted = value[2]
+            currency_selling = value[3]
+            order_type = value[4]
+            exchangeRate = value[5]
+
+            for otherOrder in sellOrders.items():
+                
+
+                otherAgentKey = otherOrder[0]
+                otherValue = otherOrder[1]
+
+                otherAmount = otherValue[0]
+                otherId = otherValue[1]
+                if otherId in orders_checked: continue
+                other_currency_wanted = otherValue[3]
+                other_currency_selling = otherValue[2]
+                other_order_type = otherValue[4]
+                other_exchange_rate = otherValue[5]
+
+                # if they agree on the exchange rate and they have not engaged in the transaction yet
+                if ( other_exchange_rate == exchangeRate and order_id not in orders_checked and otherId not in orders_checked ):
+                    
+                    """
+                        they have agreed on a price to exchange --> they now have to agree on an amount of exchange ...
+                        both agents have a desired amount of the currency they want to buy
+                        agentKey: wants 10 ETH --> 7730 USDT
+                        otherAgentKey: wants 10 USDT --> 0.12 ETH
+                        Will not match agentKey will need to sell more Tethers to fulfill their order // wait for other agents
+                    """
+                    # NEED TO CHECK IF THESE ARE TRUE
+                    # calculate the exchange
+                    amountOfOtherCurrencyRequiredToSell = amount * exchangeRate 
+                    otherAmountOfOtherCurrencyRequiredToSell = otherAmount / other_exchange_rate
+
+                    # who will still have residual
+
+                    # agentKey buys == otherAgent required to sell and agentKey required to sell == otheragent buys
+                    if (amount == otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell == otherAmount):
+                        # everything matched -- perfect exchange
+                        agentKey.updateWallet(currency_wanted, currency_selling, amount, amountOfOtherCurrencyRequiredToSell)
+                        otherAgentKey.updateWallet(other_currency_wanted, other_currency_selling, otherAmount, otherAmountOfOtherCurrencyRequiredToSell)
+                        
+                        orders_checked.append(order_id)
+                        orders_checked.append(otherId)
+                        primaryKeysToDelete.append(agentKey)
+                        secondaryKeysToDelete.append(otherAgentKey)
+                        
+                        agentKey.updateOrderStatus(order_type)
+                        otherAgentKey.updateOrderStatus(other_order_type)
+
+                    # agentKey -- wants a bigger exchange; otherAgentKey satisfied but not AgentKey
+                    elif (amount > otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell > otherAmount): 
+                        agentKey.updateWallet(currency_wanted, currency_selling, otherAmountOfOtherCurrencyRequiredToSell, otherAmount)
+                        otherAgentKey.updateWallet(other_currency_wanted, other_currency_selling, otherAmountOfOtherCurrencyRequiredToSell, otherAmount)
+                        
+                        self.orderBook.updateOrder(order, otherAmountOfOtherCurrencyRequiredToSell)
+                        
+                        agentKey.updateCurrentOrder(otherAmountOfOtherCurrencyRequiredToSell)
+
+                        orders_checked.append(otherId)
+                        secondaryKeysToDelete.append(otherAgentKey)
+
+                        otherAgentKey.updateOrderStatus(other_order_type)
+
+                    # otherAgentKey -- wants a bigger exchange; agentKey satisfied but not otherAgentKey
+                    elif (amount < otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell < otherAmount):
+                        agentKey.updateWallet(currency_wanted, currency_selling, amount, amountOfOtherCurrencyRequiredToSell)
+                        otherAgentKey.updateWallet(other_currency_wanted, other_currency_selling, amount, amountOfOtherCurrencyRequiredToSell)
+
+                        self.orderBook.updateOrder(otherOrder, amountOfOtherCurrencyRequiredToSell)
+                        otherAgentKey.updateCurrentOrder(amountOfOtherCurrencyRequiredToSell)
+
+                        orders_checked.append(order_id)
+                        primaryKeysToDelete.append(agentKey)
+
+                        agentKey.updateOrderStatus(order_type)
+
+        for i in primaryKeysToDelete:
+            del buyOrders[i]
+
+        for i in secondaryKeysToDelete:
+            del sellOrders[i]
+
+    # https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0164603&type=printable <- for reordering orderbook
+    def price_clearing_mechanism(self):
+        """ ............ """
         orderbook = self.getOrderBook()
         for currencyPairs in orderbook.getOrders():
             orders = orderbook.getOrders()[currencyPairs]
             buyOrders = orders["buy"]
             sellOrders = orders["sell"]
             
-            primaryKeysToDelete = [] # lists of the keys of the orders to delete
-            secondaryKeysToDelete = []
-            orders_checked = [] # list of order_id of orders already checked for a match
-
-            # see if there is a match in the order Book
-            # a match is two Orders with same currency pair where the amount that can exchaged is the same
-            for order in buyOrders.items():
-                agentKey = order[0]
-                value = order[1]
-
-                amount = value[0]
-                order_id = value[1]
-                currency_wanted = value[2]
-                currency_selling = value[3]
-                order_type = value[4]
-                exchangeRate = value[5]
-
-                for otherOrder in sellOrders.items():
-                    otherAgentKey = otherOrder[0]
-                    otherValue = otherOrder[1]
-
-                    otherAmount = otherValue[0]
-                    otherId = otherValue[1]
-                    other_currency_wanted = otherValue[3]
-                    other_currency_selling = otherValue[2]
-                    other_order_type = otherValue[4]
-                    other_exchange_rate = otherValue[5]
-
-                    # PROBLEM WITH IF condition amount == other_amount
-                    if ( other_exchange_rate == exchangeRate and order_id not in orders_checked and otherId not in orders_checked):
-                        
-                        """
-                            they have agreed on a price to exchange --> they now have to agree on an amount of exchange ...
-                            both agents have a desired amount of the currency they want to buy
-                            agentKey: wants 10 ETH --> 7730 USDT
-                            otherAgentKey: wants 10 USDT --> 0.12 ETH
-                            Will not match agentKey will need to sell more Tethers to fulfill their order // wait for other agents
-                        """
-                        # NEED TO CHECK IF THESE ARE TRUE
-                        amountOfOtherCurrencyRequiredToSell = amount * exchangeRate 
-                        otherAmountOfOtherCurrencyRequiredToSell = otherAmount / other_exchange_rate
-
-                        # agentKey buys == otherAgent required to sell and agentKey required to sell == otheragent buys
-                        if amount == otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell == otherAmount:
-                            # everything matched -- perfect exchange
-                            agentKey.wallet[currency_wanted] += amount
-                            agentKey.wallet[currency_selling] -= amountOfOtherCurrencyRequiredToSell
-
-                            otherAgentKey.wallet[other_currency_wanted] += otherAmount
-                            otherAgentKey.wallet[other_currency_selling] -= otherAmountOfOtherCurrencyRequiredToSell
-                            
-                            orders_checked.append(order_id)
-                            orders_checked.append(otherId)
-                            primaryKeysToDelete.append(agentKey)
-                            secondaryKeysToDelete.append(otherAgentKey)
-                            
-                            if order_type == "OPEN":
-                                agentKey.openTransactionWasSuccessfull = True
-                            else: agentKey.closingTransactionWasSuccessfull = True
-                            if other_order_type == "OPEN":
-                                otherAgentKey.openTransactionWasSuccessfull = True
-                            else: otherAgentKey.closingTransactionWasSuccessfull = True
-
-                        # agentKey -- wants a bigger exchange; otherAgentKey satisfied but not AgentKey
-                        elif amount > otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell > otherAmount: 
-                            agentKey.wallet[currency_wanted] += otherAmountOfOtherCurrencyRequiredToSell
-                            agentKey.wallet[currency_selling] -= otherAmount
-
-                            otherAgentKey.wallet[other_currency_wanted] += otherAmount
-                            otherAgentKey.wallet[other_currency_selling] -= otherAmountOfOtherCurrencyRequiredToSell
-                            
-                            amount -= otherAmountOfOtherCurrencyRequiredToSell
-                            order[1][0] -= otherAmountOfOtherCurrencyRequiredToSell
-                            currentOrderAgentKey = agentKey.currentOrder.getOrder()
-                            currentOrderAgentKey[3] = amount - otherAmountOfOtherCurrencyRequiredToSell
-
-                            orders_checked.append(otherId)
-                            secondaryKeysToDelete.append(otherAgentKey)
-                            if other_order_type == "OPEN":
-                                otherAgentKey.openTransactionWasSuccessfull = True
-                            else: otherAgentKey.closingTransactionWasSuccessfull = True
-
-
-                        # otherAgentKey -- wants a bigger exchange; agentKey satisfied but not otherAgentKey
-                        elif amount < otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell < otherAmount:
-                            agentKey.wallet[currency_wanted] += amount
-                            agentKey.wallet[currency_selling] -= amountOfOtherCurrencyRequiredToSell
-
-                            otherAgentKey.wallet[other_currency_wanted] += amountOfOtherCurrencyRequiredToSell
-                            otherAgentKey.wallet[other_currency_selling] -= amount
-
-                            otherAmount -= amountOfOtherCurrencyRequiredToSell
-                            otherOrder[1][0] -= amountOfOtherCurrencyRequiredToSell
-                            otherAgentKeyCurrentOrder = otherAgentKey.currentOrder.getOrder()
-                            otherAgentKeyCurrentOrder[3] = otherAmount - amountOfOtherCurrencyRequiredToSell
-
-                            orders_checked.append(order_id)
-                            primaryKeysToDelete.append(agentKey)
-                            if order_type == "OPEN":
-                                agentKey.openTransactionWasSuccessfull = True
-                            else: agentKey.closingTransactionWasSuccessfull = True
-
-            for i in primaryKeysToDelete:
-                del buyOrders[i]
-
-            for i in secondaryKeysToDelete:
-                del sellOrders[i]
+            self.matchBuyAndSellOrders(buyOrders, sellOrders)
                     
 
 class Currency:
@@ -371,6 +360,9 @@ class OrderBook:
     def getOrders(self):
         return self.orders
     
+    def updateOrder(self, order, amount):
+        order[1][0] -= amount
+
     def printOrderBook(self):
         """ visual representation of order book """
         print(self.orders.items())
@@ -443,3 +435,15 @@ class MarketAgent:
             self.currentOrder = self.strategy.makeCloseOrder(self, 1)
         
         self.currencyMarket.getOrderBook().addOrder(self.currentOrder)
+
+    def updateWallet(self, bought_currency, sold_currency, bought_currency_amount, sold_currency_amount):
+        self.wallet[bought_currency] += bought_currency_amount
+        self.wallet[sold_currency] -= sold_currency_amount
+    
+    def updateCurrentOrder(self, amount):
+        self.currentOrder.getOrder()[3] -= amount
+
+    def updateOrderStatus(self, type):
+        if type == "OPEN":
+            self.openTransactionWasSuccessfull = True
+        else: self.closingTransactionWasSuccessfull = True

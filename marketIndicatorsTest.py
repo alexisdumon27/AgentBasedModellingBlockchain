@@ -37,6 +37,28 @@ def get_X_day_moving_average(round, window):
             total += getCurrentPrice(round - i)
         return total / window
 
+def filter(flag, period, increase, decrease, boolean):
+
+    return 0
+
+# RULES TO IMPLEMENT #
+"""
+for OPENING
+1. filter
+2. EMA
+3. MACD
+4. RSI
+5. 5-day moving average <-- implemented
+
+for CLOSING
+1. fixed exit level
+2. trailing exit levels
+"""
+
+# exponential moving average
+def EMA(n):
+    return 27
+
 
 ############# RUN THE CODE ################
 # Live update of the values # replicates what the server does !!!
@@ -90,4 +112,11 @@ def plot_cont(xmax):
 x = ethereumData['Date']
 
 plot_cont(len(x))
-# i want to graph the price per day and have the moving average
+
+"""
+The stock is said to be OVERBOUGHT when the
+momentum oscillator reaches an extreme upper level
+above the zero line and OVERSOLD when it reaches an
+extreme lower level below the zero line. 
+
+"""
