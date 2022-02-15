@@ -93,7 +93,7 @@ class MarketModel(Model):
 
 
 model = MarketModel(3)
-for i in range(2):
+for i in range(1):
     model.step()
 
 print("")

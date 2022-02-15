@@ -1,7 +1,8 @@
-# from re import S
 from mesa import Agent, agent
 import random
+from numpy import random
 import copy
+import numpy
 import pandas as pd
 
 # should be updated at every turn
@@ -100,38 +101,31 @@ class CurrencyMarket:
             currency_wanted = value[2]
             currency_selling = value[3]
             order_type = value[4]
-            exchangeRate = value[5]
+            limit_price = value[5]
 
             for otherOrder in sellOrders.items():
-                
-
                 otherAgentKey = otherOrder[0]
                 otherValue = otherOrder[1]
 
                 otherAmount = otherValue[0]
                 otherId = otherValue[1]
                 if otherId in orders_checked: continue
-                other_currency_wanted = otherValue[3]
-                other_currency_selling = otherValue[2]
+                other_currency_wanted = otherValue[2]
+                other_currency_selling = otherValue[3]
                 other_order_type = otherValue[4]
-                other_exchange_rate = otherValue[5]
+                other_limit_price = otherValue[5]
 
                 # if they agree on the exchange rate and they have not engaged in the transaction yet
-                if ( other_exchange_rate == exchangeRate and order_id not in orders_checked and otherId not in orders_checked ):
-                    
+                if ( other_limit_price <= limit_price and order_id not in orders_checked and otherId not in orders_checked ):
                     """
-                        they have agreed on a price to exchange --> they now have to agree on an amount of exchange ...
-                        both agents have a desired amount of the currency they want to buy
-                        agentKey: wants 10 ETH --> 7730 USDT
-                        otherAgentKey: wants 10 USDT --> 0.12 ETH
-                        Will not match agentKey will need to sell more Tethers to fulfill their order // wait for other agents
+                        A sell order of index j matches a buy order of index i, and
+                        vice versa, only if other_limit_price ≤ limit_price, or if one of the two limit prices, or both, are equal to zero
                     """
                     # NEED TO CHECK IF THESE ARE TRUE
                     # calculate the exchange
-                    amountOfOtherCurrencyRequiredToSell = amount * exchangeRate 
-                    otherAmountOfOtherCurrencyRequiredToSell = otherAmount / other_exchange_rate
-
-                    # who will still have residual
+                    avg_price = (other_limit_price + limit_price) / 2
+                    amountOfOtherCurrencyRequiredToSell = amount * avg_price 
+                    otherAmountOfOtherCurrencyRequiredToSell = otherAmount / avg_price
 
                     # agentKey buys == otherAgent required to sell and agentKey required to sell == otheragent buys
                     if (amount == otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell == otherAmount):
@@ -150,7 +144,7 @@ class CurrencyMarket:
                     # agentKey -- wants a bigger exchange; otherAgentKey satisfied but not AgentKey
                     elif (amount > otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell > otherAmount): 
                         agentKey.updateWallet(currency_wanted, currency_selling, otherAmountOfOtherCurrencyRequiredToSell, otherAmount)
-                        otherAgentKey.updateWallet(other_currency_wanted, other_currency_selling, otherAmountOfOtherCurrencyRequiredToSell, otherAmount)
+                        otherAgentKey.updateWallet(other_currency_wanted, other_currency_selling, otherAmount, otherAmountOfOtherCurrencyRequiredToSell)
                         
                         self.orderBook.updateOrder(order, otherAmountOfOtherCurrencyRequiredToSell)
                         
@@ -164,9 +158,10 @@ class CurrencyMarket:
                     # otherAgentKey -- wants a bigger exchange; agentKey satisfied but not otherAgentKey
                     elif (amount < otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell < otherAmount):
                         agentKey.updateWallet(currency_wanted, currency_selling, amount, amountOfOtherCurrencyRequiredToSell)
-                        otherAgentKey.updateWallet(other_currency_wanted, other_currency_selling, amount, amountOfOtherCurrencyRequiredToSell)
+                        otherAgentKey.updateWallet(other_currency_wanted, other_currency_selling, amountOfOtherCurrencyRequiredToSell, amount)
 
                         self.orderBook.updateOrder(otherOrder, amountOfOtherCurrencyRequiredToSell)
+
                         otherAgentKey.updateCurrentOrder(amountOfOtherCurrencyRequiredToSell)
 
                         orders_checked.append(order_id)
@@ -191,7 +186,6 @@ class CurrencyMarket:
             
             self.matchBuyAndSellOrders(buyOrders, sellOrders)
                     
-
 class Currency:
 
     def __init__(self, name, conversionSymbol, type, amountInCirculation, data):
@@ -215,8 +209,8 @@ class Currency:
         return self.type
     
     def getNumOfTransactions(self):
-        return self.transactions
-    
+        return self.transactions 
+        
     def addTransaction(self):
         self.transactions += 1
 
@@ -228,12 +222,13 @@ class Strategy:
     def __init__(self):
         self.order_id = 0
         pass
-
+    
     # HARD refactor needed later :)  
     def makeOpenOrder(self, agent, round):
         """ wishes to exchange X for Y """
+        self.order_id += 1
+
         agentWallet = agent.wallet
-        
         currenciesInWallet = list(agentWallet.keys())
         sellCurrency = random.choice(currenciesInWallet) # currency agent has in its wallet that he wants to exchange (selling this to buy)
 
@@ -244,20 +239,46 @@ class Strategy:
             if potentialCurrency != sellCurrency:
                 buyCurrency = potentialCurrency
         
-        self.order_id += 1
-
         symbol = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]
+        direction = currencyPairs[buyCurrency.getName()]["direction"]
         exchange_rate = agent.currencyMarket.getAllExchangeRates()[symbol]
-        amountOfSellingCurrency = exchange_rate  # How much does it need to sell in order to get 10 of other currency
+
+        limit_price = self.getLimitPrice(direction, exchange_rate, buyCurrency, sellCurrency, agent.model.round)
+        
+        amountOfSellingCurrency = exchange_rate  # USELESS MEASURE
+
         amountOfBuyingCurrency = random.choice(range(2,10)) # AGENT WANTS TO BUY 10 of currency
 
         expiration_time = random.choice([2,3,4,5])
 
-        return Order("OPEN", buyCurrency, sellCurrency, amountOfBuyingCurrency, amountOfSellingCurrency, round, agent, exchange_rate, expiration_time, self.order_id) # creates an ORDER
+        # AMOUNTOFSELLINGCURRENCY is useless here
+        return Order("OPEN", buyCurrency, sellCurrency, amountOfBuyingCurrency, amountOfSellingCurrency, round, agent, limit_price, expiration_time, self.order_id) # creates an ORDER
 
     def closingConditionMet(self, agent, round):
         """" Agent's strategy for when to close the position """
         return True
+
+    def getLimitPrice(self, direction, exchange_rate, currency1, currency2, round):
+        gauss_result = self.getRandomDrawFromGaussian(exchange_rate, currency1, currency2, round) # https://arxiv.org/pdf/cond-mat/0103600.pdf
+        if direction == "buy":
+            return exchange_rate * gauss_result
+        else: 
+            return exchange_rate / gauss_result
+
+    def getRandomDrawFromGaussian(self, exchange_rate, currency1, currency2, round):
+        mean = exchange_rate * 1.01
+        std_dev = self.getExchangeRateDeviation5Days(currency1, currency2, round)
+        return numpy.random.normal(loc = mean, scale = std_dev)
+    
+    def getExchangeRateDeviation5Days(self, currency1, currency2, round):
+        exchange_rates_list = []
+        for i in range(5):
+            if round - i < 0 : continue
+            price_currency1 = currency1.getPriceAtRound(round - i)
+            price_currency2 = currency2.getPriceAtRound(round - i)
+            exchange_rate = price_currency1 / price_currency2 
+            exchange_rates_list.append(exchange_rate)
+        return numpy.std(exchange_rates_list)
 
     def makeCloseOrder(self, agent, round):
         """ wishes to exchange Y for X """
@@ -276,28 +297,11 @@ class Strategy:
         expiration_time = random.choice([2,3,4,5])
         return Order("CLOSE", buyCurrency, sellCurrency, amountOfBuyingCurrency, amountOfSellingCurrency, round, agent, exchange_rate, expiration_time, self.order_id)
 
-    """ agent will have to change the desired exchange_rate of their order if it did not go through """
-    def updateOrder(self, order):
-        order = order.getOrder()
-        # find what currency pair the order is for ie. X/Y
-        buyCurrency = order[1]
-        sellCurrency = order[2]
-        agent = order[6]
-
-        exchange_rate = agent.currencyMarket.getExchangeRate(buyCurrency, sellCurrency, agent.model.round)
-
-        currencyPair = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]
-        exchangeSymbol = currencyPair # what is the exchange symbol e.g. "ETH/USDT"
-        exchangeDirection = currencyPairs[buyCurrency.getName()]["direction"] # is it a buy or sell with respect to first currency
-
-        # append it as a key-value pair
-        self.orders[exchangeSymbol][exchangeDirection][agent][5] = exchange_rate 
-
 class Order:
     """
         a data structure containing all the relevant information for the order request of an agent
     """
-    def __init__(self, orderType, buyCurrency, sellCurrency, amountOfBuyingCurrency, amountOfSellingCurrency, round, agent, exchange_rate, expiration_time, order_id):
+    def __init__(self, orderType, buyCurrency, sellCurrency, amountOfBuyingCurrency, amountOfSellingCurrency, round, agent, limit_price, expiration_time, order_id):
         self.order_type = orderType
         self.buyCurrency = buyCurrency # currency agent wants to buy
         self.sellCurrency = sellCurrency # currency agent will sell in order to buy
@@ -307,8 +311,8 @@ class Order:
         self.agent = agent #
         self.expiration_time = expiration_time
         self.order_id = order_id
-        self.exchange_rate = exchange_rate
-        self.order = [self.order_type, self.buyCurrency, self.sellCurrency, self.amountOfBuyingCurrency, self.amountOfSellingCurrency, self.timestep, self.agent, self.exchange_rate, self.expiration_time, self.order_id]
+        self.limit_price = limit_price
+        self.order = [self.order_type, self.buyCurrency, self.sellCurrency, self.amountOfBuyingCurrency, self.amountOfSellingCurrency, self.timestep, self.agent, self.limit_price, self.expiration_time, self.order_id]
 
     def getOrder(self):
         return self.order
@@ -347,7 +351,7 @@ class OrderBook:
         sellCurrency = order[2]
         amount = order[3]
         agent = order[6]
-        exchange_rate = order[7]
+        limit_price = order[7]
         order_id = order[-1]
 
         currencyPair = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]
@@ -355,7 +359,15 @@ class OrderBook:
         exchangeDirection = currencyPairs[buyCurrency.getName()]["direction"] # is it a buy or sell with respect to first currency
 
         # append it as a key-value pair
-        self.orders[exchangeSymbol][exchangeDirection][agent] = [amount, order_id, buyCurrency, sellCurrency, orderType, exchange_rate] # later will add price
+        self.orders[exchangeSymbol][exchangeDirection][agent] = [amount, order_id, buyCurrency, sellCurrency, orderType, limit_price] # later will add price
+        
+        self.sortNewOrder(exchangeSymbol, exchangeDirection, orderType) # sorts based on limit_price and exchange_direction
+
+    # BUY --> ascending and SELL --> ascending
+    def sortNewOrder(self, exchangeSymbol, exchangeDirection, orderType):
+        order = orderType == "buy"
+        x = self.orders[exchangeSymbol][exchangeDirection]
+        {k: v for k, v in sorted(x.items(), key=lambda item: item[1][-1], reverse = order)}
 
     def getOrders(self):
         return self.orders
@@ -402,7 +414,6 @@ class MarketAgent:
             self.hasMadeOpenOrder = True
             if self.currentOrder.expiration_time > 0:
                 self.currentOrder.expiration_time -= 1
-                # self.currencyMarket.getOrderBook().updateOrder(self.currentOrder)
             else:
                 self.initialiseParameters()
         elif self.hasMadeOpenOrder and self.openTransactionWasSuccessfull:
@@ -415,7 +426,6 @@ class MarketAgent:
         elif self.hasMadeOpenOrder and not self.openTransactionWasSuccessfull:            
             if self.currentOrder.expiration_time > 0:
                 self.currentOrder.expiration_time -= 1
-                # self.currencyMarket.getOrderBook().updateOrder(self.currentOrder)
             else: # they made an order to close then stay ... 
                 self.initialiseParameters()
 
