@@ -103,10 +103,10 @@ class CurrencyMarket:
             amount = value[0]
             order_id = value[1]
 
-            # buy_side_currency = value[2]
-            # selling_side_currency = value[3]
+            buy_side_currency = value[2]
+            selling_side_currency = value[3]
 
-            currency_wanted = value[2] # you know that currency_wanted has to equal other_currency_selling
+            currency_wanted = value[2] # you know that currency_wanted has to equal buy_side_currency
             currency_selling = value[3]
 
             order_type = value[4]
@@ -120,8 +120,8 @@ class CurrencyMarket:
                 otherId = otherValue[1]
                 if otherId in orders_checked: continue
 
-                other_currency_wanted = otherValue[2]
-                other_currency_selling = otherValue[3]
+                # selling_side_currency = selling_side_currency
+                # buy_side_currency = buy_side_currency
 
                 other_order_type = otherValue[4]
                 other_limit_price = otherValue[5]
@@ -141,13 +141,13 @@ class CurrencyMarket:
                     if (amount == otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell == otherAmount):
                         # everything matched -- perfect exchange
                         agentKey.updateWallet(currency_wanted, currency_selling, amount, amountOfOtherCurrencyRequiredToSell)
-                        otherAgentKey.updateWallet(other_currency_wanted, other_currency_selling, otherAmount, otherAmountOfOtherCurrencyRequiredToSell)
+                        otherAgentKey.updateWallet(selling_side_currency, buy_side_currency, otherAmount, otherAmountOfOtherCurrencyRequiredToSell)
                         
                         agentKey.updateOrderStatus(order_type) # Makes open/closing transaction successful TRUE
                         otherAgentKey.updateOrderStatus(other_order_type)
 
                         agentKey.updateCurrentInvestment(amount, currency_wanted, currency_selling) # Makes currentInvestment take amount as values
-                        otherAgentKey.updateCurrentInvestment(otherAmount, other_currency_wanted, other_currency_selling)
+                        otherAgentKey.updateCurrentInvestment(otherAmount, selling_side_currency, buy_side_currency)
 
                         # both will not be checked anymore
                         orders_checked.append(order_id)
@@ -159,7 +159,7 @@ class CurrencyMarket:
                     # agentKey -- wants a bigger exchange; otherAgentKey satisfied but not AgentKey
                     elif (amount > otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell > otherAmount): 
                         agentKey.updateWallet(currency_wanted, currency_selling, otherAmountOfOtherCurrencyRequiredToSell, otherAmount)
-                        otherAgentKey.updateWallet(other_currency_wanted, other_currency_selling, otherAmount, otherAmountOfOtherCurrencyRequiredToSell)
+                        otherAgentKey.updateWallet(selling_side_currency, buy_side_currency, otherAmount, otherAmountOfOtherCurrencyRequiredToSell)
                         
                         self.orderBook.updateOrder(order, otherAmountOfOtherCurrencyRequiredToSell)
                         
@@ -177,7 +177,7 @@ class CurrencyMarket:
                     # otherAgentKey -- wants a bigger exchange; agentKey satisfied but not otherAgentKey
                     elif (amount < otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell < otherAmount):
                         agentKey.updateWallet(currency_wanted, currency_selling, amount, amountOfOtherCurrencyRequiredToSell)
-                        otherAgentKey.updateWallet(other_currency_wanted, other_currency_selling, amountOfOtherCurrencyRequiredToSell, amount)
+                        otherAgentKey.updateWallet(selling_side_currency, buy_side_currency, amountOfOtherCurrencyRequiredToSell, amount)
 
                         self.orderBook.updateOrder(otherOrder, amountOfOtherCurrencyRequiredToSell)
    
