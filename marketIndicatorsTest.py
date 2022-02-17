@@ -1,3 +1,4 @@
+import random
 from numpy.core.numeric import moveaxis
 from numpy.lib.function_base import diff
 import pandas as pd
@@ -143,3 +144,12 @@ above the zero line and OVERSOLD when it reaches an
 extreme lower level below the zero line. 
 
 """
+
+mean = 1.00
+exchange_rate = 700
+mean *= 1.02
+gauss = numpy.random.normal(loc = mean, scale = random.uniform(0.003, 0.01))
+print (gauss)
+print (exchange_rate * gauss)
+
+# For buy orders μ = 1.05, K = 2.5, σmin = 0.01 and σmax = 0.003.

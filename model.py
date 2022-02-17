@@ -1,15 +1,9 @@
-from enum import unique
-from mesa import Agent, Model, agent
+from mesa import Model
 from mesa.time import RandomActivation, BaseScheduler
 from mesa.datacollection import DataCollector
-from numpy import Infinity
 import pandas as pd
-from agents import MarketAgent, Currency, CurrencyMarket, Strategy
-import random
-import copy
-
-from agents import Strategy
-
+from investment_strategies import Strategy
+from agents import MarketAgent, Currency, CurrencyMarket
 
 def getNumberOfEthereumTransactions(model) :
     return model.listOfCurrencies[0].getNumOfTransactions()
@@ -26,12 +20,12 @@ def getTetherPrice(model):
 def getEthereumPrice(model):
     return model.listOfCurrencies[0].getPriceAtRound(model.round)
 
-ethereumData = pd.read_csv('cleanedEuthereumData.csv')
-tetherData = pd.read_csv('cleanedTetherData.csv')
+ethereumData = pd.read_csv('Data/cleanedEuthereumData.csv')
+tetherData = pd.read_csv('Data/cleanedTetherData.csv')
 
 class MarketModel(Model):
     def __init__(self, num_agents = 10):
-        self.round = 0 # what round we are at in the simulation
+        self.round = 0 # index keeping count of the round of simulation
 
         ethereum = Currency("ethereum", "USD/ETH", "crypto", 100, ethereumData)
         tether = Currency('tether', "USD/USDT", "fiat-backed", 100, tetherData)
@@ -43,8 +37,10 @@ class MarketModel(Model):
 
         self.schedule = RandomActivation(self) # changed from RandomActivation
 
-        self.num_agents = num_agents
+        self.agents = [] # list that contains all MarketAgent objects
+        self.createAgents(num_agents) #
 
+        #### for DATA collection ### 
         self.datacollector = DataCollector(
             model_reporters = {
                                 # "num_of_transactions" : totalTransactions,
@@ -56,44 +52,53 @@ class MarketModel(Model):
                 "Wallets" : "wallet"
             }
         )
-
-        self.agents = {}
-
-        self.createAgents(num_agents)
-    
         self.running = True
-
         self.datacollector.collect(self)
 
     def createAgents(self, num_agents):
         strategy = Strategy()
-        for i in range(self.num_agents): 
+        for i in range(num_agents): 
             a = MarketAgent(i, self, strategy, self.currencyMarket) # does nothing for now... 
-
             self.schedule.add(a)
-            self.agents[i] = a
+            self.agents.append(a)
 
     def step(self):
-        self.round += 1
         
-        self.currencyMarket.updateExchangeRates(self.round)
+        self.currencyMarket.updateExchangeRates(self.round) # makes sure all exchange rates are up to date
 
         self.schedule.step() # runs the step method for all Agents
-        self.currencyMarket.getOrderBook().printOrderBook()
+        
+        print ("OrderBook BEFORE transactions: ")
+        self.currencyMarket.getOrderBook().printOrderBook() # to know what the order book looks like before transactions
         self.currencyMarket.price_clearing_mechanism()
+        print ("OrderBook AFTER transactions: ")
+        self.currencyMarket.getOrderBook().printOrderBook()
 
-
-        for i in self.schedule.agents:
-            print("agent: ", i, " : ", i.wallet)
+        for i in self.agents:
+            print("---- AGENT: ", i, ", wallet: ", i.wallet)
+            # print ("current_order: ", i.currentOrder)
+            # print ("current_investment: ", i.currentInvestment)
+            # print ("hasMadeOpenOrder: ", i.hasMadeOpenOrder)
+            # print ("hasMadeClosingOrder: ", i.hasMadeClosingOrder)
+            # print ("openTransactionWasSuccessfull: ", i.openTransactionWasSuccessfull)
+            # print ("closingTransactionWasSuccessfull: ", i.closingTransactionWasSuccessfull)
 
         self.datacollector.collect(self)
+
+        self.round += 1 # go to the next round
+
         print ("-------- A step has happened -------------")
+
+    def getCurrRound(self):
+        return self.round
+    
+    def getCurrencyMarket(self):
+        return self.currencyMarket
 
 # --------------------------------------------------------------------------
 
-
-model = MarketModel(100)
-for i in range(341):
+model = MarketModel(1)
+for i in range(100):
     model.step()
 
 print("")
