@@ -3,7 +3,8 @@ from mesa.time import RandomActivation, BaseScheduler
 from mesa.datacollection import DataCollector
 import pandas as pd
 from investment_strategies import Strategy
-from agents import MarketAgent, Currency, CurrencyMarket
+from agents import MarketAgent
+from currency_market import CurrencyMarket, Currency
 
 def getNumberOfEthereumTransactions(model) :
     return model.listOfCurrencies[0].getNumOfTransactions()
