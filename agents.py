@@ -30,6 +30,7 @@ class MarketAgent(Agent):
         self.initialUSDValueOfWallet = self.getUSDWalletValue()
         self.currentUSDValueOfWallet = self.getUSDWalletValue()
     
+    # start with $100 worth of all possible currencies
     def createWallet(self):
         for currency in self.currencyMarket.getAvailableCurrencies():
             self.wallet[currency] = 100 # start with 100 of both currencies
@@ -126,4 +127,23 @@ class MarketAgent(Agent):
             total += amount_of_curr * price_curr
         return total
             
+    # def updateCurrentState(self, bought_currency, sold_currency, bought_currency_amount, sold_currency_amount, order):
+    #     # update agent's wallets <-- actual transaction (REFACTOR)
+    #     # update agent's current investments
+    #     self.updateWallet(bought_currency, sold_currency, bought_currency_amount, sold_currency_amount)
+    #     self.updateCurrentInvestment(sold_currency_amount, order) # adds amount it had to sell to buy == amount bought by other_agent
 
+    def updateCurrentState(self, order, bought_currency_amount, sold_currency_amount, order_status = None, current_order_amount = None):
+        # update agent's wallets <-- actual transaction (REFACTOR)
+        # update agent's current investments
+        value = order[1]
+        order_id = value[1]
+        bought_currency = value[2]
+        sold_currency = value[3]
+
+        # direction = currencyPairs[bought_currency.getName()][sold_currency.getName()]
+        self.updateWallet(bought_currency, sold_currency, bought_currency_amount, sold_currency_amount)
+        self.updateCurrentInvestment(sold_currency_amount, order) # adds amount it had to sell to buy == amount bought by other_agent
+
+        if order_status != None: self.updateOrderStatus(order_status)
+        if current_order_amount != None: self.updateCurrentOrderAmount(bought_currency_amount)

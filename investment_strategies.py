@@ -34,21 +34,18 @@ class Strategy:
 
         limit_price = self.getLimitPrice(direction, exchange_rate)
         
-        amountOfBuyingCurrency = self.getAmountOfBuyingCurrency(exchange_rate, direction) # AGENT WANTS TO BUY 10 of currency
+        amountOfBuyingCurrency = self.getAmountOfBuyingCurrency(exchange_rate, direction, agent.wallet[sellCurrency]) # AGENT WANTS TO BUY 10 of currency
 
         expiration_time = random.choice(range(2,5))
 
         # AMOUNTOFSELLINGCURRENCY is useless here
         return Order("OPEN", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time, self.order_id) # creates an ORDER
 
-    def getAmountOfBuyingCurrency(self, exchange_rate, direction):
+    def getAmountOfBuyingCurrency(self, exchange_rate, direction, amount_of_currency_to_sell):
         # should buy amount proportional to exchange_rate
-        print ("DO YOU EVER GO HERE")
         if direction == "buy" and exchange_rate > 1:
-            print (exchange_rate)
             return random.choice(range(2,10)) #
         else: 
-            print ("hello")
             return random.choice(range(2,10)) * exchange_rate
 
     def closingConditionMet(self, agent, round):
