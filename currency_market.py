@@ -55,39 +55,35 @@ class CurrencyMarket:
         return moving_average
 
     def matchBuyAndSellOrders(self, buyOrders, sellOrders):
-        primaryKeysToDelete = [] # lists of the keys of the orders to delete
-        secondaryKeysToDelete = []
-        orders_checked = [] # list of order_id of orders already checked for a match
+        buying_orders_keys_to_delete = [] # lists of the keys of the orders to delete
+        selling_orders_keys_to_delete = []
+        completed_orders = [] # list of order_id of orders already checked for a match
 
         # see if there is a match in the order Book
         # a match is two Orders with same currency pair where the amount that can exchaged is the same
         for order in buyOrders.items():
-            agentKey = order[0]
+            agent_key = order[0]
             value = order[1]
 
             amount = value[0]
             order_id = value[1]
-
             buy_side_currency = value[2]
             selling_side_currency = value[3]
-
             order_type = value[4]
             limit_price = value[5]
 
-            for otherOrder in sellOrders.items():
-                otherAgentKey = otherOrder[0]
-                otherValue = otherOrder[1]
+            for other_order in sellOrders.items():
+                other_agent_key = other_order[0]
+                other_value = other_order[1]
 
-                otherAmount = otherValue[0]
-                otherId = otherValue[1]
-                if otherId in orders_checked: continue
-
-                other_order_type = otherValue[4]
-                other_limit_price = otherValue[5]
+                other_amount = other_value[0]
+                other_order_id = other_value[1]
+                other_order_type = other_value[4]
+                other_limit_price = other_value[5]
 
                 # if they agree on the exchange rate and they have not engaged in the transaction yet
                 # other_limit_price == seller (more like minimum price it is willing to go to ) || limit_price == buyer (highest price it is willing to go too)
-                if ( other_limit_price <= limit_price and order_id not in orders_checked and otherId not in orders_checked ):
+                if ( other_limit_price <= limit_price and order_id not in completed_orders and other_order_id not in completed_orders and other_amount > 0):
                     """
                         A sell order of index j matches a buy order of index i, and
                         vice versa, only if other_limit_price ≤ limit_price, or if one of the two limit prices, or both, are equal to zero
@@ -95,69 +91,66 @@ class CurrencyMarket:
                     # calculate the exchange
                     avg_price = (other_limit_price + limit_price) / 2
                     amountOfOtherCurrencyRequiredToSell = amount * avg_price 
-                    otherAmountOfOtherCurrencyRequiredToSell = otherAmount / avg_price
+                    otherAmountOfOtherCurrencyRequiredToSell = other_amount / avg_price
 
-                    # agentKey buys == otherAgent required to sell and agentKey required to sell == otheragent buys
-                    if (amount == otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell == otherAmount):
-                        # everything matched -- perfect exchange
-                        agentKey.updateWallet(buy_side_currency, selling_side_currency, amount, amountOfOtherCurrencyRequiredToSell)
-                        otherAgentKey.updateWallet(selling_side_currency, buy_side_currency, otherAmount, otherAmountOfOtherCurrencyRequiredToSell)
+                    # agent_key -- wants a bigger exchange; other_agent_key satisfied but not AgentKey
+                    if (amount > otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell > other_amount): 
+                        # both update their wallets <-- actual transaction (REFACTOR)
+                        agent_key.updateWallet(buy_side_currency, selling_side_currency, otherAmountOfOtherCurrencyRequiredToSell, other_amount)
+                        other_agent_key.updateWallet(selling_side_currency, buy_side_currency, other_amount, otherAmountOfOtherCurrencyRequiredToSell)
                         
-                        agentKey.updateOrderStatus(order_type) # Makes open/closing transaction successful TRUE
-                        otherAgentKey.updateOrderStatus(other_order_type)
+                        # both update their current investments
+                        agent_key.updateCurrentInvestment(other_amount, order) # adds amount it had to sell to buy == amount bought by other_agent
+                        other_agent_key.updateCurrentInvestment(otherAmountOfOtherCurrencyRequiredToSell, other_order) # adds amount it had to sell to buy
 
-                        agentKey.updateCurrentInvestment(amount, buy_side_currency, selling_side_currency) # Makes currentInvestment take amount as values
-                        otherAgentKey.updateCurrentInvestment(otherAmount, selling_side_currency, buy_side_currency)
-
-                        # both will not be checked anymore
-                        orders_checked.append(order_id)
-                        orders_checked.append(otherId)
-                        # will be removed from dictionary
-                        primaryKeysToDelete.append(agentKey)
-                        secondaryKeysToDelete.append(otherAgentKey)
-                        break # do not look at other possible selling agents
-
-                    # agentKey -- wants a bigger exchange; otherAgentKey satisfied but not AgentKey
-                    elif (amount > otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell > otherAmount): 
-                        agentKey.updateWallet(buy_side_currency, selling_side_currency, otherAmountOfOtherCurrencyRequiredToSell, otherAmount)
-                        otherAgentKey.updateWallet(selling_side_currency, buy_side_currency, otherAmount, otherAmountOfOtherCurrencyRequiredToSell)
+                        # update agent_key's order in the orderBook -- removes amount sold by other_agent_key
+                        self.orderBook.updateOrder(order, otherAmountOfOtherCurrencyRequiredToSell) # will be left with smaller amount remaining
                         
-                        self.orderBook.updateOrder(order, otherAmountOfOtherCurrencyRequiredToSell)
+                        # update agent_keys's current order amount -- removes amount sold by other_agent_key
+                        agent_key.updateCurrentOrderAmount(otherAmountOfOtherCurrencyRequiredToSell)     
+
+                        # updates other_agent_key's order status -- it has successfully (completely) openned/closed an order
+                        other_agent_key.updateOrderStatus(other_order_type)
+
+                        # adds other_order in the list of checked orders and to the list of keys to delete 
+                        completed_orders.append(other_order_id)
+                        selling_orders_keys_to_delete.append(other_agent_key)
+
+                    # other_agent_key -- wants a bigger or equal exchange; agent_key satisfied but not (neccessarily) other_agent_key
+                    elif (amount <= amountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell <= other_amount):
+                        # both update their wallets <-- actual transaction (REFACTOR)
+                        agent_key.updateWallet(buy_side_currency, selling_side_currency, amount, amountOfOtherCurrencyRequiredToSell)
+                        other_agent_key.updateWallet(selling_side_currency, buy_side_currency, amountOfOtherCurrencyRequiredToSell, amount)
+
+                        # both update their current investments
+                        agent_key.updateCurrentInvestment(amountOfOtherCurrencyRequiredToSell, order) # agent_key's amount it had to sell
+                        other_agent_key.updateCurrentInvestment(amount, other_order) # other_agent_key adds amount that agent_key has sold to it
                         
-                        agentKey.updateCurrentInvestment(otherAmountOfOtherCurrencyRequiredToSell, order)
-                        otherAgentKey.updateCurrentInvestment(otherAmount, otherOrder)
+                        # update agent_key's order in the orderBook -- removes amount sold by other_agent_key
+                        self.orderBook.updateOrder(other_order, amountOfOtherCurrencyRequiredToSell) # will be left with smallet amount remaining
 
-                        agentKey.updateCurrentOrderAmount(otherAmountOfOtherCurrencyRequiredToSell)
+                        # update other_agent_key's current order amount -- removes amount sold by agent_key (there will be some remaining)
+                        other_agent_key.updateCurrentOrderAmount(amountOfOtherCurrencyRequiredToSell)
 
-                        orders_checked.append(otherId)
-                        secondaryKeysToDelete.append(otherAgentKey) # deletes order by the key it is attached too
+                        # updates agent_key's order status -- it has successfully (completely) openned/closed an order
+                        agent_key.updateOrderStatus(order_type)
 
-                        otherAgentKey.updateOrderStatus(other_order_type) # 
-
-                    # otherAgentKey -- wants a bigger exchange; agentKey satisfied but not otherAgentKey
-                    elif (amount < otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell < otherAmount):
-                        agentKey.updateWallet(buy_side_currency, selling_side_currency, amount, amountOfOtherCurrencyRequiredToSell)
-                        otherAgentKey.updateWallet(selling_side_currency, buy_side_currency, amountOfOtherCurrencyRequiredToSell, amount)
-
-                        self.orderBook.updateOrder(otherOrder, amountOfOtherCurrencyRequiredToSell)
-   
-                        agentKey.updateCurrentInvestment(amount, order)
-                        otherAgentKey.updateCurrentInvestment(amountOfOtherCurrencyRequiredToSell, otherOrder)
+                        # agent_key's order has been fulfilled completely // it is added to the list of keys to delete
+                        completed_orders.append(order_id)
+                        buying_orders_keys_to_delete.append(agent_key)
                         
-                        otherAgentKey.updateCurrentOrderAmount(amountOfOtherCurrencyRequiredToSell)
-
-                        orders_checked.append(order_id)
-                        primaryKeysToDelete.append(agentKey) # deletes order by the key it is attached too
-
-                        agentKey.updateOrderStatus(order_type)
+                        if amount == otherAmountOfOtherCurrencyRequiredToSell:
+                            completed_orders.append(other_order_id)
+                            selling_orders_keys_to_delete.append(other_agent_key)
+                            other_agent_key.updateOrderStatus(other_order_type)
                         break # exit the loop to match buying agent with a selling agent -- buying agent is satisfied!
                     else:
                         return RuntimeError
 
-        for i in primaryKeysToDelete:
+        for i in buying_orders_keys_to_delete:
             del buyOrders[i]
 
-        for i in secondaryKeysToDelete:
+        for i in selling_orders_keys_to_delete:
             del sellOrders[i]
 
     # https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0164603&type=printable <- for reordering orderbook

@@ -106,8 +106,8 @@ class MarketAgent(Agent):
             self.currentOrder.limit_price *= 1.02 # increase the limit_price by 2% (limit_price was too low)
         else: self.currentOrder.limit_price *= 0.98 # decrease by 2% (limit_price was too high)
 
-    def updateCurrentInvestment(self, amountInvested, order):
-        self.currentInvestment["amount"] += amountInvested
+    def updateCurrentInvestment(self, amount_sold, order):
+        self.currentInvestment["amount"] += amount_sold # amount of currency it sold to buy desired currency
         self.currentInvestment["boughtCurrency"] = order[1][2]
         self.currentInvestment["soldCurrency"] = order[1][3]
         self.currentInvestment["init_order_number"] = order[1][1]
