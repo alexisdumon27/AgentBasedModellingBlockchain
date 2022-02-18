@@ -64,9 +64,8 @@ class MarketModel(Model):
             self.agents.append(a)
 
     def step(self):
+        self.currencyMarket.updateExchangeRates(self.round) # makes sure all exchange rates are up to date (IMPORTANT)
         
-        self.currencyMarket.updateExchangeRates(self.round) # makes sure all exchange rates are up to date
-
         self.schedule.step() # runs the step method for all Agents
         
         print ("OrderBook BEFORE transactions: ")
@@ -76,13 +75,8 @@ class MarketModel(Model):
         self.currencyMarket.getOrderBook().printOrderBook()
 
         for i in self.agents:
-            print("---- AGENT: ", i, ", wallet: ", i.wallet)
-            # print ("current_order: ", i.currentOrder)
-            # print ("current_investment: ", i.currentInvestment)
-            # print ("hasMadeOpenOrder: ", i.hasMadeOpenOrder)
-            # print ("hasMadeClosingOrder: ", i.hasMadeClosingOrder)
-            # print ("openTransactionWasSuccessfull: ", i.openTransactionWasSuccessfull)
-            # print ("closingTransactionWasSuccessfull: ", i.closingTransactionWasSuccessfull)
+            print(i, ", wallet: ", i.wallet)
+            print (i.currentUSDValueOfWallet, ", diff: ", i.currentUSDValueOfWallet - i.initialUSDValueOfWallet)
 
         self.datacollector.collect(self)
 
@@ -99,8 +93,9 @@ class MarketModel(Model):
 # --------------------------------------------------------------------------
 
 model = MarketModel(1)
-for i in range(100):
+for i in range(5):
     model.step()
+
 
 print("")
 print("END RESULT:")

@@ -15,9 +15,6 @@ class CurrencyMarket:
     def getAvailableCurrencies(self):
         return self.currencies
     
-    def updateMarketIndicators(self, currency):
-        self.findMovingAverages(currency)
-    
     def getOrderBook(self):
         return self.orderBook
 
@@ -74,9 +71,6 @@ class CurrencyMarket:
             buy_side_currency = value[2]
             selling_side_currency = value[3]
 
-            currency_wanted = value[2] # you know that currency_wanted has to equal buy_side_currency
-            currency_selling = value[3]
-
             order_type = value[4]
             limit_price = value[5]
 
@@ -87,9 +81,6 @@ class CurrencyMarket:
                 otherAmount = otherValue[0]
                 otherId = otherValue[1]
                 if otherId in orders_checked: continue
-
-                # selling_side_currency = selling_side_currency
-                # buy_side_currency = buy_side_currency
 
                 other_order_type = otherValue[4]
                 other_limit_price = otherValue[5]
@@ -109,13 +100,13 @@ class CurrencyMarket:
                     # agentKey buys == otherAgent required to sell and agentKey required to sell == otheragent buys
                     if (amount == otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell == otherAmount):
                         # everything matched -- perfect exchange
-                        agentKey.updateWallet(currency_wanted, currency_selling, amount, amountOfOtherCurrencyRequiredToSell)
+                        agentKey.updateWallet(buy_side_currency, selling_side_currency, amount, amountOfOtherCurrencyRequiredToSell)
                         otherAgentKey.updateWallet(selling_side_currency, buy_side_currency, otherAmount, otherAmountOfOtherCurrencyRequiredToSell)
                         
                         agentKey.updateOrderStatus(order_type) # Makes open/closing transaction successful TRUE
                         otherAgentKey.updateOrderStatus(other_order_type)
 
-                        agentKey.updateCurrentInvestment(amount, currency_wanted, currency_selling) # Makes currentInvestment take amount as values
+                        agentKey.updateCurrentInvestment(amount, buy_side_currency, selling_side_currency) # Makes currentInvestment take amount as values
                         otherAgentKey.updateCurrentInvestment(otherAmount, selling_side_currency, buy_side_currency)
 
                         # both will not be checked anymore
@@ -124,10 +115,11 @@ class CurrencyMarket:
                         # will be removed from dictionary
                         primaryKeysToDelete.append(agentKey)
                         secondaryKeysToDelete.append(otherAgentKey)
+                        break # do not look at other possible selling agents
 
                     # agentKey -- wants a bigger exchange; otherAgentKey satisfied but not AgentKey
                     elif (amount > otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell > otherAmount): 
-                        agentKey.updateWallet(currency_wanted, currency_selling, otherAmountOfOtherCurrencyRequiredToSell, otherAmount)
+                        agentKey.updateWallet(buy_side_currency, selling_side_currency, otherAmountOfOtherCurrencyRequiredToSell, otherAmount)
                         otherAgentKey.updateWallet(selling_side_currency, buy_side_currency, otherAmount, otherAmountOfOtherCurrencyRequiredToSell)
                         
                         self.orderBook.updateOrder(order, otherAmountOfOtherCurrencyRequiredToSell)
@@ -144,7 +136,7 @@ class CurrencyMarket:
 
                     # otherAgentKey -- wants a bigger exchange; agentKey satisfied but not otherAgentKey
                     elif (amount < otherAmountOfOtherCurrencyRequiredToSell and amountOfOtherCurrencyRequiredToSell < otherAmount):
-                        agentKey.updateWallet(currency_wanted, currency_selling, amount, amountOfOtherCurrencyRequiredToSell)
+                        agentKey.updateWallet(buy_side_currency, selling_side_currency, amount, amountOfOtherCurrencyRequiredToSell)
                         otherAgentKey.updateWallet(selling_side_currency, buy_side_currency, amountOfOtherCurrencyRequiredToSell, amount)
 
                         self.orderBook.updateOrder(otherOrder, amountOfOtherCurrencyRequiredToSell)
@@ -158,6 +150,7 @@ class CurrencyMarket:
                         primaryKeysToDelete.append(agentKey) # deletes order by the key it is attached too
 
                         agentKey.updateOrderStatus(order_type)
+                        break # exit the loop to match buying agent with a selling agent -- buying agent is satisfied!
                     else:
                         return RuntimeError
 
@@ -256,7 +249,7 @@ class OrderBook:
         return self.orders
     
     def updateOrder(self, order, amount):
-        print ("WHat Is OrDEr: ", order)
+        print ("Amount before updating: ", order[1][0])
         order[1][0] -= amount
     
     def updateAgentOrderLimitPrice(self, agent, new_limit_price):

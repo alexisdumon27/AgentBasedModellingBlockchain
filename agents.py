@@ -26,10 +26,13 @@ class MarketAgent(Agent):
 
         self.wallet = {}
         self.createWallet()
+
+        self.initialUSDValueOfWallet = self.getUSDWalletValue()
+        self.currentUSDValueOfWallet = self.getUSDWalletValue()
     
     def createWallet(self):
         for currency in self.currencyMarket.getAvailableCurrencies():
-            self.wallet[currency] = 100000 # start with 100 000 of both currencies
+            self.wallet[currency] = 100 # start with 100 of both currencies
 
     # what happens during one round of the simulation for one agent
     ## a limited amount of agents get to perform their step actions per turn 
@@ -43,7 +46,6 @@ class MarketAgent(Agent):
             self.hasMadeOpenOrder = True
         elif self.hasMadeOpenOrder and not self.openTransactionWasSuccessfull and not self.hasMadeClosingOrder and not self.closingTransactionWasSuccessfull:
             # wait for open order to be successful (Open order not fulfilled yet ... )
-            print ("open order not fullfilled yet: ", self)
             if self.currentOrder.expiration_time > 0:
                 self.currentOrder.expiration_time -= 1
             else: 
@@ -60,8 +62,11 @@ class MarketAgent(Agent):
             # wait for it for open order to be successful
             print ("wait for however long to close the position (for now // may change later")
         elif self.hasMadeOpenOrder and self.openTransactionWasSuccessfull and self.hasMadeClosingOrder and self.closingTransactionWasSuccessfull:
+            print ("EVERYTHING IS DONE!!! YOU SHOULD HAVE MADE MONEY")
             # if agent has openned order, done open transac, closed order, and done closing transac
             self.initialiseParameters()
+        
+        self.currentUSDValueOfWallet = self.getUSDWalletValue()
         
     def hasACurrentInvestment(self):
         if self.currentInvestment == {"amount": 0, "boughtCurrency": None, "soldCurrency": None, "init_order_number" : None}:
@@ -83,7 +88,6 @@ class MarketAgent(Agent):
         elif orderType == "CLOSE":
             self.currentOrder = self.strategy.makeCloseOrder(self, self.round)
 
-        print (self.currentOrder)
         self.currencyMarket.getOrderBook().addOrder(self.currentOrder)
 
     def updateWallet(self, bought_currency, sold_currency, bought_currency_amount, sold_currency_amount):
@@ -114,4 +118,12 @@ class MarketAgent(Agent):
         else: 
             self.closingTransactionWasSuccessfull = True
 
+    def getUSDWalletValue(self):
+        total = 0
+        for currency in self.wallet:
+            amount_of_curr = self.wallet[currency]
+            price_curr = currency.getPriceAtRound(self.round)
+            total += amount_of_curr * price_curr
+        return total
+            
 

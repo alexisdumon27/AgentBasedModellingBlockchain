@@ -34,23 +34,36 @@ class Strategy:
 
         limit_price = self.getLimitPrice(direction, exchange_rate)
         
-        amountOfBuyingCurrency = random.choice(range(2,10)) # AGENT WANTS TO BUY 10 of currency
+        amountOfBuyingCurrency = self.getAmountOfBuyingCurrency(exchange_rate, direction) # AGENT WANTS TO BUY 10 of currency
 
-        expiration_time = random.choice([2,3,4,5])
+        expiration_time = random.choice(range(2,5))
 
         # AMOUNTOFSELLINGCURRENCY is useless here
         return Order("OPEN", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time, self.order_id) # creates an ORDER
+
+    def getAmountOfBuyingCurrency(self, exchange_rate, direction):
+        # should buy amount proportional to exchange_rate
+        print ("DO YOU EVER GO HERE")
+        if direction == "buy" and exchange_rate > 1:
+            print (exchange_rate)
+            return random.choice(range(2,10)) #
+        else: 
+            print ("hello")
+            return random.choice(range(2,10)) * exchange_rate
 
     def closingConditionMet(self, agent, round):
         """" Agent's strategy for when to close the position """
         return True
 
     def getLimitPrice(self, direction, exchange_rate):
-        random_gauss_factor = self.getRandomDrawFromGaussian(exchange_rate, direction) # to add randomness
-        return exchange_rate * random_gauss_factor # agent willing to buy at a slightly higher price
+        random_gauss_factor = self.getRandomDrawFromGaussian(direction) # to add randomness in limit_prices
+        limit_price = 0
+        while limit_price <= 0:
+            limit_price = exchange_rate * random_gauss_factor
+        return limit_price # agent willing to buy at a slightly higher price
 
     # https://arxiv.org/pdf/cond-mat/0103600.pdf
-    def getRandomDrawFromGaussian(self, exchange_rate, direction):
+    def getRandomDrawFromGaussian(self, direction):
         # For orders: μ = current_exchange_rate * 1.01, σmin = 0.01 and σmax = 0.003.
         mean = 0.98
         if direction == "buy":
@@ -68,10 +81,15 @@ class Strategy:
         amountOfBuyingCurrency = investmentToClose["amount"] #
         
         symbol = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["exchange_symbol"]
+        direction = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["direction"]
         exchange_rate = agent.currencyMarket.getAllExchangeRates()[symbol]
+        limit_price = self.getLimitPrice(direction, exchange_rate)
 
-        expiration_time = random.choice([2,3,4,5])
-        return Order("CLOSE", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, exchange_rate, expiration_time, self.order_id)
+        print("checking agent's limit price in the current_order for OPEN with exchange rate for its closing order")
+        print ("OPEN order: ", agent.currentOrder.limit_price, ", ", limit_price)
+
+        expiration_time = random.choice(range(2,5))
+        return Order("CLOSE", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time, self.order_id)
 
 class Order:
     """
