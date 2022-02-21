@@ -76,7 +76,7 @@ class MarketModel(Model):
 
         for i in self.agents:
             print(i, ", wallet: ", i.wallet)
-            print (i.currentUSDValueOfWallet, ", diff: ", i.currentUSDValueOfWallet - i.initialUSDValueOfWallet)
+            print ("wallet value: ", i.currentUSDValueOfWallet, ", diff: ", i.currentUSDValueOfWallet - i.initialUSDValueOfWallet)
 
         self.datacollector.collect(self)
 
@@ -93,9 +93,9 @@ class MarketModel(Model):
 # --------------------------------------------------------------------------
 
 model = MarketModel(2)
-for i in range(2):
+for i in range(3):
     model.step()
 
 
 print("")
-print("END RESULT:")
+print("END RESULT")

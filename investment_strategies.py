@@ -41,12 +41,19 @@ class Strategy:
         # AMOUNTOFSELLINGCURRENCY is useless here
         return Order("OPEN", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time, self.order_id) # creates an ORDER
 
-    def getAmountOfBuyingCurrency(self, exchange_rate, direction, amount_of_currency_to_sell):
-        # should buy amount proportional to exchange_rate
-        if direction == "buy" and exchange_rate > 1:
-            return random.choice(range(2,10)) #
-        else: 
-            return random.choice(range(2,10)) * exchange_rate
+    def getAmountOfBuyingCurrency(self, exchange_rate, direction, max_amount_to_sell):
+        # should buy amount proportional to exchange_rate and it should not exceed the max amount of the currency it is selling
+        amount = 0.00 # go through all the numbers until you reach the max amount that they can sell
+        while amount < 1000000:
+            amount += 0.01
+            if direction == "buy" and exchange_rate > 1:
+                if amount * exchange_rate > max_amount_to_sell:
+                    amount -= 0.1
+                    return amount
+            else:
+                if amount > max_amount_to_sell:
+                    amount -= 0.1
+                    return amount
 
     def closingConditionMet(self, agent, round):
         """" Agent's strategy for when to close the position """
@@ -87,6 +94,18 @@ class Strategy:
 
         expiration_time = random.choice(range(2,5))
         return Order("CLOSE", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time, self.order_id)
+
+
+# class RandomStrategy(Strategy):
+
+#     """
+#         there are three important methods that every subclass should implement:
+#         1. makeOpenOrder
+#         2. closingConditionsMet
+#         3. makeCloseOrder
+#     """
+#     def makeOpenOrder(self, agent, round):
+#         return super().makeOpenOrder(agent, round)
 
 class Order:
     """
