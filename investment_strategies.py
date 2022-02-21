@@ -46,6 +46,7 @@ class Strategy:
 
 
 
+
 class RandomStrategy(Strategy):
 
     """
@@ -61,6 +62,7 @@ class RandomStrategy(Strategy):
         return True
 
         # HARD refactor needed later :)  
+   
     def makeOpenOrder(self, agent, round):
         """ wishes to exchange X for Y """
         self.order_id += 1
@@ -93,7 +95,6 @@ class RandomStrategy(Strategy):
         """ wishes to exchange Y for X """
 
         investmentToClose = agent.currentInvestment # close current investment // investment is a dictionary object
-        print ("investment to close: ", investmentToClose)
 
         buyCurrency = investmentToClose["soldCurrency"] # currency you used to invest
         sellCurrency = investmentToClose["boughtCurrency"] # currency you invested in
@@ -126,29 +127,28 @@ class EMAStrategy(Strategy):
 
         # HARD refactor needed later :)  
     def makeOpenOrder(self, agent, round):
-        """ wishes to exchange X for Y """
-        self.order_id += 1
+        """ 
+            If there is no current open position, then a long position is generated only if the close price is higher than EMA(n) and 
+            a short position is generated only if the close price is lower than EMA(n). If a position is currently open, then this rule is ignored 
+        """
 
-        agentWallet = agent.wallet
-        currenciesInWallet = list(agentWallet.keys())
-        sellCurrency = random.choice(currenciesInWallet) # currency agent has in its wallet that he wants to exchange (selling this to buy)
+        """
+        pseudo-code
+        Find the currency-pair with the most positive difference between their currentExchangeRate and EMA
 
-        currencies = agent.currencyMarket.getAvailableCurrencies() # list of available currencies in the market
-        buyCurrency = None
-        while buyCurrency == None:
-            potentialCurrency = random.choice(currencies)
-            if potentialCurrency != sellCurrency:
-                buyCurrency = potentialCurrency
+        biggestPositiveDiff = 0
+        currencyPairBiggestDiff = None
+        For each currencyPairSymbol:
+            getCurrentExchangeRate
+            getEMA for that period and
+
+        inverseCurrencyPair <- 
+        make order with these two currencies 
+        """
+        # biggestPositiveDifference = 0
+        # currencyPairBiggestDiff = None # symbol like ['USDT/ETH'] for example
+        # listOfSymbols = 
         
-        symbol = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["exchange_symbol"]
-        direction = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["direction"]
-        exchange_rate = agent.currencyMarket.getAllExchangeRates()[symbol]
-
-        limit_price = self.getLimitPrice(direction, exchange_rate)
-        
-        amountOfBuyingCurrency = self.getAmountOfBuyingCurrency(exchange_rate, direction, agent.wallet[sellCurrency]) # AGENT WANTS TO BUY 10 of currency
-
-        expiration_time = random.choice(range(2,5))
 
         # AMOUNTOFSELLINGCURRENCY is useless here
         return Order("OPEN", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time) # creates an ORDER
@@ -156,22 +156,8 @@ class EMAStrategy(Strategy):
     def makeCloseOrder(self, agent, round):
         """ wishes to exchange Y for X """
 
-        investmentToClose = agent.currentInvestment # close current investment // investment is a dictionary object
-        print ("investment to close: ", investmentToClose)
-
-        buyCurrency = investmentToClose["soldCurrency"] # currency you used to invest
-        sellCurrency = investmentToClose["boughtCurrency"] # currency you invested in
-        amountOfBuyingCurrency = investmentToClose["amount"] #
-        
-        symbol = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["exchange_symbol"]
-        direction = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["direction"]
-        exchange_rate = agent.currencyMarket.getAllExchangeRates()[symbol]
-        limit_price = self.getLimitPrice(direction, exchange_rate)
-
-        expiration_time = random.choice(range(2,5))
         return Order("CLOSE", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time)
         
-
 class MACDStrategy(Strategy):
     """
         Follows Moving Average Convergence Divergence indicator
@@ -194,8 +180,36 @@ class TrendFollowerStrategy(Strategy):
         super().__init__(strategy_name)
 
 
-# class MarketIndicators:
+class MarketIndicators:
 
+    def __init__(self, exchange_rates) -> None:
+        self.exchange_rates = exchange_rates
+
+    # exponential moving average
+    # https://www.investopedia.com/terms/e/ema.asp
+    # https://towardsdatascience.com/trading-toolbox-02-wma-ema-62c22205e2a9
+    def getEMA(self, round, window, symbol):
+        ema10 = self.exchange_rates[symbol].ewm(span = window, adjust= False).mean()
+        df = pd.DataFrame()
+        df["ema"] = numpy.round(ema10, decimals = 3)
+        return df["ema"].values[round]
+
+    # Moving average Convergence Divergence
+    # https://www.investopedia.com/terms/m/macd.asp
+    def getMACD(self, round):
+        return self.getEMA(round, 12) - self.getEMA(round, 26)
+
+    def get_X_day_moving_average(self, symbol, round, window):
+        if round < window:
+            return None
+        else:
+            total = 0
+            for i in range(window):
+                total += self.exchange_rates[symbol][round - i]
+            return total / window
+
+    def getExchangeRate(self, symbol, round):
+        return self.exchange_rates[symbol][round]
 
 class Order:
     """
