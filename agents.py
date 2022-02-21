@@ -21,7 +21,7 @@ class MarketAgent(Agent):
         self.openTransactionWasSuccessfull = False
         self.closingTransactionWasSuccessfull = False
 
-        self.currentInvestment = {"amount": 0, "boughtCurrency": None, "soldCurrency": None, "init_order_number" : None} # an dictionary holding info about current Investment Object
+        self.currentInvestment = {"amount": 0, "boughtCurrency": None, "soldCurrency": None} # an dictionary holding info about current Investment Object
         self.currentOrder = None
 
         self.wallet = {}
@@ -70,7 +70,7 @@ class MarketAgent(Agent):
         self.currentUSDValueOfWallet = self.getUSDWalletValue()
         
     def hasACurrentInvestment(self):
-        if self.currentInvestment == {"amount": 0, "boughtCurrency": None, "soldCurrency": None, "init_order_number" : None}:
+        if self.currentInvestment == {"amount": 0, "boughtCurrency": None, "soldCurrency": None}:
             return False
         else: True
 
@@ -80,7 +80,7 @@ class MarketAgent(Agent):
         self.openTransactionWasSuccessfull = False
         self.closingTransactionWasSuccessfull = False
         self.currentOrder = None
-        self.currentInvestment = {"amount": 0, "boughtCurrency": None, "soldCurrency":None, "init_order_number" : None}
+        self.currentInvestment = {"amount": 0, "boughtCurrency": None, "soldCurrency":None}
 
     def makeOrder(self, orderType):
         # looks at what strategy returns // will be abstracted by currencyMarket and strategy object
@@ -109,9 +109,8 @@ class MarketAgent(Agent):
 
     def updateCurrentInvestment(self, amount_sold, order):
         self.currentInvestment["amount"] += amount_sold # amount of currency it sold to buy desired currency
-        self.currentInvestment["boughtCurrency"] = order[1][2]
-        self.currentInvestment["soldCurrency"] = order[1][3]
-        self.currentInvestment["init_order_number"] = order[1][1]
+        self.currentInvestment["boughtCurrency"] = order[1][1]
+        self.currentInvestment["soldCurrency"] = order[1][2]
 
     def updateOrderStatus(self, type):
         if type == "OPEN":
@@ -126,22 +125,11 @@ class MarketAgent(Agent):
             price_curr = currency.getPriceAtRound(self.round)
             total += amount_of_curr * price_curr
         return total
-            
-    # def updateCurrentState(self, bought_currency, sold_currency, bought_currency_amount, sold_currency_amount, order):
-    #     # update agent's wallets <-- actual transaction (REFACTOR)
-    #     # update agent's current investments
-    #     self.updateWallet(bought_currency, sold_currency, bought_currency_amount, sold_currency_amount)
-    #     self.updateCurrentInvestment(sold_currency_amount, order) # adds amount it had to sell to buy == amount bought by other_agent
 
     def updateCurrentState(self, order, bought_currency_amount, sold_currency_amount, order_status = None, current_order_amount = None):
-        # update agent's wallets <-- actual transaction (REFACTOR)
-        # update agent's current investments
-        value = order[1]
-        order_id = value[1]
-        bought_currency = value[2]
-        sold_currency = value[3]
+        bought_currency = order[1][1]
+        sold_currency = order[1][2]
 
-        # direction = currencyPairs[bought_currency.getName()][sold_currency.getName()]
         self.updateWallet(bought_currency, sold_currency, bought_currency_amount, sold_currency_amount)
         self.updateCurrentInvestment(sold_currency_amount, order) # adds amount it had to sell to buy == amount bought by other_agent
 

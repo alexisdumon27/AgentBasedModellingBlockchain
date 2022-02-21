@@ -42,7 +42,7 @@ class Strategy:
         expiration_time = random.choice(range(2,5))
 
         # AMOUNTOFSELLINGCURRENCY is useless here
-        return Order("OPEN", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time, self.order_id) # creates an ORDER
+        return Order("OPEN", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time) # creates an ORDER
 
     def getAmountOfBuyingCurrency(self, exchange_rate, direction, max_amount_to_sell):
         # should buy amount proportional to exchange_rate and it should not exceed the max amount of the currency it is selling
@@ -79,9 +79,9 @@ class Strategy:
 
     def makeCloseOrder(self, agent, round):
         """ wishes to exchange Y for X """
-        self.order_id += 1
 
-        investmentToClose = agent.currentInvestment # close current investment // investment is an Order object
+        investmentToClose = agent.currentInvestment # close current investment // investment is a dictionary object
+        print ("investment to close: ", investmentToClose)
         
         buyCurrency = investmentToClose["soldCurrency"] # currency you used to invest
         sellCurrency = investmentToClose["boughtCurrency"] # currency you invested in
@@ -92,11 +92,8 @@ class Strategy:
         exchange_rate = agent.currencyMarket.getAllExchangeRates()[symbol]
         limit_price = self.getLimitPrice(direction, exchange_rate)
 
-        print("checking agent's limit price in the current_order for OPEN with exchange rate for its closing order")
-        print ("OPEN order: ", agent.currentOrder.limit_price, ", ", limit_price)
-
         expiration_time = random.choice(range(2,5))
-        return Order("CLOSE", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time, self.order_id)
+        return Order("CLOSE", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time)
 
 
 class RandomStrategy(Strategy):
@@ -110,7 +107,7 @@ class RandomStrategy(Strategy):
     def __init__(self, strategy_name):
         super().__init__(strategy_name)
 
-        
+
     def makeOpenOrder(self, agent, round):
         return super().makeOpenOrder(agent, round)
 
@@ -118,7 +115,7 @@ class Order:
     """
         a data structure containing all the relevant information for the order request of an agent
     """
-    def __init__(self, orderType, buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time, order_id):
+    def __init__(self, orderType, buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time):
         self.order_type = orderType
         self.buyCurrency = buyCurrency # currency agent wants to buy
         self.sellCurrency = sellCurrency # currency agent will sell in order to buy
@@ -126,5 +123,4 @@ class Order:
         self.timestep = round # 
         self.agent = agent #
         self.expiration_time = expiration_time
-        self.order_id = order_id
         self.limit_price = limit_price

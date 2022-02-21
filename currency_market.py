@@ -65,16 +65,16 @@ class CurrencyMarket:
             buy_order_values = order[1]
 
             amount = buy_order_values[0]
-            order_type = buy_order_values[4]
-            limit_price = buy_order_values[5]
+            order_type = buy_order_values[3]
+            limit_price = buy_order_values[4]
 
             for other_order in sellOrders.items():
                 other_agent_key = other_order[0]
                 sell_order_values = other_order[1]
 
                 other_amount = sell_order_values[0]
-                other_order_type = sell_order_values[4]
-                other_limit_price = sell_order_values[5]
+                other_order_type = sell_order_values[3]
+                other_limit_price = sell_order_values[4]
 
                 # if they agree on the exchange rate and they have not engaged in the transaction yet
                 # other_limit_price == seller (more like minimum price it is willing to go to ) || limit_price == buyer (highest price it is willing to go too)
@@ -199,15 +199,15 @@ class OrderBook:
         amount = order.amountOfBuyingCurrency
         agent = order.agent
         limit_price = order.limit_price
-        order_id = order.order_id
 
         exchangeSymbol = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["exchange_symbol"] # what is the exchange symbol e.g. "ETH/USDT"
         exchangeDirection = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["direction"] # is it a buy or sell with respect to first currency
 
         # append it as a key-value pair
-        self.orders[exchangeSymbol][exchangeDirection][agent] = [amount, order_id, buyCurrency, sellCurrency, orderType, limit_price] # later will add price
+        self.orders[exchangeSymbol][exchangeDirection][agent] = [amount, buyCurrency, sellCurrency, orderType, limit_price] # later will add price
         
         self.sortNewOrder(exchangeSymbol, exchangeDirection, orderType) # sorts based on limit_price and exchange_direction
+
 
     # BUY --> ascending and SELL --> ascending
     def sortNewOrder(self, exchangeSymbol, exchangeDirection, orderType):
