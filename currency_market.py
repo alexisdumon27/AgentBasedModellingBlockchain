@@ -169,6 +169,12 @@ class Currency:
     def addTransaction(self):
         self.transactions += 1
 
+class Exchange_Rates:
+    def __init__(self):
+        self.exchange_rates = pd.read_csv('Data/exchanges_rates')
+        
+
+
 class OrderBook:
     """ 
         data structure which assembles order objects into a useful dictionary

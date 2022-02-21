@@ -24,4 +24,4 @@ euthereumDatafile = euthereumDatafile.reindex(index=euthereumDatafile.index[::-1
 
 euthereumDatafile.reset_index(drop = True, inplace=True)
 
-euthereumDatafile.to_csv('cleanedEuthereumData.csv')
+euthereumDatafile.to_csv('cleanedEuthereumData.csv', index = False)

@@ -2,7 +2,7 @@ from mesa import Model
 from mesa.time import RandomActivation, BaseScheduler
 from mesa.datacollection import DataCollector
 import pandas as pd
-from investment_strategies import Strategy
+from investment_strategies import Strategy, RandomStrategy
 from agents import MarketAgent
 from currency_market import CurrencyMarket, Currency
 
@@ -57,7 +57,7 @@ class MarketModel(Model):
         self.datacollector.collect(self)
 
     def createAgents(self, num_agents):
-        strategy = Strategy("testing")
+        strategy = RandomStrategy("testing")
         for i in range(num_agents): 
             a = MarketAgent(i, self, strategy, self.currencyMarket) # does nothing for now... 
             self.schedule.add(a)

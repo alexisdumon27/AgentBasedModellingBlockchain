@@ -99,6 +99,9 @@ class MarketAgent(Agent):
         self.currentOrder.amountOfBuyingCurrency -= amount
 
     def updateCurrentOrderLimitPrice(self):
+        """
+            change to use the new limit price || remove order
+        """
         buyCurrency = self.currentOrder.buyCurrency.getName()
         sellCurrency = self.currentOrder.sellCurrency.getName()
         direction = currencyPairs[buyCurrency][sellCurrency]["direction"]

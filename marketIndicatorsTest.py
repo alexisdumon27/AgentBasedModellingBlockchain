@@ -8,7 +8,8 @@ import matplotlib.animation as anim
 import numpy
 from numpy import linspace, loadtxt, ones, convolve
 
-ethereumData = pd.read_csv('cleanedEuthereumData.csv')
+ethereumData = pd.read_csv('Data/cleanedEuthereumData.csv')
+tetherData = pd.read_csv('Data/cleanedTetherData.csv')
 
 # https://stackoverflow.com/questions/11352047/finding-moving-average-from-data-points-in-python
 def movingaverage(interval, window_size):
@@ -28,6 +29,16 @@ def getCurrentMomentum(round, window):
 # uses Ethereum data directly
 def getCurrentPrice(round):
     return ethereumData['USD/ETH'].values[round]
+
+# uses Ethereum data directly
+# def getCurrentPriceInUSD(round, symbol):
+#     return ethereumData[symbol].values[round]
+
+def getCurrentEthereumPrice(round):
+    return ethereumData['USD/ETH'].values[round]
+
+def getCurrentTetherPrice(round):
+    return tetherData['USD/USDT'].values[round]
 
 def get_X_day_moving_average(round, window):
     if round < window:
@@ -88,7 +99,10 @@ def plot_cont(xmax):
     y_5_day_momentums = []
     y_10_day_momentums = []
     y_30_day_momentums = []
-    fig, ax = plt.subplots(2, 1)
+
+    y_exchanges_ethereum_tether = []
+
+    fig, ax = plt.subplots(3, 1)
 
     def update(i):
         y_price = getCurrentPrice(i)
@@ -114,6 +128,9 @@ def plot_cont(xmax):
         y_10_day_momentums.append(y_10_day_momentum)
         y_30_day_momentums.append(y_30_day_momentum)
 
+        y_exchange_ethereum_tether = getCurrentEthereumPrice(i) * getCurrentTetherPrice(i)
+        y_exchanges_ethereum_tether.append(y_exchange_ethereum_tether)
+
         x = range(len(y))
         ax[0].clear()
         ax[0].plot(x, y)
@@ -128,14 +145,14 @@ def plot_cont(xmax):
         ax[1].plot(x, y_30_day_momentums, color = 'b')
         ax[1].plot(x, y_macds, color = 'black')
 
-
+        ax[2].plot(x, y_exchanges_ethereum_tether)
 
     a = anim.FuncAnimation(fig, update, frames=xmax, repeat=False)
     plt.show()
 
 x = ethereumData['Date']
 
-# plot_cont(len(x))
+plot_cont(len(x))
 
 """
 The stock is said to be OVERBOUGHT when the
@@ -144,12 +161,3 @@ above the zero line and OVERSOLD when it reaches an
 extreme lower level below the zero line. 
 
 """
-
-mean = 1.00
-exchange_rate = 700
-mean *= 1.02
-gauss = numpy.random.normal(loc = mean, scale = random.uniform(0.003, 0.01))
-print (gauss)
-print (exchange_rate * gauss)
-
-# For buy orders μ = 1.05, K = 2.5, σmin = 0.01 and σmax = 0.003.
