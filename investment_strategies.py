@@ -8,7 +8,10 @@ class Strategy:
         this will eventually be a superclass whose children have different implementations of the four methods
         each children will therefore represent a different type of strategy
     """
-    def __init__(self):
+    def __init__(self, strategy_name):
+        self.name = strategy_name
+        # agent_risk_level
+
         self.order_id = 0
         pass
     
@@ -96,16 +99,20 @@ class Strategy:
         return Order("CLOSE", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time, self.order_id)
 
 
-# class RandomStrategy(Strategy):
+class RandomStrategy(Strategy):
 
-#     """
-#         there are three important methods that every subclass should implement:
-#         1. makeOpenOrder
-#         2. closingConditionsMet
-#         3. makeCloseOrder
-#     """
-#     def makeOpenOrder(self, agent, round):
-#         return super().makeOpenOrder(agent, round)
+    """
+        there are three important methods that every subclass should implement:
+        1. makeOpenOrder
+        2. closingConditionsMet
+        3. makeCloseOrder
+    """
+    def __init__(self, strategy_name):
+        super().__init__(strategy_name)
+
+        
+    def makeOpenOrder(self, agent, round):
+        return super().makeOpenOrder(agent, round)
 
 class Order:
     """

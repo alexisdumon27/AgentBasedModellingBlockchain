@@ -57,7 +57,6 @@ class CurrencyMarket:
     def matchBuyAndSellOrders(self, buyOrders, sellOrders):
         buying_orders_keys_to_delete = [] # lists of the keys of the orders to delete
         selling_orders_keys_to_delete = []
-        completed_orders = [] # list of order_id of orders already checked for a match
 
         # see if there is a match in the order Book
         # a match is two Orders with same currency pair where the amount that can exchaged is the same
@@ -66,7 +65,6 @@ class CurrencyMarket:
             buy_order_values = order[1]
 
             amount = buy_order_values[0]
-            order_id = buy_order_values[1]
             order_type = buy_order_values[4]
             limit_price = buy_order_values[5]
 
@@ -75,13 +73,12 @@ class CurrencyMarket:
                 sell_order_values = other_order[1]
 
                 other_amount = sell_order_values[0]
-                other_order_id = sell_order_values[1]
                 other_order_type = sell_order_values[4]
                 other_limit_price = sell_order_values[5]
 
                 # if they agree on the exchange rate and they have not engaged in the transaction yet
                 # other_limit_price == seller (more like minimum price it is willing to go to ) || limit_price == buyer (highest price it is willing to go too)
-                if ( other_limit_price <= limit_price and order_id not in completed_orders and other_order_id not in completed_orders and other_amount > 0):
+                if ( other_limit_price <= limit_price and agent_key not in buying_orders_keys_to_delete and other_agent_key not in selling_orders_keys_to_delete and other_amount > 0):
                     """
                         A sell order of index j matches a buy order of index i, and
                         vice versa, only if other_limit_price ≤ limit_price, or if one of the two limit prices, or both, are equal to zero
@@ -92,7 +89,7 @@ class CurrencyMarket:
                     sell_order_amount_selling_other_currency = other_amount / avg_price
 
                     # agent_key -- wants a bigger exchange; other_agent_key satisfied but not AgentKey
-                    if (self.buyOrderBiggerThanSellOrder(buy_order_values, sell_order_values, buy_order_amount_selling_other_currency, sell_order_amount_selling_other_currency)): 
+                    if self.buyOrderBiggerThanSellOrder(buy_order_values, sell_order_values, buy_order_amount_selling_other_currency, sell_order_amount_selling_other_currency): 
                         agent_key.updateCurrentState(order, sell_order_amount_selling_other_currency, other_amount, current_order_amount = 1)
                         other_agent_key.updateCurrentState(other_order, other_amount, sell_order_amount_selling_other_currency, order_status = other_order_type)
 
@@ -100,7 +97,6 @@ class CurrencyMarket:
                         self.orderBook.updateOrder(order, sell_order_amount_selling_other_currency) # will be left with smaller amount remaining
                         
                         # adds other_order in the list of checked orders and to the list of keys to delete 
-                        completed_orders.append(other_order_id)
                         selling_orders_keys_to_delete.append(other_agent_key)
 
                     # other_agent_key -- wants a bigger or equal exchange; agent_key satisfied but not (neccessarily) other_agent_key
@@ -112,15 +108,14 @@ class CurrencyMarket:
                         self.orderBook.updateOrder(other_order, buy_order_amount_selling_other_currency) # will be left with smallet amount remaining
 
                         # agent_key's order has been fulfilled completely // it is added to the list of keys to delete
-                        completed_orders.append(order_id)
                         buying_orders_keys_to_delete.append(agent_key)
                         
                         if amount == sell_order_amount_selling_other_currency:
-                            completed_orders.append(other_order_id)
                             selling_orders_keys_to_delete.append(other_agent_key)
                             other_agent_key.updateOrderStatus(other_order_type)
                         break # exit the loop to match buying agent with a selling agent -- buying agent is satisfied!
-
+        
+        # delete keys from orderbook
         for i in buying_orders_keys_to_delete:
             del buyOrders[i]
 

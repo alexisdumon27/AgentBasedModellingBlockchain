@@ -57,7 +57,7 @@ class MarketModel(Model):
         self.datacollector.collect(self)
 
     def createAgents(self, num_agents):
-        strategy = Strategy()
+        strategy = Strategy("testing")
         for i in range(num_agents): 
             a = MarketAgent(i, self, strategy, self.currencyMarket) # does nothing for now... 
             self.schedule.add(a)
@@ -92,8 +92,8 @@ class MarketModel(Model):
 
 # --------------------------------------------------------------------------
 
-model = MarketModel(2)
-for i in range(3):
+model = MarketModel(100)
+for i in range(100):
     model.step()
 
 
