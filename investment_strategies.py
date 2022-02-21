@@ -78,7 +78,7 @@ class RandomStrategy(Strategy):
         
         symbol = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["exchange_symbol"]
         direction = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["direction"]
-        exchange_rate = agent.currencyMarket.getAllExchangeRates()[symbol]
+        exchange_rate = agent.currencyMarket.getCurrenciesExchangeRate(symbol, agent.round)
 
         limit_price = self.getLimitPrice(direction, exchange_rate)
         
@@ -101,7 +101,7 @@ class RandomStrategy(Strategy):
         
         symbol = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["exchange_symbol"]
         direction = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["direction"]
-        exchange_rate = agent.currencyMarket.getAllExchangeRates()[symbol]
+        exchange_rate = agent.currencyMarket.getCurrenciesExchangeRate(symbol, agent.round)
         limit_price = self.getLimitPrice(direction, exchange_rate)
 
         expiration_time = random.choice(range(2,5))
@@ -120,9 +120,8 @@ class EMAStrategy(Strategy):
         return True
 
     def getEMA(self, currency_data):
-        ema10 = ethereumData['USD/ETH'].ewm(span = window, adjust= False).mean()
         df = pd.DataFrame()
-        df["ema"] = numpy.round(ema10, decimals = 3)
+        df["ema"] = numpy.round(["ema10"], decimals = 3)
         return df["ema"].values[round]
 
         # HARD refactor needed later :)  

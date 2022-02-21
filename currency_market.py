@@ -2,14 +2,13 @@ from numpy import random
 import pandas as pd
 from currency_pairs import currencyPairs, inverseCurrencyPair
 
-
 class CurrencyMarket:
     """
         Object that contains information necessary for AGENTS to make orders and transact with one another
     """
-    def __init__(self, listOfCurrencies):
+    def __init__(self, listOfCurrencies, exchange_rates):
         self.currencies = listOfCurrencies
-        self.exchange_rates = {"ETH/USDT" : 0, "USDT/ETH" : 0}
+        self.exchange_rates = exchange_rates
         self.orderBook = OrderBook()
         
     def getAvailableCurrencies(self):
@@ -18,31 +17,8 @@ class CurrencyMarket:
     def getOrderBook(self):
         return self.orderBook
 
-    # HARD REFACTOR NEEDED --> this is awful
-    def updateExchangeRates(self, round):
-        # for all possible combinations of currencies what is the exchange rate
-        for symbols in inverseCurrencyPair:
-            currencies = inverseCurrencyPair[symbols]
-            currency1 = currencies[0]
-            currency2 = currencies[1]
-            
-            for currency in self.currencies:
-                if currency.getName() == currency1:
-                    currency1 = currency
-                elif currency.getName() == currency2:
-                    currency2 = currency
-
-            self.exchange_rates[symbols] = self.getExchangeRate(currency1, currency2, round)
-    
-    def getAllExchangeRates(self):
-        return self.exchange_rates
-
-    def getExchangeRate(self, currency1, currency2, round):
-        """ 1 currency1 == X currency2 at round X"""
-        price_currency1 = currency1.getPriceAtRound(round)
-        price_currency2 = currency2.getPriceAtRound(round)
-        exchange_rate = price_currency1 / price_currency2 # 1 USD in both currencies, then 1 USD worth of curr 1 equal to 1 USD worth of curr 2
-        return exchange_rate
+    def getCurrenciesExchangeRate(self, symbol, round):
+        return self.exchange_rates[symbol][round]
 
     # INDICATORS
     def calcMovingAverage(self, currency, currentRound, spread):
@@ -170,9 +146,15 @@ class Currency:
         self.transactions += 1
 
 class Exchange_Rates:
-    def __init__(self):
-        self.exchange_rates = pd.read_csv('Data/exchanges_rates')
+    def __init__(self, exchange_rates_data):
         
+        self.data =  exchange_rates_data
+
+    def getPriceAtRound(self, round, symbol):
+        return self.data[symbol].values[round]
+    
+    def getType(self):
+        return self.type
 
 
 class OrderBook:

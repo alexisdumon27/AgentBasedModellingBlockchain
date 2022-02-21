@@ -24,17 +24,20 @@ def getEthereumPrice(model):
 ethereumData = pd.read_csv('Data/cleanedEuthereumData.csv')
 tetherData = pd.read_csv('Data/cleanedTetherData.csv')
 
+exchange_rates = pd.read_csv('Data/exchange_rates.csv')
+
 class MarketModel(Model):
     def __init__(self, num_agents = 10):
         self.round = 0 # index keeping count of the round of simulation
 
         ethereum = Currency("ethereum", "USD/ETH", "crypto", 100, ethereumData)
         tether = Currency('tether', "USD/USDT", "fiat-backed", 100, tetherData)
+        
         self.listOfCurrencies = []
         self.listOfCurrencies.append(ethereum)
         self.listOfCurrencies.append(tether)
 
-        self.currencyMarket = CurrencyMarket(self.listOfCurrencies)
+        self.currencyMarket = CurrencyMarket(self.listOfCurrencies, exchange_rates)
 
         self.schedule = RandomActivation(self) # changed from RandomActivation
 
@@ -64,7 +67,7 @@ class MarketModel(Model):
             self.agents.append(a)
 
     def step(self):
-        self.currencyMarket.updateExchangeRates(self.round) # makes sure all exchange rates are up to date (IMPORTANT)
+        # self.currencyMarket.updateExchangeRates(self.round) # makes sure all exchange rates are up to date (IMPORTANT)
         
         self.schedule.step() # runs the step method for all Agents
         
