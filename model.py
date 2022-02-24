@@ -15,12 +15,6 @@ def totalTransactions(model):
         total += currency.getNumOfTransactions()
     return total
 
-def getTetherPrice(model):
-    return model.listOfCurrencies[1].getPriceAtRound(model.round)
-
-def getEthereumPrice(model):
-    return model.listOfCurrencies[0].getPriceAtRound(model.round)
-
 ethereumData = pd.read_csv('Data/cleanedEuthereumData.csv')
 tetherData = pd.read_csv('Data/cleanedTetherData.csv')
 
@@ -30,8 +24,8 @@ class MarketModel(Model):
     def __init__(self, num_agents = 10):
         self.round = 0 # index keeping count of the round of simulation
 
-        ethereum = Currency("ethereum", "USD/ETH", "crypto", 100, ethereumData)
-        tether = Currency('tether', "USD/USDT", "fiat-backed", 100, tetherData)
+        ethereum = Currency("ethereum", "ETH", "crypto", 100, ethereumData)
+        tether = Currency('tether', "USDT", "fiat-backed", 100, tetherData)
         
         self.listOfCurrencies = []
         self.listOfCurrencies.append(ethereum)
@@ -60,7 +54,7 @@ class MarketModel(Model):
         self.datacollector.collect(self)
 
     def createAgents(self, num_agents):
-        strategy = RandomStrategy("testing")
+        strategy = RandomStrategy("testing", exchange_rates)
         for i in range(num_agents): 
             a = MarketAgent(i, self, strategy, self.currencyMarket) # does nothing for now... 
             self.schedule.add(a)
@@ -95,8 +89,17 @@ class MarketModel(Model):
 
 # --------------------------------------------------------------------------
 
-model = MarketModel(100)
-for i in range(100):
+# exchange_rates = pd.read_csv('Data/exchange_rates.csv')
+
+
+# emma_straat = EMAStrategy("poop", exchange_rates)
+# agent1 = MarketAgent(1, model.Model, emma_straat, currency_market.CurrencyMarket())
+
+# emma_straat.makeOpenOrder(agent1, 1)
+
+
+model = MarketModel(1)
+for i in range(1):
     model.step()
 
 

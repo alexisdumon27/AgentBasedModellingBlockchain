@@ -3,13 +3,29 @@ import numpy
 import pandas as pd
 from currency_pairs import currencyPairs
 
+
+class Order:
+    """
+        a data structure containing all the relevant information for the order request of an agent
+    """
+    def __init__(self, orderType, buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time):
+        self.order_type = orderType
+        self.buyCurrency = buyCurrency # currency agent wants to buy
+        self.sellCurrency = sellCurrency # currency agent will sell in order to buy
+        self.amountOfBuyingCurrency = amountOfBuyingCurrency # amount of buy currency agent wants to own :: DEPEND ON EXCHANGE_RATE
+        self.timestep = round # 
+        self.agent = agent #
+        self.expiration_time = expiration_time
+        self.limit_price = limit_price
+
 class Strategy:
     """
         this will eventually be a superclass whose children have different implementations of the four methods
         each children will therefore represent a different type of strategy
     """
-    def __init__(self, strategy_name):
+    def __init__(self, strategy_name, exchange_rates_data):
         self.name = strategy_name
+        self.exchange_rates = exchange_rates_data
         # agent_risk_level
 
         self.order_id = 0
@@ -44,9 +60,6 @@ class Strategy:
             mean *= 1.02
         return numpy.random.normal(loc = mean, scale = random.uniform(0.003, 0.01))
 
-
-
-
 class RandomStrategy(Strategy):
 
     """
@@ -54,8 +67,8 @@ class RandomStrategy(Strategy):
         Represents people that are in the market without any knowledge (Zero-Intelligence Traders) whose aim is not 
         profit maximisation
     """
-    def __init__(self, strategy_name):
-        super().__init__(strategy_name)
+    def __init__(self, strategy_name, exchange_rates_data):
+        super().__init__(strategy_name, exchange_rates_data)
 
     def closingConditionMet(self, agent, round):
         """" Agent's strategy for when to close the position """
@@ -108,73 +121,65 @@ class RandomStrategy(Strategy):
         expiration_time = random.choice(range(2,5))
         return Order("CLOSE", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time)
 
-
+# The following strategies use different market indicators as the basis for when the agent should decide to invest
 class EMAStrategy(Strategy):
     """
         Follows Exponential Moving Average indicator
     """
-    def __init__(self, strategy_name):
-        super().__init__(strategy_name)
-    
+    def __init__(self, strategy_name, exchange_rates_data):
+        super().__init__(strategy_name, exchange_rates_data)
+        self.exchange_rates = exchange_rates_data
+
     def closingConditionMet(self, agent, round):
         """" Agent's strategy for when to close the position """
         return True
 
-    def getEMA(self, currency_data):
-        df = pd.DataFrame()
-        df["ema"] = numpy.round(["ema10"], decimals = 3)
-        return df["ema"].values[round]
+    def get_X_day_EMA(self, round, window, symbol):
+        # 5_ema_USDT/ETH
+        column_name = window + "_ema_" + symbol
+        return self.exchange_rates[column_name][round]
 
-        # HARD refactor needed later :)  
+    def get_X_day_moving_average(self, round, window, symbol):
+        if round < window:
+            return None
+        else:
+            total = 0
+            for i in range(window):
+                total += self.exchange_rates.exchange_rates[symbol](round - i)
+            return total / window
+
     def makeOpenOrder(self, agent, round):
         """ 
-            If there is no current open position, then a long position is generated only if the close price is higher than EMA(n) and 
-            a short position is generated only if the close price is lower than EMA(n). If a position is currently open, then this rule is ignored 
+            goes through all of the currencies in its wallet it could exchange:
+            sees if any can be used as exchange for a performing exchange_rate
+            if it identifies one than puts order and stops looking (only one order possible)
         """
 
-        """
-        pseudo-code
-        Find the currency-pair with the most positive difference between their currentExchangeRate and EMA
+        agents_owned_currencies = agent.wallet.keys() # list of currencies agent can use to sell in order to invest in another currency [objects]
+        market_currencies = agent.currencyMarket.getAvailableCurrencies() # list of currencies the agent can invest in [objects]
+        # for agent_currency in market_currencies:
+        #     for 
+        #     # print ("hello")
+        #     # try to identify best 
 
-        biggestPositiveDiff = 0
-        currencyPairBiggestDiff = None
-        For each currencyPairSymbol:
-            getCurrentExchangeRate
-            getEMA for that period and
+        #     prev_ema_5_day = get_X_day_EMA(round - 1, 5, symbol)
+        #     prev_ema_50_day = get_X_day_EMA(round - 1, 15, symbol)
+        #     curr_ema_5_day = get_X_day_EMA(round, 5, symbol)
+        #     curr_ema_50_day = get_X_day_EMA(round, 15, symbol)
+        #     if curr_ema_5_day > curr_ema_50_day and prev_ema_5_day < prev_ema_50_day:
+        #         print("made and order") 
 
-        inverseCurrencyPair <- 
-        make order with these two currencies 
-        """
-        # biggestPositiveDifference = 0
-        # currencyPairBiggestDiff = None # symbol like ['USDT/ETH'] for example
-        # listOfSymbols = 
-        
-
-        # AMOUNTOFSELLINGCURRENCY is useless here
-        return Order("OPEN", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time) # creates an ORDER
+        # return Order("OPEN", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time) # creates an ORDER
 
     def makeCloseOrder(self, agent, round):
         """ wishes to exchange Y for X """
+        print ("poop")
+        # return Order("CLOSE", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time)
 
-        return Order("CLOSE", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time)
-        
-class MACDStrategy(Strategy):
-    """
-        Follows Moving Average Convergence Divergence indicator
-    """
-    def __init__(self, strategy_name):
-        super().__init__(strategy_name)
 
 class RSIStrategy(Strategy):
     """
         Follows Relative Strength Index indicator
-    """
-    def __init__(self, strategy_name):
-        super().__init__(strategy_name)
-
-class TrendFollowerStrategy(Strategy):
-    """
-        Bases which and when to buy based on which currency_pair is the most bought
     """
     def __init__(self, strategy_name):
         super().__init__(strategy_name)
@@ -210,17 +215,3 @@ class MarketIndicators:
 
     def getExchangeRate(self, symbol, round):
         return self.exchange_rates[symbol][round]
-
-class Order:
-    """
-        a data structure containing all the relevant information for the order request of an agent
-    """
-    def __init__(self, orderType, buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time):
-        self.order_type = orderType
-        self.buyCurrency = buyCurrency # currency agent wants to buy
-        self.sellCurrency = sellCurrency # currency agent will sell in order to buy
-        self.amountOfBuyingCurrency = amountOfBuyingCurrency # amount of buy currency agent wants to own :: DEPEND ON EXCHANGE_RATE
-        self.timestep = round # 
-        self.agent = agent #
-        self.expiration_time = expiration_time
-        self.limit_price = limit_price

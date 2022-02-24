@@ -20,16 +20,6 @@ class CurrencyMarket:
     def getCurrenciesExchangeRate(self, symbol, round):
         return self.exchange_rates[symbol][round]
 
-    # INDICATORS
-    def calcMovingAverage(self, currency, currentRound, spread):
-        """ spread: how many steps back do you want to calculate the moving average for """
-        total = 0
-        startRound = currentRound - spread
-        for round in range(startRound, currentRound):
-            total += currency.getPriceAtRound(round)
-        moving_average = total / spread
-        return moving_average
-
     def matchBuyAndSellOrders(self, buyOrders, sellOrders):
         buying_orders_keys_to_delete = [] # lists of the keys of the orders to delete
         selling_orders_keys_to_delete = []
@@ -121,14 +111,15 @@ class Currency:
 
     def __init__(self, name, conversionSymbol, type, amountInCirculation, data):
         self.name = name
-        self.conversionSymbol = conversionSymbol
+        self.symbol = conversionSymbol
         self.type = type
         self.amountInCirculation = amountInCirculation
         self.data = data
         self.transactions = 0
 
     def getPriceAtRound(self, round):
-        return self.data[self.conversionSymbol].values[round]
+        conversionSymbol = "USD" + self.symbol
+        return self.data[conversionSymbol].values[round]
 
     def getData(self):
         return self.data

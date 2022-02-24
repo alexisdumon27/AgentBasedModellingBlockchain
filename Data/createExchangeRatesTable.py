@@ -35,7 +35,18 @@ exchange_rates_df['USDT/ETH'] = exchange_rates_df['USD/USDT'] / exchange_rates_d
 
 exchange_rates_df['ETH/USDT'] = exchange_rates_df['USD/ETH'] / exchange_rates_df['USD/USDT']
 
-print (exchange_rates_df)
+# print (exchange_rates_df)
 
+exchange_rates_df['5_ema_USDT/ETH'] = exchange_rates_df['USDT/ETH'].ewm(span=5, adjust=False).mean()
+exchange_rates_df['10_ema_USDT/ETH'] = exchange_rates_df['USDT/ETH'].ewm(span=10, adjust=False).mean()
+exchange_rates_df['15_ema_USDT/ETH'] = exchange_rates_df['USDT/ETH'].ewm(span=15, adjust=False).mean()
+exchange_rates_df['50_ema_USDT/ETH'] = exchange_rates_df['USDT/ETH'].ewm(span=50, adjust=False).mean()
+
+exchange_rates_df['5_ema_ETH/USDT'] = exchange_rates_df['ETH/USDT'].ewm(span=5, adjust=False).mean()
+exchange_rates_df['10_ema_ETH/USDT'] = exchange_rates_df['ETH/USDT'].ewm(span=10, adjust=False).mean()
+exchange_rates_df['15_ema_ETH/USDT'] = exchange_rates_df['ETH/USDT'].ewm(span=15, adjust=False).mean()
+exchange_rates_df['50_ema_ETH/USDT'] = exchange_rates_df['ETH/USDT'].ewm(span=50, adjust=False).mean()
+
+# print (exchange_rates_df)
 exchange_rates_df.to_csv('exchange_rates.csv')
 
