@@ -56,18 +56,11 @@ class CurrencyMarket:
                     avg_price = (other_limit_price + limit_price) / 2
                     buy_order_amount_selling_other_currency = amount * avg_price 
                     sell_order_amount_selling_other_currency = other_amount / avg_price
+                
 
                     print ("amount needed to sell in order to buy: ", buy_order_amount_selling_other_currency)
+                    print ("amount: ", amount, " : ", avg_price, " , other amount: ", other_amount)
                     print ("amount needed to sell in order to buy for selling side", sell_order_amount_selling_other_currency)
-                    # print ("A transaction is happening")
-                    # print ("BUYING AGENT before")
-                    # print ("wallet: ", agent_key.wallet)
-                    # print ("current investment: ", agent_key.currentInvestment)
-                    
-                    # print ("ORDER before")
-                    # print (amount)
-                    # print ("Other Order before")
-                    # print (other_amount)
 
                     # agent_key -- wants a bigger exchange; other_agent_key satisfied but not AgentKey
                     if self.isBuyOrderBiggerThanSellOrder(buy_order_values, sell_order_values, buy_order_amount_selling_other_currency, sell_order_amount_selling_other_currency): 
@@ -76,7 +69,7 @@ class CurrencyMarket:
 
                         # update agent_key's order in the orderBook -- removes amount sold by other_agent_key
                         self.orderBook.updateOrder(order, sell_order_amount_selling_other_currency) # will be left with smaller amount remaining
-                        
+                        amount -= sell_order_amount_selling_other_currency
                         # adds other_order in the list of checked orders and to the list of keys to delete 
                         selling_orders_keys_to_delete.append(other_agent_key)
 
