@@ -232,7 +232,6 @@ class PivotPointStrategy(Strategy):
                 current_exchange_rate_price = exchange_rate_data[round]
                 
                 # find pivot point resistance support etc ... 
-
                 important_points = self.getImportantPoints(exchange_rate_data, round)
                 low = important_points[2]
                 high = important_points[1]
@@ -296,7 +295,6 @@ class PivotPointStrategy(Strategy):
 
     def makeCloseOrder(self, agent, round):
         """ wishes to exchange Y for X """
-
         investmentToClose = agent.currentInvestment # close current investment // investment is a dictionary object
 
         buyCurrency = investmentToClose["soldCurrency"] # currency you used to invest
@@ -312,6 +310,7 @@ class PivotPointStrategy(Strategy):
         return Order("CLOSE", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time)
 
 
+""" DOES nothing"""
 class MarketIndicators:
 
     def __init__(self, exchange_rates) -> None:

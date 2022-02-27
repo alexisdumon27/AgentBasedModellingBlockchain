@@ -24,6 +24,7 @@ class CurrencyMarket:
         buying_orders_keys_to_delete = [] # lists of the keys of the orders to delete
         selling_orders_keys_to_delete = []
 
+        number_of_transactions = 0
         # see if there is a match in the order Book
         # a match is two Orders with same currency pair where the amount that can exchaged is the same
         for order in buyOrders.items():
@@ -44,18 +45,32 @@ class CurrencyMarket:
 
                 # if they agree on the exchange rate and they have not engaged in the transaction yet
                 # other_limit_price == seller (more like minimum price it is willing to go to ) || limit_price == buyer (highest price it is willing to go too)
-                if ( other_limit_price <= limit_price and agent_key not in buying_orders_keys_to_delete and other_agent_key not in selling_orders_keys_to_delete and other_amount > 0):
+                if ( other_limit_price <= limit_price and agent_key not in buying_orders_keys_to_delete and other_agent_key not in selling_orders_keys_to_delete):
                     """
                         A sell order of index j matches a buy order of index i, and
                         vice versa, only if other_limit_price ≤ limit_price, or if one of the two limit prices, or both, are equal to zero
                     """
+                    number_of_transactions += 1
+
                     # calculate the exchange
                     avg_price = (other_limit_price + limit_price) / 2
                     buy_order_amount_selling_other_currency = amount * avg_price 
                     sell_order_amount_selling_other_currency = other_amount / avg_price
 
+                    print ("amount needed to sell in order to buy: ", buy_order_amount_selling_other_currency)
+                    print ("amount needed to sell in order to buy for selling side", sell_order_amount_selling_other_currency)
+                    # print ("A transaction is happening")
+                    # print ("BUYING AGENT before")
+                    # print ("wallet: ", agent_key.wallet)
+                    # print ("current investment: ", agent_key.currentInvestment)
+                    
+                    # print ("ORDER before")
+                    # print (amount)
+                    # print ("Other Order before")
+                    # print (other_amount)
+
                     # agent_key -- wants a bigger exchange; other_agent_key satisfied but not AgentKey
-                    if self.buyOrderBiggerThanSellOrder(buy_order_values, sell_order_values, buy_order_amount_selling_other_currency, sell_order_amount_selling_other_currency): 
+                    if self.isBuyOrderBiggerThanSellOrder(buy_order_values, sell_order_values, buy_order_amount_selling_other_currency, sell_order_amount_selling_other_currency): 
                         agent_key.updateCurrentState(order, sell_order_amount_selling_other_currency, other_amount, current_order_amount = 1)
                         other_agent_key.updateCurrentState(other_order, other_amount, sell_order_amount_selling_other_currency, order_status = other_order_type)
 
@@ -80,7 +95,16 @@ class CurrencyMarket:
                             selling_orders_keys_to_delete.append(other_agent_key)
                             other_agent_key.updateOrderStatus(other_order_type)
                         break # exit the loop to match buying agent with a selling agent -- buying agent is satisfied!
+
+                    # print ("BUYING AGENT after")
+                    # print ("wallet: ", agent_key.wallet)
+                    # print ("current investment: ", agent_key.currentInvestment)
+                    # print ("ORDER after")
+                    # print (amount)
+                    # print ("Other Order after")
+                    # print (other_amount)
         
+        print ("In this round there were: ", number_of_transactions, " transactions")
         # delete keys from orderbook
         for i in buying_orders_keys_to_delete:
             del buyOrders[i]
@@ -99,7 +123,7 @@ class CurrencyMarket:
             
             self.matchBuyAndSellOrders(buyOrders, sellOrders)
 
-    def buyOrderBiggerThanSellOrder(self, buy_order_values, sell_order_values, buy_order_amount_selling, sell_order_amount_amount_selling):
+    def isBuyOrderBiggerThanSellOrder(self, buy_order_values, sell_order_values, buy_order_amount_selling, sell_order_amount_amount_selling):
         amount = buy_order_values[0]
         other_amount = sell_order_values[0]
         if (amount > sell_order_amount_amount_selling and buy_order_amount_selling > other_amount):
@@ -159,6 +183,7 @@ class OrderBook:
                     "buy": { "agent1": [ 'amount', 'limit_price'], "agent2": [12, 1027] },
                     "sell" : { "agent3": [10, 1027], "agent4": [12, 1027] }
                 },
+                
             "BTC/ETH" :
                 {
                     "buy": { "agent1": [10, 1027, bitcoin], "agent2": [12, 1027, bitcoin]},
@@ -200,7 +225,6 @@ class OrderBook:
         return self.orders
     
     def updateOrder(self, order, amount):
-        print ("Amount before updating: ", order[1][0])
         order[1][0] -= amount
     
     def updateAgentOrderLimitPrice(self, agent, new_limit_price):
