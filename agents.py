@@ -44,7 +44,8 @@ class MarketAgent(Agent):
         
         if not self.hasMadeOpenOrder and not self.hasMadeClosingOrder and not self.hasMadeClosingOrder and not self.closingTransactionWasSuccessfull:
             self.makeOrder("OPEN") # currentOrder is also updated
-            self.hasMadeOpenOrder = True
+            if self.hasACurrentOrder():
+                self.hasMadeOpenOrder = True
         elif self.hasMadeOpenOrder and not self.openTransactionWasSuccessfull and not self.hasMadeClosingOrder and not self.closingTransactionWasSuccessfull:
             # wait for open order to be successful (Open order not fulfilled yet ... )
             if self.currentOrder.expiration_time > 0:
@@ -54,7 +55,6 @@ class MarketAgent(Agent):
                 self.updateCurrentOrderLimitPrice() # updates for agent
                 # updateOrderBook
                 self.currencyMarket.orderBook.updateAgentOrderLimitPrice(self, self.currentOrder.limit_price)
-                self.currentOrder
         elif self.hasMadeOpenOrder and self.openTransactionWasSuccessfull and not self.hasMadeClosingOrder and not self.closingTransactionWasSuccessfull:
             if self.strategy.closingConditionMet(self, self.round): # obsolete atm (always TRUE)
                 self.makeOrder("CLOSE") # currentOrder is also updated 
@@ -74,6 +74,9 @@ class MarketAgent(Agent):
             return False
         else: True
 
+    def hasACurrentOrder(self):
+        return self.currentOrder != None
+
     def initialiseParameters(self):
         self.hasMadeOpenOrder = False
         self.hasMadeClosingOrder = False
@@ -85,11 +88,13 @@ class MarketAgent(Agent):
     def makeOrder(self, orderType):
         # looks at what strategy returns // will be abstracted by currencyMarket and strategy object
         if orderType == "OPEN":
-            self.currentOrder = self.strategy.makeOpenOrder(self, self.round)
+            possibleOrder = self.strategy.makeOpenOrder(self, self.round)
         elif orderType == "CLOSE":
-            self.currentOrder = self.strategy.makeCloseOrder(self, self.round)
+            possibleOrder = self.strategy.makeCloseOrder(self, self.round)
 
-        self.currencyMarket.getOrderBook().addOrder(self.currentOrder)
+        if possibleOrder != None:
+            self.currentOrder = possibleOrder
+            self.currencyMarket.getOrderBook().addOrder(self.currentOrder)
 
     def updateWallet(self, bought_currency, sold_currency, bought_currency_amount, sold_currency_amount):
         self.wallet[bought_currency] += bought_currency_amount

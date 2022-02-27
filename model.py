@@ -2,7 +2,7 @@ from mesa import Model
 from mesa.time import RandomActivation, BaseScheduler
 from mesa.datacollection import DataCollector
 import pandas as pd
-from investment_strategies import Strategy, RandomStrategy
+from investment_strategies import PivotPointStrategy, Strategy, RandomStrategy
 from agents import MarketAgent
 from currency_market import CurrencyMarket, Currency
 
@@ -22,7 +22,7 @@ exchange_rates = pd.read_csv('Data/exchange_rates.csv')
 
 class MarketModel(Model):
     def __init__(self, num_agents = 10):
-        self.round = 0 # index keeping count of the round of simulation
+        self.round = 10 # index keeping count of the round of simulation
 
         ethereum = Currency("ethereum", "ETH", "crypto", 100, ethereumData)
         tether = Currency('tether', "USDT", "fiat-backed", 100, tetherData)
@@ -54,11 +54,22 @@ class MarketModel(Model):
         self.datacollector.collect(self)
 
     def createAgents(self, num_agents):
-        strategy = RandomStrategy("testing", exchange_rates)
+        random_strategy = RandomStrategy("Random strategy", exchange_rates)
+        pivot_point_strategy = PivotPointStrategy("Pivot point strategy", exchange_rates)
+
         for i in range(num_agents): 
+            strategy = random_strategy
+            if i % 3 == 1:
+                strategy = pivot_point_strategy
             a = MarketAgent(i, self, strategy, self.currencyMarket) # does nothing for now... 
             self.schedule.add(a)
             self.agents.append(a)
+            
+            # a.step() # do step method of agent so it makes an open_order
+        
+        
+        # print ("STOP ITERATION")
+        # return StopIteration
 
     def step(self):
         # self.currencyMarket.updateExchangeRates(self.round) # makes sure all exchange rates are up to date (IMPORTANT)
@@ -89,17 +100,8 @@ class MarketModel(Model):
 
 # --------------------------------------------------------------------------
 
-# exchange_rates = pd.read_csv('Data/exchange_rates.csv')
-
-
-# emma_straat = EMAStrategy("poop", exchange_rates)
-# agent1 = MarketAgent(1, model.Model, emma_straat, currency_market.CurrencyMarket())
-
-# emma_straat.makeOpenOrder(agent1, 1)
-
-
-model = MarketModel(1)
-for i in range(1):
+model = MarketModel(20)
+for i in range(15):
     model.step()
 
 

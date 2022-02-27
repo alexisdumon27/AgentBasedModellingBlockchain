@@ -117,8 +117,10 @@ class Currency:
         self.data = data
         self.transactions = 0
 
+    # necessary to find the price in USD
+    # maybe better if I do not pass the data as a parameter ... 
     def getPriceAtRound(self, round):
-        conversionSymbol = "USD" + self.symbol
+        conversionSymbol = "USD/" + self.symbol
         return self.data[conversionSymbol].values[round]
 
     def getData(self):
