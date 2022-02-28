@@ -56,7 +56,7 @@ class MarketAgent(Agent):
                 # updateOrderBook
                 self.currencyMarket.orderBook.updateAgentOrderLimitPrice(self, self.currentOrder.limit_price)
         elif self.hasMadeOpenOrder and self.openTransactionWasSuccessfull and not self.hasMadeClosingOrder and not self.closingTransactionWasSuccessfull:
-            if self.strategy.closingConditionMet(self, self.round): # obsolete atm (always TRUE)
+            if self.strategy.closingConditionMet(self, self.round):
                 self.makeOrder("CLOSE") # currentOrder is also updated 
                 self.hasMadeClosingOrder = True
         elif self.hasMadeOpenOrder and self.openTransactionWasSuccessfull and self.hasMadeClosingOrder and not self.closingTransactionWasSuccessfull:

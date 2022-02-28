@@ -46,19 +46,81 @@ class Strategy:
                     return amount
 
     def getLimitPrice(self, direction, exchange_rate):
+        # https://arxiv.org/pdf/cond-mat/0103600.pdf
         random_gauss_factor = self.getRandomDrawFromGaussian(direction) # to add randomness in limit_prices
         limit_price = 0
         while limit_price <= 0:
             limit_price = exchange_rate * random_gauss_factor
         return limit_price # agent willing to buy at a slightly higher price
-
-    # https://arxiv.org/pdf/cond-mat/0103600.pdf
+    
     def getRandomDrawFromGaussian(self, direction):
         # For orders: μ = current_exchange_rate * 1.01, σmin = 0.01 and σmax = 0.003.
         mean = 0.98
         if direction == "buy":
             mean *= 1.02
         return numpy.random.normal(loc = mean, scale = random.uniform(0.003, 0.01))
+
+    def makeOpenOrder(self, agent, round):
+        """ wishes to exchange X for Y """
+        currencies_in_wallet = random.sample(list(agent.wallet.keys()), len(list(agent.wallet.keys())))
+        currencies_in_market = random.sample(agent.currencyMarket.getAvailableCurrencies(), len(agent.currencyMarket.getAvailableCurrencies()))
+
+        currencyPair = self.findCurrencyPairToInvest(currencies_in_market, currencies_in_wallet, round) 
+
+        if currencyPair == None: 
+            return None
+        else:
+            # creates an ORDER
+            buyCurrency = currencyPair[0]
+            sellCurrency = currencyPair[1]
+            return self.sendOrderRequest(agent, buyCurrency, sellCurrency)
+
+    def findCurrencyPairToInvest(self, currencies_in_market, currencies_in_wallet, round):
+        for possible_selling_currency in currencies_in_wallet:
+            possible_selling_currency_symbol = possible_selling_currency.symbol
+
+            for possible_buying_currency in currencies_in_market:
+                possible_buying_currency_symbol = possible_buying_currency.symbol
+                
+                if possible_selling_currency_symbol == possible_buying_currency_symbol: continue
+
+                exchange_rate_symbol = possible_buying_currency_symbol + "/" + possible_selling_currency_symbol # is this the right way around ?
+                
+                exchange_rate_data = self.exchange_rates[exchange_rate_symbol]
+                current_exchange_rate_price = exchange_rate_data[round]
+                
+                if self.evaluateIndicators(round, current_exchange_rate_price, exchange_rate_data): # this method is subclass specific !!!
+                    return [possible_buying_currency, possible_selling_currency]
+        return None
+
+    def sendOrderRequest(self, agent, buyCurrency, sellCurrency):
+        exchange_rate_symbol = buyCurrency.symbol + "/" + sellCurrency.symbol
+
+        exchange_rate = agent.currencyMarket.getCurrenciesExchangeRate(exchange_rate_symbol, agent.round)
+        direction = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["direction"]
+        limit_price = self.getLimitPrice(direction, exchange_rate)
+        amountOfBuyingCurrency = self.getAmountOfBuyingCurrency(exchange_rate, direction, agent.wallet[sellCurrency]) # AGENT WANTS TO BUY 10 of currency
+        
+        expiration_time = random.choice(range(2,5))
+
+        return Order("OPEN", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time)
+    
+    def closingConditionMet(self, agent, round):
+        """" Agent's strategy for when to close the position """
+        """
+            if support is broken and the market is in downward trend
+        """
+        investmentToClose = agent.currentInvestment
+
+        buyCurrency = investmentToClose["soldCurrency"] # currency you used to invest
+        sellCurrency = investmentToClose["boughtCurrency"] # currency you invested in
+
+        exchange_rate_symbol = buyCurrency.symbol + "/" + sellCurrency.symbol
+                
+        exchange_rate_data = self.exchange_rates[exchange_rate_symbol]
+        exchange_rate = agent.currencyMarket.getCurrenciesExchangeRate(exchange_rate_symbol, agent.round)
+
+        return self.haveStrategySpecificConditionsBeenMet(round, exchange_rate, exchange_rate_data)
 
     # always the same disregarding what the investement strategy is -- it closes the initial investment
     def makeCloseOrder(self, agent, round):
@@ -129,21 +191,9 @@ class PivotPointStrategy(Strategy):
         super().__init__(strategy_name, exchange_rates_data)
         self.exchange_rates = exchange_rates_data
     
-    def closingConditionMet(self, agent, round):
+    def haveStrategySpecificConditionsBeenMet(self, round, exchange_rate, exchange_rate_data):
         """" Agent's strategy for when to close the position """
-        """
-            if support is broken and the market is in downward trend
-        """
-        investmentToClose = agent.currentInvestment
-
-        buyCurrency = investmentToClose["soldCurrency"] # currency you used to invest
-        sellCurrency = investmentToClose["boughtCurrency"] # currency you invested in
-
-        exchange_rate_symbol = buyCurrency.symbol + "/" + sellCurrency.symbol # is this the right way around ?
-                
-        exchange_rate_data = self.exchange_rates[exchange_rate_symbol]
         # get support and the pivot points
-        exchange_rate = agent.currencyMarket.getCurrenciesExchangeRate(exchange_rate_symbol, agent.round)
         important_points = self.getImportantPoints(exchange_rate_data, round)
         low = important_points[2]
         high = important_points[1]
@@ -158,93 +208,20 @@ class PivotPointStrategy(Strategy):
         return False
 
         # HARD refactor needed later :)  
-   
-    def makeOpenOrder(self, agent, round):
-        """ wishes to exchange X for Y """
 
-        """
-            pseudo-code algorithm:
-
-            step 1: seeing what the agent has and what it could do
-
-            getCurrenciesInAgentsWallet : the ones that agent can sell to purchase / invest in another
-
-            getCurrenciesAvailableInTheMarket : the ones that the agent can invest in
-
-            step 2: choosing the currency to invest in and with
-
-            for all possible currency pairs made from
-            [ curr in market / curr in wallet ] or [ curr in wallet / curr in market ]
-
-                find the first pair for which both: 
-                    market trend is UP (pivot point passed going up) and if it has BROKEN a resistance level
-                    ^ MUST BE CALCULATED FOR EVERY PAIR
-            
-            choose to invest in that one
-            if none -- not a good time to invest <- do nothing
-
-            step 3: make the order
-
-            how much to buy
-            what limit_price
-            expiration_time
-
-            return ORDER : ) 
-        """
+    def evaluateIndicators(self, round, current_exchange_rate_price, exchange_rate_data):
+        important_points = self.getImportantPoints(exchange_rate_data, round)
+        low = important_points[2]
+        high = important_points[1]
+        pivot_point = important_points[0]
+        resistance = self.calculateResistance(low, pivot_point)
+        support = self.calculateSupport(high, pivot_point)
         
-        print ("AGENT IS TRYING TO MAKE AN OPEN ORDER")
-
-        currencies_in_wallet = random.sample(list(agent.wallet.keys()), len(list(agent.wallet.keys())))
-        currencies_in_market = random.sample(agent.currencyMarket.getAvailableCurrencies(), len(agent.currencyMarket.getAvailableCurrencies()))
-
-        print (currencies_in_market)
-        print (currencies_in_wallet)
-
-        currencyPair = self.findCurrencyPairToInvest(currencies_in_market, currencies_in_wallet, round)
-
-        if currencyPair == None: return None
-
-        buyCurrency = currencyPair[0]
-        sellCurrency = currencyPair[1]
-        exchange_rate_symbol = buyCurrency.symbol + "/" + sellCurrency.symbol
-
-        exchange_rate = agent.currencyMarket.getCurrenciesExchangeRate(exchange_rate_symbol, agent.round)
-        direction = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["direction"]
-        limit_price = self.getLimitPrice(direction, exchange_rate)
-        amountOfBuyingCurrency = self.getAmountOfBuyingCurrency(exchange_rate, direction, agent.wallet[sellCurrency]) # AGENT WANTS TO BUY 10 of currency
-        
-        expiration_time = random.choice(range(2,5))
-
-        return Order("OPEN", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time) # creates an ORDER
-
-    def findCurrencyPairToInvest(self, currencies_in_market, currencies_in_wallet, round):
-        for possible_selling_currency in currencies_in_wallet:
-            possible_selling_currency_symbol = possible_selling_currency.symbol
-
-            for possible_buying_currency in currencies_in_market:
-                possible_buying_currency_symbol = possible_buying_currency.symbol
-                
-                if possible_selling_currency_symbol == possible_buying_currency_symbol: continue
-
-                exchange_rate_symbol = possible_buying_currency_symbol + "/" + possible_selling_currency_symbol # is this the right way around ?
-                
-                exchange_rate_data = self.exchange_rates[exchange_rate_symbol]
-                current_exchange_rate_price = exchange_rate_data[round]
-                
-                # find pivot point resistance support etc ... 
-                important_points = self.getImportantPoints(exchange_rate_data, round)
-                low = important_points[2]
-                high = important_points[1]
-                pivot_point = important_points[0]
-                resistance = self.calculateResistance(low, pivot_point)
-                support = self.calculateSupport(high, pivot_point)
-                
-                # is market trend up?
-                # has it just broken a resistance level ?
-                if self.isMarketTrendUp(pivot_point, current_exchange_rate_price):
-                    if self.hasBrokenResistanceLevel(resistance, current_exchange_rate_price):
-                        return [possible_buying_currency, possible_selling_currency]
-        return None
+        # is market trend up?
+        # has it just broken a resistance level ?
+        if self.isMarketTrendUp(pivot_point, current_exchange_rate_price):
+            if self.hasBrokenResistanceLevel(resistance, current_exchange_rate_price):
+                return True
 
     def getImportantPoints(self, exchange_rate_data, round):
         """ formula: pivot_point = (prev_high + prev_low + prev_close) / 3 """
@@ -286,29 +263,122 @@ class PivotPointStrategy(Strategy):
             return True
         return False
 
-    def currenciesAsSymbols(self, currencies):
-        symbols_list = []
-        for currency in currencies:
-            symbols_list.append(currency.symbol)
+class MovingAverageStrategy(Strategy):
+    """
+        Follows Moving average indicators
+    """
+    def __init__(self, strategy_name, exchange_rates_data):
+        super().__init__(strategy_name, exchange_rates_data)
+        self.exchange_rates = exchange_rates_data
+    
+    def haveStrategySpecificConditionsBeenMet(self, round, exchange_rate, exchange_rate_data):
+        """" Agent's strategy for when to close the position """
+        # get support and the pivot points
+        if self.isPriceMovementShowingStrongSell(exchange_rate, exchange_rate_data, round):
+            return True
+
+        if self.isComparingMovingAveragesShowingStrongSell(exchange_rate, exchange_rate_data, round):
+            return True
         
-        return symbols_list
+        return False
 
-    def makeCloseOrder(self, agent, round):
-        """ wishes to exchange Y for X """
-        investmentToClose = agent.currentInvestment # close current investment // investment is a dictionary object
-
-        buyCurrency = investmentToClose["soldCurrency"] # currency you used to invest
-        sellCurrency = investmentToClose["boughtCurrency"] # currency you invested in
-        amountOfBuyingCurrency = investmentToClose["amount"] #
+    def evaluateIndicators(self, round, current_exchange_rate_price, exchange_rate_data):
         
-        symbol = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["exchange_symbol"]
-        direction = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["direction"]
-        exchange_rate = agent.currencyMarket.getCurrenciesExchangeRate(symbol, agent.round)
-        limit_price = self.getLimitPrice(direction, exchange_rate)
+        if self.isPriceMovementShowingStrongBuy(exchange_rate_data, round):
+            return True
 
-        expiration_time = random.choice(range(2,5))
-        return Order("CLOSE", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time)
+        if self.isComparingMovingAveragesShowingStrongBuy(exchange_rate_data, round):
+            return True
+        
+        return False
+    
+    def isPriceMovementShowingStrongBuy(self, exchange_rate_data, round):
+        if self.isXDayMovingAverageRising(round, 5, exchange_rate_data) and self.hasPriceCrossedFromBelowXDayMovingAverage(round, 5, exchange_rate_data): 
+            return True
 
+    def hasPriceCrossedFromBelowXDayMovingAverage(self, round, range, exchange_rate_data):
+        current_price = exchange_rate_data[round]
+        previous_price = exchange_rate_data[round - 1]
+        current_moving_average = self.getXDayMovingAverage(round, range, exchange_rate_data)
+        previous_moving_average = self.getXDayMovingAverage(round - 1, range, exchange_rate_data)
+
+        if previous_price < previous_moving_average and current_price > current_moving_average:
+            return True
+        return False
+
+    def isXDayMovingAverageRising(self, round, range, exchange_rate_data):
+        """ rising if current round moving avg higher than previous round """
+        current_moving_average_X_day = self.getXDayMovingAverage(round, range, exchange_rate_data)
+        previous_moving_average_X_day = self.getXDayMovingAverage(round - 1, range, exchange_rate_data)
+        if current_moving_average_X_day > previous_moving_average_X_day:
+            return True
+        return False
+
+    def isComparingMovingAveragesShowingStrongBuy(self, exchange_rate_data, round):
+        shorter_period = 5
+        longer_period = 20
+        if (self.isXDayMovingAverageRising(round, shorter_period, exchange_rate_data) and self.isXDayMovingAverageRising(round, longer_period, exchange_rate_data)
+            and self.hasShorterPeriodCrossedLongerPeriodFromBelow(round, shorter_period, longer_period, exchange_rate_data) ):
+            return True
+
+    def hasShorterPeriodCrossedLongerPeriodFromBelow(self, round, shorter_period, longer_period, exchange_rate_data):
+        previous_short_period_day_moving_average = self.getXDayMovingAverage(round - 1, shorter_period, exchange_rate_data)
+        current_short_period_day_moving_average = self.getXDayMovingAverage(round, shorter_period, exchange_rate_data)
+
+        previous_long_period_day_moving_average = self.getXDayMovingAverage(round - 1, longer_period, exchange_rate_data)
+        current_long_period_day_moving_average = self.getXDayMovingAverage(round, longer_period, exchange_rate_data)
+
+        if previous_short_period_day_moving_average < previous_long_period_day_moving_average and current_short_period_day_moving_average > current_long_period_day_moving_average:
+            return True
+        return False
+
+    def getXDayMovingAverage(self, round, period, exchange_rate_data):
+        # exchange_rate_data is already currency specific
+        if round < period:
+            period = round
+        total = 0
+        for i in range(period):
+            total += exchange_rate_data[round - i]
+        return total / period
+
+    def isPriceMovementShowingStrongSell(self, exchange_rate_data, round):
+        if self.isXDayMovingAverageFalling(round, 5, exchange_rate_data) and self.hasPriceCrossedFromAboveXDayMovingAverage(round, 5, exchange_rate_data): 
+            return True
+
+    def isXDayMovingAverageFalling(self, round, range, exchange_rate_data):
+        current_moving_average_X_day = self.getXDayMovingAverage(round, range, exchange_rate_data)
+        previous_moving_average_X_day = self.getXDayMovingAverage(round - 1, range, exchange_rate_data)
+        if current_moving_average_X_day < previous_moving_average_X_day:
+            return True
+        return False
+    
+    def hasPriceCrossedFromAboveXDayMovingAverage(self, round, range, exchange_rate_data):
+        current_price = exchange_rate_data[round]
+        previous_price = exchange_rate_data[round - 1]
+        current_moving_average = self.getXDayMovingAverage(round, range, exchange_rate_data)
+        previous_moving_average = self.getXDayMovingAverage(round - 1, range, exchange_rate_data)
+
+        if previous_price > previous_moving_average and current_price < current_moving_average:
+            return True
+        return False
+
+    def isComparingMovingAveragesShowingStrongSell(self, exchange_rate_data, round):
+        shorter_period = 5
+        longer_period = 20
+        if (self.isXDayMovingAverageFalling(round, shorter_period, exchange_rate_data) and self.isXDayMovingAverageFalling(round, longer_period, exchange_rate_data)
+            and self.hasShorterPeriodCrossedLongerPeriodFromAbove(round, shorter_period, longer_period, exchange_rate_data) ):
+            return True
+    
+    def hasShorterPeriodCrossedLongerPeriodFromAbove(self, round, shorter_period, longer_period, exchange_rate_data):
+        previous_short_period_day_moving_average = self.getXDayMovingAverage(round - 1, shorter_period, exchange_rate_data)
+        current_short_period_day_moving_average = self.getXDayMovingAverage(round, shorter_period, exchange_rate_data)
+
+        previous_long_period_day_moving_average = self.getXDayMovingAverage(round - 1, longer_period, exchange_rate_data)
+        current_long_period_day_moving_average = self.getXDayMovingAverage(round, longer_period, exchange_rate_data)
+
+        if previous_short_period_day_moving_average > previous_long_period_day_moving_average and current_short_period_day_moving_average < current_long_period_day_moving_average:
+            return True
+        return False
 
 """ DOES nothing"""
 class MarketIndicators:

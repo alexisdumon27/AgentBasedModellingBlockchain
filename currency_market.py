@@ -88,14 +88,6 @@ class CurrencyMarket:
                             selling_orders_keys_to_delete.append(other_agent_key)
                             other_agent_key.updateOrderStatus(other_order_type)
                         break # exit the loop to match buying agent with a selling agent -- buying agent is satisfied!
-
-                    # print ("BUYING AGENT after")
-                    # print ("wallet: ", agent_key.wallet)
-                    # print ("current investment: ", agent_key.currentInvestment)
-                    # print ("ORDER after")
-                    # print (amount)
-                    # print ("Other Order after")
-                    # print (other_amount)
         
         print ("In this round there were: ", number_of_transactions, " transactions")
         # delete keys from orderbook
