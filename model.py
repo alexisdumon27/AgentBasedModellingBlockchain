@@ -60,10 +60,12 @@ class MarketModel(Model):
 
         for i in range(num_agents): 
             strategy = random_strategy
-            if i % 3 == 1:
+            if i % 4 == 1:
                 strategy = pivot_point_strategy
-                
-            a = MarketAgent(i, self, moving_average_strategy, self.currencyMarket) # does nothing for now... 
+            elif i%4 == 2:
+                strategy = moving_average_strategy
+
+            a = MarketAgent(i, self, strategy, self.currencyMarket) # does nothing for now... 
             self.schedule.add(a)
             self.agents.append(a)
             

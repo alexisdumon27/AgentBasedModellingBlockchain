@@ -198,7 +198,6 @@ class PivotPointStrategy(Strategy):
         low = important_points[2]
         high = important_points[1]
         pivot_point = important_points[0]
-        resistance = self.calculateResistance(low, pivot_point)
         support = self.calculateSupport(high, pivot_point)
 
         if self.isMarketTrendDown(pivot_point, exchange_rate):
@@ -274,10 +273,10 @@ class MovingAverageStrategy(Strategy):
     def haveStrategySpecificConditionsBeenMet(self, round, exchange_rate, exchange_rate_data):
         """" Agent's strategy for when to close the position """
         # get support and the pivot points
-        if self.isPriceMovementShowingStrongSell(exchange_rate, exchange_rate_data, round):
+        if self.isPriceMovementShowingStrongSell(exchange_rate_data, round):
             return True
 
-        if self.isComparingMovingAveragesShowingStrongSell(exchange_rate, exchange_rate_data, round):
+        if self.isComparingMovingAveragesShowingStrongSell(exchange_rate_data, round):
             return True
         
         return False
