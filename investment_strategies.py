@@ -64,15 +64,15 @@ class Strategy:
         """ wishes to exchange X for Y """
         currencies_in_wallet = random.sample(list(agent.wallet.keys()), len(list(agent.wallet.keys())))
         currencies_in_market = random.sample(agent.currencyMarket.getAvailableCurrencies(), len(agent.currencyMarket.getAvailableCurrencies()))
-
         currencyPair = self.findCurrencyPairToInvest(currencies_in_market, currencies_in_wallet, round) 
-
+        if self.name == "MACD Strategy": "PPPPPPPPPPPPP"
         if currencyPair == None: 
             return None
         else:
             # creates an ORDER
             buyCurrency = currencyPair[0]
             sellCurrency = currencyPair[1]
+            if self.name == "MACD Strategy": "PPPPPPPPPPPPP"
             return self.sendOrderRequest(agent, buyCurrency, sellCurrency)
 
     def findCurrencyPairToInvest(self, currencies_in_market, currencies_in_wallet, round):
@@ -88,7 +88,6 @@ class Strategy:
                 
                 exchange_rate_data = self.exchange_rates[exchange_rate_symbol]
                 current_exchange_rate_price = exchange_rate_data[round]
-                
                 if self.evaluateIndicators(round, current_exchange_rate_price, exchange_rate_data): # this method is subclass specific !!!
                     return [possible_buying_currency, possible_selling_currency]
         return None
@@ -120,7 +119,7 @@ class Strategy:
         exchange_rate_data = self.exchange_rates[exchange_rate_symbol]
         exchange_rate = agent.currencyMarket.getCurrenciesExchangeRate(exchange_rate_symbol, agent.round)
 
-        return self.haveStrategySpecificConditionsBeenMet(round, exchange_rate, exchange_rate_data)
+        return self.haveStrategySpecificClosingConditionsBeenMet(round, exchange_rate, exchange_rate_data)
 
     # always the same disregarding what the investement strategy is -- it closes the initial investment
     def makeCloseOrder(self, agent, round):
@@ -191,7 +190,7 @@ class PivotPointStrategy(Strategy):
         super().__init__(strategy_name, exchange_rates_data)
         self.exchange_rates = exchange_rates_data
     
-    def haveStrategySpecificConditionsBeenMet(self, round, exchange_rate, exchange_rate_data):
+    def haveStrategySpecificClosingConditionsBeenMet(self, round, exchange_rate, exchange_rate_data):
         """" Agent's strategy for when to close the position """
         # get support and the pivot points
         important_points = self.getImportantPoints(exchange_rate_data, round)
@@ -205,8 +204,6 @@ class PivotPointStrategy(Strategy):
                 return True
                 
         return False
-
-        # HARD refactor needed later :)  
 
     def evaluateIndicators(self, round, current_exchange_rate_price, exchange_rate_data):
         important_points = self.getImportantPoints(exchange_rate_data, round)
@@ -270,7 +267,7 @@ class MovingAverageStrategy(Strategy):
         super().__init__(strategy_name, exchange_rates_data)
         self.exchange_rates = exchange_rates_data
     
-    def haveStrategySpecificConditionsBeenMet(self, round, exchange_rate, exchange_rate_data):
+    def haveStrategySpecificClosingConditionsBeenMet(self, round, exchange_rate, exchange_rate_data):
         """" Agent's strategy for when to close the position """
         # get support and the pivot points
         if self.isPriceMovementShowingStrongSell(exchange_rate_data, round):
@@ -379,34 +376,155 @@ class MovingAverageStrategy(Strategy):
             return True
         return False
 
-""" DOES nothing"""
-class MarketIndicators:
+class MACDStrategy(Strategy):
+    """
+        Follows MACD indicator
+    """
+    def __init__(self, strategy_name, exchange_rates_data):
+        super().__init__(strategy_name, exchange_rates_data)
+        self.exchange_rates = exchange_rates_data
+    
+    def haveStrategySpecificClosingConditionsBeenMet(self, round, exchange_rate, exchange_rate_data):
+        """" Agent's strategy for when to close the position """
+        # get support and the pivot points
+        if self.hasCrossedSignalLineFromAbove(exchange_rate_data, round):
+            return True
 
-    def __init__(self, exchange_rates) -> None:
-        self.exchange_rates = exchange_rates
+        if self.hasCrossedOverXAxisFromAbove(exchange_rate_data, round):
+            return True
+        
+        if self.IsThereConvergenceBetweenMACDAndPriceDownward(exchange_rate_data, round):
+            return True
+        
+        return False
 
-    # exponential moving average
-    # https://www.investopedia.com/terms/e/ema.asp
-    # https://towardsdatascience.com/trading-toolbox-02-wma-ema-62c22205e2a9
-    def getEMA(self, round, window, symbol):
-        ema10 = self.exchange_rates[symbol].ewm(span = window, adjust= False).mean()
-        df = pd.DataFrame()
-        df["ema"] = numpy.round(ema10, decimals = 3)
-        return df["ema"].values[round]
+    def evaluateIndicators(self, round, current_exchange_rate_price, exchange_rate_data):
+        print ("hello")
+        if self.hasCrossedSignalLineFromBelow(exchange_rate_data, round):
+            print ("condition 1")
+            return True
 
-    # Moving average Convergence Divergence
-    # https://www.investopedia.com/terms/m/macd.asp
-    def getMACD(self, round):
-        return self.getEMA(round, 12) - self.getEMA(round, 26)
+        if self.hasCrossedOverXAxisFromBelow(exchange_rate_data, round):
+            print ("condition 2")
+            return True
+        
+        if self.IsThereConvergenceBetweenMACDAndPriceUpward(exchange_rate_data, round):
+            print ("condition 3")
+            return True
+        
+        return False
+    
+    def getXDayExponentialMovingAverage(self, round, period, exchange_rate_data):
+        """ using pandas ewm formula -- returns a pandas column """
+        temp_df = exchange_rate_data.ewm(span = period, adjust = False).mean()
+        return temp_df.iloc[round]
 
-    def get_X_day_moving_average(self, symbol, round, window):
-        if round < window:
-            return None
-        else:
-            total = 0
-            for i in range(window):
-                total += self.exchange_rates[symbol][round - i]
-            return total / window
+    def getMACDLine(self, exchange_rate_data, round):
+        EMA_12_days = self.getXDayExponentialMovingAverage(round, 12, exchange_rate_data)
+        EMA_26_days = self.getXDayExponentialMovingAverage(round, 26, exchange_rate_data)
+        return EMA_12_days - EMA_26_days
 
-    def getExchangeRate(self, symbol, round):
-        return self.exchange_rates[symbol][round]
+    def getSignalLine(self, exchange_rate_data, round):
+        return self.getXDayExponentialMovingAverage(round, 9, exchange_rate_data)
+
+    def IsThereConvergenceBetweenMACDAndPriceUpward(self, exchange_rate_data, round):
+        """ convergence upwards if both are rising """
+        if self.isMACDLineRising(exchange_rate_data, round) and self.isExchangeRateRising(exchange_rate_data, round):
+            return True
+        return False    
+
+    def IsThereConvergenceBetweenMACDAndPriceDownward(self, exchange_rate_data, round):
+        """ convergence upwards if both are rising """
+        if self.isMACDLineFalling(exchange_rate_data, round) and self.isExchangeRateFalling(exchange_rate_data, round):
+            return True
+        return False    
+
+    def isExchangeRateRising(self, exchange_rate_data, round):
+        previous_exchange_rate = exchange_rate_data.iloc[round - 1]
+        current_exchange_rate = exchange_rate_data.iloc[round]
+        if previous_exchange_rate < current_exchange_rate:
+            return True
+        return False
+    
+    def isExchangeRateFalling(self, exchange_rate_data, round):
+        previous_exchange_rate = exchange_rate_data.iloc[round - 1]
+        current_exchange_rate = exchange_rate_data.iloc[round]
+        if previous_exchange_rate > current_exchange_rate:
+            return True
+        return False
+
+    def hasCrossedSignalLineFromBelow(self, exchange_rate_data, round):
+        if self.isMACDLineRising(exchange_rate_data, round) and self.hasMACDLineHasCrossedSignalLineFromBelow(exchange_rate_data, round):
+            return True
+        return False
+
+    def hasCrossedSignalLineFromAbove(self, exchange_rate_data, round):
+        if self.isMACDLineFalling(exchange_rate_data, round) and self.hasMACDLineHasCrossedSignalLineFromAbove(exchange_rate_data, round):
+            return True
+        return False
+
+    def isMACDLineRising(self, exchange_rate_data, round):
+        previous_MACD_line = self.getMACDLine(exchange_rate_data, round - 1)
+        current_MACD_line = self.getMACDLine(exchange_rate_data, round)
+        if current_MACD_line > previous_MACD_line:
+            return True
+        return False
+
+    def isMACDLineFalling(self, exchange_rate_data, round):
+        previous_MACD_line = self.getMACDLine(exchange_rate_data, round - 1)
+        current_MACD_line = self.getMACDLine(exchange_rate_data, round)
+        if current_MACD_line < previous_MACD_line:
+            return True
+        return False
+
+    def hasCrossedOverXAxisFromBelow(self, exchange_rate_data, round):
+        if self.isMACDLineRising(exchange_rate_data, round) and self.hasMACDLineHasCrossedXAxisFromBelow(exchange_rate_data, round):
+            return True
+        return False
+    
+    def hasCrossedOverXAxisFromAbove(self, exchange_rate_data, round):
+        if self.isMACDLineFalling(exchange_rate_data, round) and self.hasMACDLineHasCrossedXAxisFromAbove(exchange_rate_data, round):
+            return True
+        return False
+
+    def hasMACDLineHasCrossedXAxisFromBelow(self, exchange_rate_data, round):
+        previous_MACD_line = self.getMACDLine(exchange_rate_data, round - 1)
+        current_MACD_line = self.getMACDLine(exchange_rate_data, round)
+
+        if previous_MACD_line < 0 and current_MACD_line > 0:
+            return True
+        return False
+
+    def hasMACDLineHasCrossedXAxisFromAbove(self, exchange_rate_data, round):
+        previous_MACD_line = self.getMACDLine(exchange_rate_data, round - 1)
+        current_MACD_line = self.getMACDLine(exchange_rate_data, round)
+
+        if previous_MACD_line > 0 and current_MACD_line < 0:
+            return True
+        return False
+
+    def hasMACDLineHasCrossedSignalLineFromBelow(self, exchange_rate_data, round):
+        previous_MACD_line = self.getMACDLine(exchange_rate_data, round - 1)
+        current_MACD_line = self.getMACDLine(exchange_rate_data, round)
+        previous_signal_line = self.getSignalLine(exchange_rate_data, round - 1)
+        current_signal_line = self.getSignalLine(exchange_rate_data, round)
+
+        if previous_MACD_line < previous_signal_line and current_MACD_line > current_signal_line:
+            return True
+        return False
+
+    def hasMACDLineHasCrossedSignalLineFromAbove(self, exchange_rate_data, round):
+        previous_MACD_line = self.getMACDLine(exchange_rate_data, round - 1)
+        current_MACD_line = self.getMACDLine(exchange_rate_data, round)
+        previous_signal_line = self.getSignalLine(exchange_rate_data, round - 1)
+        current_signal_line = self.getSignalLine(exchange_rate_data, round)
+
+        if previous_MACD_line > previous_signal_line and current_MACD_line < current_signal_line:
+            return True
+        return False
+
+
+
+    
+
+

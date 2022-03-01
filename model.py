@@ -2,7 +2,7 @@ from mesa import Model
 from mesa.time import RandomActivation, BaseScheduler
 from mesa.datacollection import DataCollector
 import pandas as pd
-from investment_strategies import MovingAverageStrategy, PivotPointStrategy, Strategy, RandomStrategy
+from investment_strategies import MACDStrategy, MovingAverageStrategy, PivotPointStrategy, Strategy, RandomStrategy
 from agents import MarketAgent
 from currency_market import CurrencyMarket, Currency
 
@@ -57,23 +57,21 @@ class MarketModel(Model):
         random_strategy = RandomStrategy("Random strategy", exchange_rates)
         pivot_point_strategy = PivotPointStrategy("Pivot point strategy", exchange_rates)
         moving_average_strategy = MovingAverageStrategy("Moving average strategy", exchange_rates)
+        macd_strategy = MACDStrategy('MACD Strategy', exchange_rates)
 
         for i in range(num_agents): 
             strategy = random_strategy
-            if i % 4 == 1:
+            if i % 6 == 1:
                 strategy = pivot_point_strategy
-            elif i%4 == 2:
+            elif i % 6 == 2:
                 strategy = moving_average_strategy
+            elif i % 6 == 3:
+                print ("What is happening")
+                strategy = macd_strategy
 
             a = MarketAgent(i, self, strategy, self.currencyMarket) # does nothing for now... 
             self.schedule.add(a)
             self.agents.append(a)
-            
-            # a.step() # do step method of agent so it makes an open_order
-        
-        
-        # print ("STOP ITERATION")
-        # return StopIteration
 
     def step(self):
         # self.currencyMarket.updateExchangeRates(self.round) # makes sure all exchange rates are up to date (IMPORTANT)
@@ -105,7 +103,7 @@ class MarketModel(Model):
 # --------------------------------------------------------------------------
 
 model = MarketModel(20)
-for i in range(20):
+for i in range(1):
     model.step()
 
 
