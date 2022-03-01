@@ -9,7 +9,7 @@ class Order:
         a data structure containing all the relevant information for the order request of an agent
     """
     def __init__(self, orderType, buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time):
-        self.order_type = orderType
+        self.order_type = orderType # OPEN or CLOSE order
         self.buyCurrency = buyCurrency # currency agent wants to buy
         self.sellCurrency = sellCurrency # currency agent will sell in order to buy
         self.amountOfBuyingCurrency = amountOfBuyingCurrency # amount of buy currency agent wants to own :: DEPEND ON EXCHANGE_RATE
@@ -49,30 +49,29 @@ class Strategy:
         # https://arxiv.org/pdf/cond-mat/0103600.pdf
         random_gauss_factor = self.getRandomDrawFromGaussian(direction) # to add randomness in limit_prices
         limit_price = 0
+        # WHAT AM I DOING HERE ???
         while limit_price <= 0:
             limit_price = exchange_rate * random_gauss_factor
         return limit_price # agent willing to buy at a slightly higher price
     
     def getRandomDrawFromGaussian(self, direction):
-        # For orders: μ = current_exchange_rate * 1.01, σmin = 0.01 and σmax = 0.003.
+        # For orders: μ = 0.98 / 1.02, σmin = 0.01 and σmax = 0.003.
         mean = 0.98
         if direction == "buy":
-            mean *= 1.02
+            mean = 1.02
         return numpy.random.normal(loc = mean, scale = random.uniform(0.003, 0.01))
 
     def makeOpenOrder(self, agent, round):
         """ wishes to exchange X for Y """
         currencies_in_wallet = random.sample(list(agent.wallet.keys()), len(list(agent.wallet.keys())))
         currencies_in_market = random.sample(agent.currencyMarket.getAvailableCurrencies(), len(agent.currencyMarket.getAvailableCurrencies()))
-        currencyPair = self.findCurrencyPairToInvest(currencies_in_market, currencies_in_wallet, round) 
-        if self.name == "MACD Strategy": "PPPPPPPPPPPPP"
-        if currencyPair == None: 
+        exchanging_currencies = self.findCurrencyPairToInvest(currencies_in_market, currencies_in_wallet, round) 
+        if exchanging_currencies == None: 
             return None
         else:
             # creates an ORDER
-            buyCurrency = currencyPair[0]
-            sellCurrency = currencyPair[1]
-            if self.name == "MACD Strategy": "PPPPPPPPPPPPP"
+            buyCurrency = exchanging_currencies[0]
+            sellCurrency = exchanging_currencies[1]
             return self.sendOrderRequest(agent, buyCurrency, sellCurrency)
 
     def findCurrencyPairToInvest(self, currencies_in_market, currencies_in_wallet, round):
@@ -93,16 +92,16 @@ class Strategy:
         return None
 
     def sendOrderRequest(self, agent, buyCurrency, sellCurrency):
-        exchange_rate_symbol = buyCurrency.symbol + "/" + sellCurrency.symbol
-
+        
+        exchange_rate_symbol = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["exchange_symbol"]
         exchange_rate = agent.currencyMarket.getCurrenciesExchangeRate(exchange_rate_symbol, agent.round)
         direction = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["direction"]
-        limit_price = self.getLimitPrice(direction, exchange_rate)
-        amountOfBuyingCurrency = self.getAmountOfBuyingCurrency(exchange_rate, direction, agent.wallet[sellCurrency]) # AGENT WANTS TO BUY 10 of currency
+        limit_price = self.getLimitPrice(direction, exchange_rate) # always given through (ETH/USDT)
+        amountOfBuyingCurrency = self.getAmountOfBuyingCurrency(limit_price, direction, agent.wallet[sellCurrency]) # AGENT WANTS TO BUY 10 of currency
         
         expiration_time = random.choice(range(2,5))
 
-        return Order("OPEN", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time)
+        return Order("OPEN", buyCurrency, sellCurrency, amountOfBuyingCurrency, agent.round, agent, limit_price, expiration_time)
     
     def closingConditionMet(self, agent, round):
         """" Agent's strategy for when to close the position """
@@ -120,8 +119,7 @@ class Strategy:
         exchange_rate = agent.currencyMarket.getCurrenciesExchangeRate(exchange_rate_symbol, agent.round)
 
         return self.haveStrategySpecificClosingConditionsBeenMet(round, exchange_rate, exchange_rate_data)
-
-    # always the same disregarding what the investement strategy is -- it closes the initial investment
+    
     def makeCloseOrder(self, agent, round):
         """ wishes to exchange Y for X """
 
@@ -249,7 +247,6 @@ class PivotPointStrategy(Strategy):
         return False
 
     def hasBrokenResistanceLevel(self, resistance, current_exchange):
-        print (current_exchange, " > ", resistance)
         if current_exchange > resistance:
             return True
         return False
@@ -399,17 +396,13 @@ class MACDStrategy(Strategy):
         return False
 
     def evaluateIndicators(self, round, current_exchange_rate_price, exchange_rate_data):
-        print ("hello")
         if self.hasCrossedSignalLineFromBelow(exchange_rate_data, round):
-            print ("condition 1")
             return True
 
         if self.hasCrossedOverXAxisFromBelow(exchange_rate_data, round):
-            print ("condition 2")
             return True
         
         if self.IsThereConvergenceBetweenMACDAndPriceUpward(exchange_rate_data, round):
-            print ("condition 3")
             return True
         
         return False
@@ -522,8 +515,6 @@ class MACDStrategy(Strategy):
         if previous_MACD_line > previous_signal_line and current_MACD_line < current_signal_line:
             return True
         return False
-
-
 
     
 

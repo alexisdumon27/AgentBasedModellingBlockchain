@@ -66,7 +66,6 @@ class MarketModel(Model):
             elif i % 6 == 2:
                 strategy = moving_average_strategy
             elif i % 6 == 3:
-                print ("What is happening")
                 strategy = macd_strategy
 
             a = MarketAgent(i, self, strategy, self.currencyMarket) # does nothing for now... 
@@ -78,9 +77,13 @@ class MarketModel(Model):
         
         self.schedule.step() # runs the step method for all Agents
         
+        self.currencyMarket.orderBook.sortOrdersInOrderBook()
+
         print ("OrderBook BEFORE transactions: ")
         self.currencyMarket.getOrderBook().printOrderBook() # to know what the order book looks like before transactions
-        self.currencyMarket.price_clearing_mechanism()
+
+        self.currencyMarket.price_clearing_mechanism() # do all transactions
+
         print ("OrderBook AFTER transactions: ")
         self.currencyMarket.getOrderBook().printOrderBook()
 

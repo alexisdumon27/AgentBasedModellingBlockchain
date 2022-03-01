@@ -158,7 +158,6 @@ class Exchange_Rates:
     def getType(self):
         return self.type
 
-
 class OrderBook:
     """ 
         data structure which assembles order objects into a useful dictionary
@@ -196,13 +195,17 @@ class OrderBook:
 
         # append it as a key-value pair
         self.orders[exchangeSymbol][exchangeDirection][agent] = [amount, buyCurrency, sellCurrency, orderType, limit_price] # later will add price
-        
-        self.sortNewOrder(exchangeSymbol, exchangeDirection, orderType) # sorts based on limit_price and exchange_direction
+
+    def sortOrdersInOrderBook(self):
+        for exchange_symbols in self.orders.keys():
+            currency_pair_orders = self.orders[exchange_symbols]
+            currency_pair_orders["buy"] = {k: v for k, v in sorted(currency_pair_orders["buy"].items(), key=lambda item: item[1][-1], reverse = True)}
+            currency_pair_orders["sell"] = {k: v for k, v in sorted(currency_pair_orders["sell"].items(), key=lambda item: item[1][-1], reverse = False)}
 
 
     # BUY --> ascending and SELL --> ascending
-    def sortNewOrder(self, exchangeSymbol, exchangeDirection, orderType):
-        ordering = orderType == "buy"
+    def sortNewOrder(self, exchangeSymbol, exchangeDirection):
+        ordering = exchangeDirection == "buy"
         orders_of_type = self.orders[exchangeSymbol][exchangeDirection]
         {k: v for k, v in sorted(orders_of_type.items(), key=lambda item: item[1][-1], reverse = ordering)}
 
@@ -218,6 +221,8 @@ class OrderBook:
         exchangeSymbol = currencyPairs[buyCurrency][sellCurrency]["exchange_symbol"]
         exchangeDirection = currencyPairs[buyCurrency][sellCurrency]["direction"]
         self.orders[exchangeSymbol][exchangeDirection][agent][-1] = new_limit_price
+
+        self.sortNewOrder(exchangeSymbol, exchangeDirection)
 
     def printOrderBook(self):
         """ visual representation of order book """
