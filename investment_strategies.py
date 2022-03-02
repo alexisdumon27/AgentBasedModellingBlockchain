@@ -1,3 +1,4 @@
+from cmath import nan
 import random
 import numpy
 import pandas as pd
@@ -25,7 +26,7 @@ class Strategy:
     """
     def __init__(self, strategy_name, exchange_rates_data):
         self.name = strategy_name
-        self.exchange_rates = exchange_rates_data
+        self.exchange_rates_data = exchange_rates_data
         # agent_risk_level
 
         self.order_id = 0
@@ -85,9 +86,7 @@ class Strategy:
 
                 exchange_rate_symbol = possible_buying_currency_symbol + "/" + possible_selling_currency_symbol # is this the right way around ?
                 
-                exchange_rate_data = self.exchange_rates[exchange_rate_symbol]
-                current_exchange_rate_price = exchange_rate_data[round]
-                if self.evaluateIndicators(round, current_exchange_rate_price, exchange_rate_data): # this method is subclass specific !!!
+                if self.evaluateIndicators(round, exchange_rate_symbol): # this method is subclass specific !!!
                     return [possible_buying_currency, possible_selling_currency]
         return None
 
@@ -115,10 +114,10 @@ class Strategy:
 
         exchange_rate_symbol = buyCurrency.symbol + "/" + sellCurrency.symbol
                 
-        exchange_rate_data = self.exchange_rates[exchange_rate_symbol]
+        exchange_rate_data = self.exchange_rates_data[exchange_rate_symbol]
         exchange_rate = agent.currencyMarket.getCurrenciesExchangeRate(exchange_rate_symbol, agent.round)
 
-        return self.haveStrategySpecificClosingConditionsBeenMet(round, exchange_rate, exchange_rate_data)
+        return self.haveStrategySpecificClosingConditionsBeenMet(round, exchange_rate_symbol)
     
     def makeCloseOrder(self, agent, round):
         """ wishes to exchange Y for X """
@@ -186,33 +185,31 @@ class PivotPointStrategy(Strategy):
     """
     def __init__(self, strategy_name, exchange_rates_data):
         super().__init__(strategy_name, exchange_rates_data)
-        self.exchange_rates = exchange_rates_data
+        self.exchange_rates_data = exchange_rates_data
     
-    def haveStrategySpecificClosingConditionsBeenMet(self, round, exchange_rate, exchange_rate_data):
+    def haveStrategySpecificClosingConditionsBeenMet(self, round, symbol):
         """" Agent's strategy for when to close the position """
         # get support and the pivot points
-        important_points = self.getImportantPoints(exchange_rate_data, round)
-        low = important_points[2]
+        symbol_exchange_rate_data = self.exchange_rates_data[symbol]
+        important_points = self.getImportantPoints(symbol_exchange_rate_data, round)
         high = important_points[1]
         pivot_point = important_points[0]
         support = self.calculateSupport(high, pivot_point)
 
-        if self.isMarketTrendDown(pivot_point, exchange_rate):
-            if self.hasBrokenSupportLevel(support, exchange_rate):
+        if self.isMarketTrendDown(pivot_point, symbol_exchange_rate_data):
+            if self.hasBrokenSupportLevel(support, symbol_exchange_rate_data):
                 return True
                 
         return False
 
-    def evaluateIndicators(self, round, current_exchange_rate_price, exchange_rate_data):
-        important_points = self.getImportantPoints(exchange_rate_data, round)
+    def evaluateIndicators(self, round, symbol):
+        symbol_exchange_rate_data = self.exchange_rates_data[symbol]
+        important_points = self.getImportantPoints(symbol_exchange_rate_data, round)
         low = important_points[2]
-        high = important_points[1]
         pivot_point = important_points[0]
         resistance = self.calculateResistance(low, pivot_point)
-        support = self.calculateSupport(high, pivot_point)
-        
-        # is market trend up?
-        # has it just broken a resistance level ?
+
+        current_exchange_rate_price = symbol_exchange_rate_data[round]
         if self.isMarketTrendUp(pivot_point, current_exchange_rate_price):
             if self.hasBrokenResistanceLevel(resistance, current_exchange_rate_price):
                 return True
@@ -262,112 +259,111 @@ class MovingAverageStrategy(Strategy):
     """
     def __init__(self, strategy_name, exchange_rates_data):
         super().__init__(strategy_name, exchange_rates_data)
-        self.exchange_rates = exchange_rates_data
+        self.exchange_rates_data = exchange_rates_data
     
-    def haveStrategySpecificClosingConditionsBeenMet(self, round, exchange_rate, exchange_rate_data):
+    def haveStrategySpecificClosingConditionsBeenMet(self, round, symbol):
         """" Agent's strategy for when to close the position """
         # get support and the pivot points
-        if self.isPriceMovementShowingStrongSell(exchange_rate_data, round):
+        if self.isPriceMovementShowingStrongSell(symbol, round):
             return True
 
-        if self.isComparingMovingAveragesShowingStrongSell(exchange_rate_data, round):
+        if self.isComparingMovingAveragesShowingStrongSell(symbol, round):
             return True
         
         return False
 
-    def evaluateIndicators(self, round, current_exchange_rate_price, exchange_rate_data):
-        
-        if self.isPriceMovementShowingStrongBuy(exchange_rate_data, round):
+    def evaluateIndicators(self, round, symbol):
+        if self.isPriceMovementShowingStrongBuy(symbol, round):
             return True
 
-        if self.isComparingMovingAveragesShowingStrongBuy(exchange_rate_data, round):
+        if self.isComparingMovingAveragesShowingStrongBuy(symbol, round):
             return True
         
         return False
     
-    def isPriceMovementShowingStrongBuy(self, exchange_rate_data, round):
-        if self.isXDayMovingAverageRising(round, 5, exchange_rate_data) and self.hasPriceCrossedFromBelowXDayMovingAverage(round, 5, exchange_rate_data): 
+    def isPriceMovementShowingStrongBuy(self, symbol, round):
+        if self.isXDayMovingAverageRising(round, 5, symbol) and self.hasPriceCrossedFromBelowXDayMovingAverage(round, 5, symbol): 
             return True
 
-    def hasPriceCrossedFromBelowXDayMovingAverage(self, round, range, exchange_rate_data):
-        current_price = exchange_rate_data[round]
-        previous_price = exchange_rate_data[round - 1]
-        current_moving_average = self.getXDayMovingAverage(round, range, exchange_rate_data)
-        previous_moving_average = self.getXDayMovingAverage(round - 1, range, exchange_rate_data)
+    def hasPriceCrossedFromBelowXDayMovingAverage(self, round, range, symbol):
+        current_price = self.exchange_rates_data[symbol][round]
+        previous_price = self.exchange_rates_data[symbol][round - 1]
+        current_moving_average = self.getXDayMovingAverage(round, range, symbol)
+        previous_moving_average = self.getXDayMovingAverage(round - 1, range, symbol)
 
         if previous_price < previous_moving_average and current_price > current_moving_average:
             return True
         return False
 
-    def isXDayMovingAverageRising(self, round, range, exchange_rate_data):
+    def isXDayMovingAverageRising(self, round, range, symbol):
         """ rising if current round moving avg higher than previous round """
-        current_moving_average_X_day = self.getXDayMovingAverage(round, range, exchange_rate_data)
-        previous_moving_average_X_day = self.getXDayMovingAverage(round - 1, range, exchange_rate_data)
+        current_moving_average_X_day = self.getXDayMovingAverage(round, range, symbol)
+        previous_moving_average_X_day = self.getXDayMovingAverage(round - 1, range, symbol)
         if current_moving_average_X_day > previous_moving_average_X_day:
             return True
         return False
 
-    def isComparingMovingAveragesShowingStrongBuy(self, exchange_rate_data, round):
+    def isComparingMovingAveragesShowingStrongBuy(self, symbol, round):
         shorter_period = 5
         longer_period = 20
-        if (self.isXDayMovingAverageRising(round, shorter_period, exchange_rate_data) and self.isXDayMovingAverageRising(round, longer_period, exchange_rate_data)
-            and self.hasShorterPeriodCrossedLongerPeriodFromBelow(round, shorter_period, longer_period, exchange_rate_data) ):
+        if (self.isXDayMovingAverageRising(round, shorter_period, symbol) and self.isXDayMovingAverageRising(round, longer_period, symbol)
+            and self.hasShorterPeriodCrossedLongerPeriodFromBelow(round, shorter_period, longer_period, symbol) ):
             return True
 
-    def hasShorterPeriodCrossedLongerPeriodFromBelow(self, round, shorter_period, longer_period, exchange_rate_data):
-        previous_short_period_day_moving_average = self.getXDayMovingAverage(round - 1, shorter_period, exchange_rate_data)
-        current_short_period_day_moving_average = self.getXDayMovingAverage(round, shorter_period, exchange_rate_data)
+    def hasShorterPeriodCrossedLongerPeriodFromBelow(self, round, shorter_period, longer_period, symbol):
+        previous_short_period_day_moving_average = self.getXDayMovingAverage(round - 1, shorter_period, symbol)
+        current_short_period_day_moving_average = self.getXDayMovingAverage(round, shorter_period, symbol)
 
-        previous_long_period_day_moving_average = self.getXDayMovingAverage(round - 1, longer_period, exchange_rate_data)
-        current_long_period_day_moving_average = self.getXDayMovingAverage(round, longer_period, exchange_rate_data)
+        previous_long_period_day_moving_average = self.getXDayMovingAverage(round - 1, longer_period, symbol)
+        current_long_period_day_moving_average = self.getXDayMovingAverage(round, longer_period, symbol)
 
         if previous_short_period_day_moving_average < previous_long_period_day_moving_average and current_short_period_day_moving_average > current_long_period_day_moving_average:
             return True
         return False
 
-    def getXDayMovingAverage(self, round, period, exchange_rate_data):
+    def getXDayMovingAverage(self, round, period, symbol):
         # exchange_rate_data is already currency specific
         if round < period:
             period = round
         total = 0
         for i in range(period):
-            total += exchange_rate_data[round - i]
+            total += self.exchange_rates_data[symbol][round - i]
         return total / period
 
-    def isPriceMovementShowingStrongSell(self, exchange_rate_data, round):
-        if self.isXDayMovingAverageFalling(round, 5, exchange_rate_data) and self.hasPriceCrossedFromAboveXDayMovingAverage(round, 5, exchange_rate_data): 
+    def isPriceMovementShowingStrongSell(self, symbol, round):
+        if self.isXDayMovingAverageFalling(round, 5, symbol) and self.hasPriceCrossedFromAboveXDayMovingAverage(round, 5, symbol): 
             return True
 
-    def isXDayMovingAverageFalling(self, round, range, exchange_rate_data):
-        current_moving_average_X_day = self.getXDayMovingAverage(round, range, exchange_rate_data)
-        previous_moving_average_X_day = self.getXDayMovingAverage(round - 1, range, exchange_rate_data)
+    def isXDayMovingAverageFalling(self, round, range, symbol):
+        current_moving_average_X_day = self.getXDayMovingAverage(round, range, symbol)
+        previous_moving_average_X_day = self.getXDayMovingAverage(round - 1, range, symbol)
         if current_moving_average_X_day < previous_moving_average_X_day:
             return True
         return False
     
-    def hasPriceCrossedFromAboveXDayMovingAverage(self, round, range, exchange_rate_data):
-        current_price = exchange_rate_data[round]
-        previous_price = exchange_rate_data[round - 1]
-        current_moving_average = self.getXDayMovingAverage(round, range, exchange_rate_data)
-        previous_moving_average = self.getXDayMovingAverage(round - 1, range, exchange_rate_data)
+    def hasPriceCrossedFromAboveXDayMovingAverage(self, round, range, symbol):
+        current_price = self.exchange_rates_data[symbol][round]
+        previous_price = self.exchange_rates_data[symbol][round - 1]
+        current_moving_average = self.getXDayMovingAverage(round, range, symbol)
+        previous_moving_average = self.getXDayMovingAverage(round - 1, range, symbol)
 
         if previous_price > previous_moving_average and current_price < current_moving_average:
             return True
         return False
 
-    def isComparingMovingAveragesShowingStrongSell(self, exchange_rate_data, round):
+    def isComparingMovingAveragesShowingStrongSell(self, symbol, round):
         shorter_period = 5
         longer_period = 20
-        if (self.isXDayMovingAverageFalling(round, shorter_period, exchange_rate_data) and self.isXDayMovingAverageFalling(round, longer_period, exchange_rate_data)
-            and self.hasShorterPeriodCrossedLongerPeriodFromAbove(round, shorter_period, longer_period, exchange_rate_data) ):
+        if (self.isXDayMovingAverageFalling(round, shorter_period, symbol) and self.isXDayMovingAverageFalling(round, longer_period, symbol)
+            and self.hasShorterPeriodCrossedLongerPeriodFromAbove(round, shorter_period, longer_period, symbol) ):
             return True
     
-    def hasShorterPeriodCrossedLongerPeriodFromAbove(self, round, shorter_period, longer_period, exchange_rate_data):
-        previous_short_period_day_moving_average = self.getXDayMovingAverage(round - 1, shorter_period, exchange_rate_data)
-        current_short_period_day_moving_average = self.getXDayMovingAverage(round, shorter_period, exchange_rate_data)
+    def hasShorterPeriodCrossedLongerPeriodFromAbove(self, round, shorter_period, longer_period, symbol):
+        previous_short_period_day_moving_average = self.getXDayMovingAverage(round - 1, shorter_period, symbol)
+        current_short_period_day_moving_average = self.getXDayMovingAverage(round, shorter_period, symbol)
 
-        previous_long_period_day_moving_average = self.getXDayMovingAverage(round - 1, longer_period, exchange_rate_data)
-        current_long_period_day_moving_average = self.getXDayMovingAverage(round, longer_period, exchange_rate_data)
+        previous_long_period_day_moving_average = self.getXDayMovingAverage(round - 1, longer_period, symbol)
+        current_long_period_day_moving_average = self.getXDayMovingAverage(round, longer_period, symbol)
 
         if previous_short_period_day_moving_average > previous_long_period_day_moving_average and current_short_period_day_moving_average < current_long_period_day_moving_average:
             return True
@@ -379,143 +375,216 @@ class MACDStrategy(Strategy):
     """
     def __init__(self, strategy_name, exchange_rates_data):
         super().__init__(strategy_name, exchange_rates_data)
-        self.exchange_rates = exchange_rates_data
+        self.exchange_rates_data = exchange_rates_data
     
-    def haveStrategySpecificClosingConditionsBeenMet(self, round, exchange_rate, exchange_rate_data):
+    def haveStrategySpecificClosingConditionsBeenMet(self, round, symbol):
         """" Agent's strategy for when to close the position """
         # get support and the pivot points
-        if self.hasCrossedSignalLineFromAbove(exchange_rate_data, round):
+        if self.hasCrossedSignalLineFromAbove(symbol, round):
             return True
 
-        if self.hasCrossedOverXAxisFromAbove(exchange_rate_data, round):
+        if self.hasCrossedOverXAxisFromAbove(symbol, round):
             return True
         
-        if self.IsThereConvergenceBetweenMACDAndPriceDownward(exchange_rate_data, round):
+        if self.IsThereConvergenceBetweenMACDAndPriceDownward(symbol, round):
             return True
         
         return False
 
-    def evaluateIndicators(self, round, current_exchange_rate_price, exchange_rate_data):
-        if self.hasCrossedSignalLineFromBelow(exchange_rate_data, round):
+    def evaluateIndicators(self, round, symbol):        
+        if self.hasCrossedSignalLineFromBelow(symbol, round):
             return True
 
-        if self.hasCrossedOverXAxisFromBelow(exchange_rate_data, round):
+        if self.hasCrossedOverXAxisFromBelow(symbol, round):
             return True
         
-        if self.IsThereConvergenceBetweenMACDAndPriceUpward(exchange_rate_data, round):
+        if self.IsThereConvergenceBetweenMACDAndPriceUpward(symbol,round):
             return True
         
         return False
     
-    def getXDayExponentialMovingAverage(self, round, period, exchange_rate_data):
+    def getXDayExponentialMovingAverage(self, round, period, symbol):
         """ using pandas ewm formula -- returns a pandas column """
-        temp_df = exchange_rate_data.ewm(span = period, adjust = False).mean()
-        return temp_df.iloc[round]
+        column_name = str(period) + "_ema_" + symbol
+        return self.exchange_rates_data[column_name].iloc[round]
 
-    def getMACDLine(self, exchange_rate_data, round):
-        EMA_12_days = self.getXDayExponentialMovingAverage(round, 12, exchange_rate_data)
-        EMA_26_days = self.getXDayExponentialMovingAverage(round, 26, exchange_rate_data)
+    def getMACDLine(self, symbol, round):
+        EMA_12_days = self.getXDayExponentialMovingAverage(round, 12, symbol)
+        EMA_26_days = self.getXDayExponentialMovingAverage(round, 26, symbol)
         return EMA_12_days - EMA_26_days
 
-    def getSignalLine(self, exchange_rate_data, round):
-        return self.getXDayExponentialMovingAverage(round, 9, exchange_rate_data)
+    def getSignalLine(self, symbol, round):
+        return self.getXDayExponentialMovingAverage(round, 9, symbol)
 
-    def IsThereConvergenceBetweenMACDAndPriceUpward(self, exchange_rate_data, round):
+    def IsThereConvergenceBetweenMACDAndPriceUpward(self, symbol, round):
         """ convergence upwards if both are rising """
-        if self.isMACDLineRising(exchange_rate_data, round) and self.isExchangeRateRising(exchange_rate_data, round):
+        if self.isMACDLineRising(symbol, round) and self.isExchangeRateRising(symbol, round):
             return True
         return False    
 
-    def IsThereConvergenceBetweenMACDAndPriceDownward(self, exchange_rate_data, round):
+    def IsThereConvergenceBetweenMACDAndPriceDownward(self, symbol, round):
         """ convergence upwards if both are rising """
-        if self.isMACDLineFalling(exchange_rate_data, round) and self.isExchangeRateFalling(exchange_rate_data, round):
+        if self.isMACDLineFalling(symbol, round) and self.isExchangeRateFalling(symbol, round):
             return True
         return False    
 
-    def isExchangeRateRising(self, exchange_rate_data, round):
-        previous_exchange_rate = exchange_rate_data.iloc[round - 1]
-        current_exchange_rate = exchange_rate_data.iloc[round]
+    def isExchangeRateRising(self, symbol, round):
+        previous_exchange_rate = self.exchange_rates_data[symbol].iloc[round - 1]
+        current_exchange_rate = self.exchange_rates_data[symbol].iloc[round]
         if previous_exchange_rate < current_exchange_rate:
             return True
         return False
     
-    def isExchangeRateFalling(self, exchange_rate_data, round):
-        previous_exchange_rate = exchange_rate_data.iloc[round - 1]
-        current_exchange_rate = exchange_rate_data.iloc[round]
+    def isExchangeRateFalling(self, symbol, round):
+        previous_exchange_rate = self.exchange_rates_data[symbol].iloc[round - 1]
+        current_exchange_rate = self.exchange_rates_data[symbol].iloc[round]
         if previous_exchange_rate > current_exchange_rate:
             return True
         return False
 
-    def hasCrossedSignalLineFromBelow(self, exchange_rate_data, round):
-        if self.isMACDLineRising(exchange_rate_data, round) and self.hasMACDLineHasCrossedSignalLineFromBelow(exchange_rate_data, round):
+    def hasCrossedSignalLineFromBelow(self, symbol, round):
+        if self.isMACDLineRising(symbol, round) and self.hasMACDLineHasCrossedSignalLineFromBelow(symbol, round):
             return True
         return False
 
-    def hasCrossedSignalLineFromAbove(self, exchange_rate_data, round):
-        if self.isMACDLineFalling(exchange_rate_data, round) and self.hasMACDLineHasCrossedSignalLineFromAbove(exchange_rate_data, round):
+    def hasCrossedSignalLineFromAbove(self, symbol, round):
+        if self.isMACDLineFalling(symbol, round) and self.hasMACDLineHasCrossedSignalLineFromAbove(symbol, round):
             return True
         return False
 
-    def isMACDLineRising(self, exchange_rate_data, round):
-        previous_MACD_line = self.getMACDLine(exchange_rate_data, round - 1)
-        current_MACD_line = self.getMACDLine(exchange_rate_data, round)
+    def isMACDLineRising(self, symbol, round):
+        previous_MACD_line = self.getMACDLine(symbol, round - 1)
+        current_MACD_line = self.getMACDLine(symbol, round)
         if current_MACD_line > previous_MACD_line:
             return True
         return False
 
-    def isMACDLineFalling(self, exchange_rate_data, round):
-        previous_MACD_line = self.getMACDLine(exchange_rate_data, round - 1)
-        current_MACD_line = self.getMACDLine(exchange_rate_data, round)
+    def isMACDLineFalling(self, symbol, round):
+        previous_MACD_line = self.getMACDLine(symbol, round - 1)
+        current_MACD_line = self.getMACDLine(symbol, round)
         if current_MACD_line < previous_MACD_line:
             return True
         return False
 
-    def hasCrossedOverXAxisFromBelow(self, exchange_rate_data, round):
-        if self.isMACDLineRising(exchange_rate_data, round) and self.hasMACDLineHasCrossedXAxisFromBelow(exchange_rate_data, round):
+    def hasCrossedOverXAxisFromBelow(self, symbol, round):
+        if self.isMACDLineRising(symbol, round) and self.hasMACDLineHasCrossedXAxisFromBelow(symbol, round):
             return True
         return False
     
-    def hasCrossedOverXAxisFromAbove(self, exchange_rate_data, round):
-        if self.isMACDLineFalling(exchange_rate_data, round) and self.hasMACDLineHasCrossedXAxisFromAbove(exchange_rate_data, round):
+    def hasCrossedOverXAxisFromAbove(self, symbol, round):
+        if self.isMACDLineFalling(symbol, round) and self.hasMACDLineHasCrossedXAxisFromAbove(symbol, round):
             return True
         return False
 
-    def hasMACDLineHasCrossedXAxisFromBelow(self, exchange_rate_data, round):
-        previous_MACD_line = self.getMACDLine(exchange_rate_data, round - 1)
-        current_MACD_line = self.getMACDLine(exchange_rate_data, round)
+    def hasMACDLineHasCrossedXAxisFromBelow(self, symbol, round):
+        previous_MACD_line = self.getMACDLine(symbol, round - 1)
+        current_MACD_line = self.getMACDLine(symbol, round)
 
         if previous_MACD_line < 0 and current_MACD_line > 0:
             return True
         return False
 
-    def hasMACDLineHasCrossedXAxisFromAbove(self, exchange_rate_data, round):
-        previous_MACD_line = self.getMACDLine(exchange_rate_data, round - 1)
-        current_MACD_line = self.getMACDLine(exchange_rate_data, round)
+    def hasMACDLineHasCrossedXAxisFromAbove(self, symbol, round):
+        previous_MACD_line = self.getMACDLine(symbol, round - 1)
+        current_MACD_line = self.getMACDLine(symbol, round)
 
         if previous_MACD_line > 0 and current_MACD_line < 0:
             return True
         return False
 
-    def hasMACDLineHasCrossedSignalLineFromBelow(self, exchange_rate_data, round):
-        previous_MACD_line = self.getMACDLine(exchange_rate_data, round - 1)
-        current_MACD_line = self.getMACDLine(exchange_rate_data, round)
-        previous_signal_line = self.getSignalLine(exchange_rate_data, round - 1)
-        current_signal_line = self.getSignalLine(exchange_rate_data, round)
+    def hasMACDLineHasCrossedSignalLineFromBelow(self, symbol, round):
+        previous_MACD_line = self.getMACDLine(symbol, round - 1)
+        current_MACD_line = self.getMACDLine(symbol, round)
+        previous_signal_line = self.getSignalLine(symbol, round - 1)
+        current_signal_line = self.getSignalLine(symbol, round)
 
         if previous_MACD_line < previous_signal_line and current_MACD_line > current_signal_line:
             return True
         return False
 
-    def hasMACDLineHasCrossedSignalLineFromAbove(self, exchange_rate_data, round):
-        previous_MACD_line = self.getMACDLine(exchange_rate_data, round - 1)
-        current_MACD_line = self.getMACDLine(exchange_rate_data, round)
-        previous_signal_line = self.getSignalLine(exchange_rate_data, round - 1)
-        current_signal_line = self.getSignalLine(exchange_rate_data, round)
+    def hasMACDLineHasCrossedSignalLineFromAbove(self, symbol, round):
+        previous_MACD_line = self.getMACDLine(symbol, round - 1)
+        current_MACD_line = self.getMACDLine(symbol, round)
+        previous_signal_line = self.getSignalLine(symbol, round - 1)
+        current_signal_line = self.getSignalLine(symbol, round)
 
         if previous_MACD_line > previous_signal_line and current_MACD_line < current_signal_line:
             return True
         return False
 
+class RSIStrategy(Strategy):
+    """
+        This use the Relative strength index as the indicator for entry and exit of the market
+    """
     
+    def __init__(self, strategy_name, exchange_rates_data):
+        super().__init__(strategy_name, exchange_rates_data)
+        self.exchange_rates_data = exchange_rates_data
+        
+    def haveStrategySpecificClosingConditionsBeenMet(self, round, symbol):
+        """" Agent's strategy for when to close the position """
+        if self.hasRSICrossedOverboughtSignal(round, symbol):
+            return True
+        if self.hasUpwardWeakness(self, round, symbol):
+            return True
+        return False
 
+    def evaluateIndicators(self, round, symbol):
+        if self.hasRSICrossedOversoldSignal(round, symbol):
+            return True
+        if self.hasDownwardWeakness(round, symbol):
+            return True
+        return False
+    
+    def hasDownwardWeakness(self, round, symbol):
+        """ 
+            If exchange rate reaches 10 (X) day low but indicator does not 
+            If the price falls to a new low, but the indicator does not, that may be a sign of the downtrend weakness.
+        """
+        current_exchange_rate = self.exchange_rates_data[symbol].iloc[round]
+        min_exchange_rate_past_10_days = self.exchange_rates_data[symbol].iloc[round-9:round+1].min()
+        if current_exchange_rate == min_exchange_rate_past_10_days:
+            current_rsi = self.getRelativeStrengthIndex(round, symbol)
+            column_name = "rsi_" + symbol
+            min_rsi_past_10_days = self.exchange_rates_data[column_name].iloc[round-9:round+1].min()
+            if current_rsi == min_rsi_past_10_days:
+                return True
+        return False
 
+    def hasRSICrossedOversoldSignal(self, round, exchange_rate_data):
+        previous_rsi = self.getRelativeStrengthIndex(round - 1, exchange_rate_data)
+        current_rsi = self.getRelativeStrengthIndex(round, exchange_rate_data)
+        if previous_rsi == None or current_rsi == None: return False
+        if previous_rsi > current_rsi and current_rsi < 30:
+            return True
+        return False
+
+    def hasUpwardWeakness(self, round, symbol):
+        """ 
+            If exchange rate reaches 10 (X) day low but indicator does not 
+            If the price falls to a new low, but the indicator does not, that may be a sign of the downtrend weakness.
+        """
+        current_exchange_rate = self.exchange_rates_data[symbol].iloc[round]
+        max_exchange_rate_past_10_days = self.exchange_rates_data[symbol].iloc[round-9:round+1].max()
+        if current_exchange_rate == max_exchange_rate_past_10_days:
+            current_rsi = self.getRelativeStrengthIndex(round, symbol)
+            column_name = "rsi_" + symbol
+            max_rsi_past_10_days = self.exchange_rates_data[column_name].iloc[round-9:round+1].max()
+            if current_rsi == max_rsi_past_10_days:
+                return True
+        return False
+
+    def hasRSICrossedOverboughtSignal(self, round, exchange_rate_data):
+        previous_rsi = self.getRelativeStrengthIndex(round - 1, exchange_rate_data)
+        current_rsi = self.getRelativeStrengthIndex(round, exchange_rate_data)
+        if previous_rsi == None or current_rsi == None: return False
+        if previous_rsi < current_rsi and current_rsi > 70:
+            return True
+        return False
+
+    def getRelativeStrengthIndex(self, round, symbol):
+        column_name = "rsi_" + symbol
+        rsi = self.exchange_rates_data[column_name].iloc[round]
+        if rsi != nan:
+            return rsi
+        return None
