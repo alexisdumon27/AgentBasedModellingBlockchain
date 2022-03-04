@@ -7,16 +7,16 @@ from agents import MarketAgent
 from currency_market import CurrencyMarket, Currency
 
 def getNumberOfEthereumTransactions(model) :
-    return model.listOfCurrencies[0].getNumOfTransactions()
+    return model.list_of_currencies[0].getNumOfTransactions()
 
 def totalTransactions(model):
     total = 0
-    for currency in model.listOfCurrencies:
+    for currency in model.list_of_currencies:
         total += currency.getNumOfTransactions()
     return total
 
-ethereumData = pd.read_csv('Data/cleanedEuthereumData.csv')
-tetherData = pd.read_csv('Data/cleanedTetherData.csv')
+# ethereumData = pd.read_csv('Data/cleanedEuthereumData.csv')
+# tetherData = pd.read_csv('Data/cleanedTetherData.csv')
 
 exchange_rates = pd.read_csv('Data/exchange_rates.csv')
 
@@ -24,14 +24,18 @@ class MarketModel(Model):
     def __init__(self, num_agents = 10):
         self.round = 10 # index keeping count of the round of simulation
 
-        ethereum = Currency("ethereum", "ETH", "crypto", 100, ethereumData)
-        tether = Currency('tether', "USDT", "fiat-backed", 100, tetherData)
+        ethereum = Currency("ethereum", "ETH", "crypto", 100, exchange_rates['ETH/USD'])
+        tether = Currency('tether', "USDT", "fiat-backed", 100, exchange_rates['USDT/USD'])
+        binance = Currency('binance', "BNB", "fiat-backed", 100, exchange_rates['BNB/USD'])
+        bitcoin = Currency('bitcoin', "BTC", "fiat-backed", 100, exchange_rates['BTC/USD'])
         
-        self.listOfCurrencies = []
-        self.listOfCurrencies.append(ethereum)
-        self.listOfCurrencies.append(tether)
+        self.list_of_currencies = []
+        self.list_of_currencies.append(ethereum)
+        self.list_of_currencies.append(tether)
+        self.list_of_currencies.append(binance)
+        self.list_of_currencies.append(bitcoin)
 
-        self.currencyMarket = CurrencyMarket(self.listOfCurrencies, exchange_rates)
+        self.currency_market = CurrencyMarket(self.list_of_currencies, exchange_rates)
 
         self.schedule = RandomActivation(self) # changed from RandomActivation
 
@@ -71,45 +75,40 @@ class MarketModel(Model):
             elif i % 7 == 4:
                 strategy = rsi_strategy
 
-            a = MarketAgent(i, self, strategy, self.currencyMarket) # does nothing for now... 
+            a = MarketAgent(i, self, strategy, self.currency_market) # does nothing for now... 
             self.schedule.add(a)
             self.agents.append(a)
 
     def step(self):
-        # self.currencyMarket.updateExchangeRates(self.round) # makes sure all exchange rates are up to date (IMPORTANT)
+        # self.currency_market.updateExchangeRates(self.round) # makes sure all exchange rates are up to date (IMPORTANT)
         
         self.schedule.step() # runs the step method for all Agents
         
-        self.currencyMarket.orderBook.sortOrdersInOrderBook()
+        self.currency_market.orderBook.sortOrdersInOrderBook()
 
-        print ("OrderBook BEFORE transactions: ")
-        self.currencyMarket.getOrderBook().printOrderBook() # to know what the order book looks like before transactions
+        # print ("OrderBook BEFORE transactions: ")
+        # self.currency_market.getOrderBook().printOrderBook() # to know what the order book looks like before transactions
 
-        self.currencyMarket.price_clearing_mechanism() # do all transactions
+        self.currency_market.price_clearing_mechanism() # do all transactions
 
-        print ("OrderBook AFTER transactions: ")
-        self.currencyMarket.getOrderBook().printOrderBook()
+        # print ("OrderBook AFTER transactions: ")
+        # self.currency_market.getOrderBook().printOrderBook()
 
-        for i in self.agents:
-            print(i, ", wallet: ", i.wallet)
-            print ("wallet value: ", i.currentUSDValueOfWallet, ", diff: ", i.currentUSDValueOfWallet - i.initialUSDValueOfWallet)
+        # for i in self.agents:
+        #     print(i, ", wallet: ", i.wallet)
+        #     print ("wallet value: ", i.currentUSDValueOfWallet, ", diff: ", i.currentUSDValueOfWallet - i.initialUSDValueOfWallet)
 
         self.datacollector.collect(self)
 
         self.round += 1 # go to the next round
 
         print ("-------- A step has happened -------------")
-
-    def getCurrRound(self):
-        return self.round
     
-    def getCurrencyMarket(self):
-        return self.currencyMarket
-
 # --------------------------------------------------------------------------
 
-model = MarketModel(20)
-for i in range(1):
+model = MarketModel(1000)
+for i in range(1000):
+    print (i)
     model.step()
 
 

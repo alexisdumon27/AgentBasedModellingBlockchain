@@ -1,28 +1,23 @@
 from mesa import Agent
-import random
-from numpy import random
-import numpy
-import pandas as pd
-from currency_pairs import currencyPairs, inverseCurrencyPair
 
 class MarketAgent(Agent):
 
-    def __init__(self, unique_id, model, strategy, currencyMarket):
+    def __init__(self, unique_id, model, strategy, currency_market):
         self.unique_id = unique_id
         self.model = model
         self.round = model.round
-        self.currencyMarket = currencyMarket
+        self.currency_market = currency_market
 
         # randomly initialised fields
         self.strategy = strategy
 
-        self.hasMadeOpenOrder = False
-        self.hasMadeClosingOrder = False
-        self.openTransactionWasSuccessfull = False
-        self.closingTransactionWasSuccessfull = False
+        self.has_made_open_order = False
+        self.has_made_closing_order = False
+        self.open_transaction_was_successfull = False
+        self.closing_transaction_was_successfull = False
 
-        self.currentInvestment = {"amount": 0, "boughtCurrency": None, "soldCurrency": None} # an dictionary holding info about current Investment Object
-        self.currentOrder = None
+        self.current_investment = {"amount": 0, "bought_currency": None, "sold_currency": None} # an dictionary holding info about current Investment Object
+        self.current_order = None
 
         self.wallet = {}
         self.createWallet()
@@ -32,7 +27,7 @@ class MarketAgent(Agent):
     
     # start with $100 worth of all possible currencies
     def createWallet(self):
-        for currency in self.currencyMarket.getAvailableCurrencies():
+        for currency in self.currency_market.getAvailableCurrencies():
             self.wallet[currency] = 100 # start with 100 of both currencies
 
     # what happens during one round of the simulation for one agent
@@ -42,89 +37,90 @@ class MarketAgent(Agent):
 
         self.round = self.model.round
         
-        if not self.hasMadeOpenOrder and not self.hasMadeClosingOrder and not self.hasMadeClosingOrder and not self.closingTransactionWasSuccessfull:
-            self.makeOrder("OPEN") # currentOrder is also updated
+        if not self.has_made_open_order and not self.has_made_closing_order and not self.has_made_closing_order and not self.closing_transaction_was_successfull:
+            self.makeOrder("OPEN") # current_order is also updated
             if self.hasACurrentOrder():
-                self.hasMadeOpenOrder = True
-        elif self.hasMadeOpenOrder and not self.openTransactionWasSuccessfull and not self.hasMadeClosingOrder and not self.closingTransactionWasSuccessfull:
+                self.has_made_open_order = True
+        elif self.has_made_open_order and not self.open_transaction_was_successfull and not self.has_made_closing_order and not self.closing_transaction_was_successfull:
             # wait for open order to be successful (Open order not fulfilled yet ... )
-            if self.currentOrder.expiration_time > 0:
-                self.currentOrder.expiration_time -= 1
+            if self.current_order.expiration_time > 0:
+                self.current_order.expiration_time -= 1
             else: 
                 # UPDATE the limit_price of the order (could be too low or too high)
                 self.updateCurrentOrderLimitPrice() # updates for agent
-                # updateOrderBook
-                self.currencyMarket.orderBook.updateAgentOrderLimitPrice(self, self.currentOrder.limit_price)
-        elif self.hasMadeOpenOrder and self.openTransactionWasSuccessfull and not self.hasMadeClosingOrder and not self.closingTransactionWasSuccessfull:
+                self.currency_market.orderBook.updateAgentOrderLimitPriceInOrderBook(self, self.current_order.limit_price) # updates the orderbook withe agents new limit price
+        elif self.has_made_open_order and self.open_transaction_was_successfull and not self.has_made_closing_order and not self.closing_transaction_was_successfull:
             if self.strategy.closingConditionMet(self, self.round):
-                self.makeOrder("CLOSE") # currentOrder is also updated 
-                self.hasMadeClosingOrder = True
-        elif self.hasMadeOpenOrder and self.openTransactionWasSuccessfull and self.hasMadeClosingOrder and not self.closingTransactionWasSuccessfull:
+                self.makeOrder("CLOSE") # current_order is also updated 
+                self.has_made_closing_order = True
+        elif self.has_made_open_order and self.open_transaction_was_successfull and self.has_made_closing_order and not self.closing_transaction_was_successfull:
             # wait for it for open order to be successful
-            print ("wait for however long to close the position (for now // may change later")
-        elif self.hasMadeOpenOrder and self.openTransactionWasSuccessfull and self.hasMadeClosingOrder and self.closingTransactionWasSuccessfull:
-            print ("EVERYTHING IS DONE!!! YOU SHOULD HAVE MADE MONEY")
+            if self.current_order.expiration_time > 0:
+                self.current_order.expiration_time -= 1
+            else: 
+                # UPDATE the limit_price of the order (could be too low or too high)
+                self.updateCurrentOrderLimitPrice() # updates for agent
+                self.currency_market.orderBook.updateAgentOrderLimitPriceInOrderBook(self, self.current_order.limit_price) # updates the orderbook with agents new limit price
+        elif self.has_made_open_order and self.open_transaction_was_successfull and self.has_made_closing_order and self.closing_transaction_was_successfull:
             # if agent has openned order, done open transac, closed order, and done closing transac
             self.initialiseParameters()
         
         self.currentUSDValueOfWallet = self.getUSDWalletValue()
         
     def hasACurrentInvestment(self):
-        if self.currentInvestment == {"amount": 0, "boughtCurrency": None, "soldCurrency": None}:
+        if self.current_investment == {"amount": 0, "bought_currency": None, "sold_currency": None}:
             return False
         else: True
 
     def hasACurrentOrder(self):
-        return self.currentOrder != None
+        return self.current_order != None
 
     def initialiseParameters(self):
-        self.hasMadeOpenOrder = False
-        self.hasMadeClosingOrder = False
-        self.openTransactionWasSuccessfull = False
-        self.closingTransactionWasSuccessfull = False
-        self.currentOrder = None
-        self.currentInvestment = {"amount": 0, "boughtCurrency": None, "soldCurrency":None}
+        self.has_made_open_order = False
+        self.has_made_closing_order = False
+        self.open_transaction_was_successfull = False
+        self.closing_transaction_was_successfull = False
+        self.current_order = None
+        self.current_investment = {"amount": 0, "bought_currency": None, "sold_currency":None}
 
     def makeOrder(self, orderType):
-        # looks at what strategy returns // will be abstracted by currencyMarket and strategy object
+        # looks at what strategy returns // will be abstracted by currency_market and strategy object
         if orderType == "OPEN":
             possibleOrder = self.strategy.makeOpenOrder(self, self.round)
         elif orderType == "CLOSE":
             possibleOrder = self.strategy.makeCloseOrder(self, self.round)
 
         if possibleOrder != None:
-            self.currentOrder = possibleOrder
-            self.currencyMarket.getOrderBook().addOrder(self.currentOrder)
+            self.current_order = possibleOrder
+            self.currency_market.getOrderBook().addOrder(self.current_order)
 
     def updateWallet(self, bought_currency, sold_currency, bought_currency_amount, sold_currency_amount):
         self.wallet[bought_currency] += bought_currency_amount
         self.wallet[sold_currency] -= sold_currency_amount
     
     def updateCurrentOrderAmount(self, amount):
-        self.currentOrder.amountOfBuyingCurrency -= amount
+        self.current_order.amount_of_buying_currency -= amount
 
     def updateCurrentOrderLimitPrice(self):
         """
             change to use the new limit price || remove order
         """
-        buyCurrency = self.currentOrder.buyCurrency.getName()
-        sellCurrency = self.currentOrder.sellCurrency.getName()
-        direction = currencyPairs[buyCurrency][sellCurrency]["direction"]
-
-        if direction == "buy":
-            self.currentOrder.limit_price *= 1.02 # increase the limit_price by 2% (limit_price was too low)
-        else: self.currentOrder.limit_price *= 0.98 # decrease by 2% (limit_price was too high)
+        buy_currency = self.current_order.buy_currency
+        sell_currency = self.current_order.sell_currency
+        symbol = buy_currency.symbol + "/" + sell_currency.symbol
+        current_exchange_rate = self.currency_market.getCurrenciesExchangeRate(symbol, self.model.round)
+        self.current_order.limit_price = self.strategy.getLimitPrice(current_exchange_rate) # update the limit_price !!!!
 
     def updateCurrentInvestment(self, amount_sold, order):
-        self.currentInvestment["amount"] += amount_sold # amount of currency it sold to buy desired currency
-        self.currentInvestment["boughtCurrency"] = order[1][1]
-        self.currentInvestment["soldCurrency"] = order[1][2]
+        self.current_investment["amount"] += amount_sold # amount of currency it sold to buy desired currency
+        self.current_investment["bought_currency"] = order[1][1]
+        self.current_investment["sold_currency"] = order[1][2]
 
     def updateOrderStatus(self, type):
         if type == "OPEN":
-            self.openTransactionWasSuccessfull = True
+            self.open_transaction_was_successfull = True
         else: 
-            self.closingTransactionWasSuccessfull = True
+            self.closing_transaction_was_successfull = True
 
     def getUSDWalletValue(self):
         total = 0

@@ -1,13 +1,12 @@
 from numpy import random
 import pandas as pd
-from currency_pairs import currencyPairs, inverseCurrencyPair
 
 class CurrencyMarket:
     """
         Object that contains information necessary for AGENTS to make orders and transact with one another
     """
-    def __init__(self, listOfCurrencies, exchange_rates):
-        self.currencies = listOfCurrencies
+    def __init__(self, list_of_currencies, exchange_rates):
+        self.currencies = list_of_currencies
         self.exchange_rates = exchange_rates
         self.orderBook = OrderBook()
         
@@ -20,14 +19,16 @@ class CurrencyMarket:
     def getCurrenciesExchangeRate(self, symbol, round):
         return self.exchange_rates[symbol][round]
 
-    def matchBuyAndSellOrders(self, buyOrders, sellOrders):
+    def matchBuyAndSellOrders(self, buy_orders, sell_orders):
+        # which is buy_orders and sell_orders is arbitrary -- does not make a difference
+
         buying_orders_keys_to_delete = [] # lists of the keys of the orders to delete
         selling_orders_keys_to_delete = []
 
         number_of_transactions = 0
-        # see if there is a match in the order Book
-        # a match is two Orders with same currency pair where the amount that can exchaged is the same
-        for order in buyOrders.items():
+
+        # Match buying orders with selling orders based on limit_price and amount
+        for order in buy_orders.items():
             agent_key = order[0]
             buy_order_values = order[1]
 
@@ -35,7 +36,7 @@ class CurrencyMarket:
             order_type = buy_order_values[3]
             limit_price = buy_order_values[4]
 
-            for other_order in sellOrders.items():
+            for other_order in sell_orders.items():
                 other_agent_key = other_order[0]
                 sell_order_values = other_order[1]
 
@@ -56,11 +57,6 @@ class CurrencyMarket:
                     avg_price = (other_limit_price + limit_price) / 2
                     buy_order_amount_selling_other_currency = amount * avg_price 
                     sell_order_amount_selling_other_currency = other_amount / avg_price
-                
-
-                    print ("amount needed to sell in order to buy: ", buy_order_amount_selling_other_currency)
-                    print ("amount: ", amount, " : ", avg_price, " , other amount: ", other_amount)
-                    print ("amount needed to sell in order to buy for selling side", sell_order_amount_selling_other_currency)
 
                     # agent_key -- wants a bigger exchange; other_agent_key satisfied but not AgentKey
                     if self.isBuyOrderBiggerThanSellOrder(buy_order_values, sell_order_values, buy_order_amount_selling_other_currency, sell_order_amount_selling_other_currency): 
@@ -89,24 +85,25 @@ class CurrencyMarket:
                             other_agent_key.updateOrderStatus(other_order_type)
                         break # exit the loop to match buying agent with a selling agent -- buying agent is satisfied!
         
-        print ("In this round there were: ", number_of_transactions, " transactions")
+        # print ("In this round there were: ", number_of_transactions, " transactions")
         # delete keys from orderbook
         for i in buying_orders_keys_to_delete:
-            del buyOrders[i]
+            del buy_orders[i]
 
         for i in selling_orders_keys_to_delete:
-            del sellOrders[i]
+            del sell_orders[i]
 
     # https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0164603&type=printable <- for reordering orderbook
     def price_clearing_mechanism(self):
         """ ............ """
         orderbook = self.getOrderBook().getOrders()
         for possible_currency_exchanges in orderbook:
-            orders = orderbook[possible_currency_exchanges]
-            buyOrders = orders["buy"]
-            sellOrders = orders["sell"]
+            orders = orderbook[possible_currency_exchanges] # returns dictionary  { 'ETH/USDT' : {agent 1 : [] ... }, 'USDT/ETH': { agent 2: [] ... }}
+            exchange_symbol_keys = list(orders.keys())
+            exchange_direction_0_orders = orders[exchange_symbol_keys[0]]
+            exchange_direction_1_orders = orders[exchange_symbol_keys[1]]
             
-            self.matchBuyAndSellOrders(buyOrders, sellOrders)
+            self.matchBuyAndSellOrders(exchange_direction_0_orders, exchange_direction_1_orders)
 
     def isBuyOrderBiggerThanSellOrder(self, buy_order_values, sell_order_values, buy_order_amount_selling, sell_order_amount_amount_selling):
         amount = buy_order_values[0]
@@ -118,22 +115,18 @@ class CurrencyMarket:
 
 class Currency:
 
-    def __init__(self, name, conversionSymbol, type, amountInCirculation, data):
+    def __init__(self, name, conversion_symbol, type, amount_in_circulation, data):
         self.name = name
-        self.symbol = conversionSymbol
+        self.symbol = conversion_symbol
         self.type = type
-        self.amountInCirculation = amountInCirculation
-        self.data = data
+        self.amount_in_circulation = amount_in_circulation
+        self.data = data # data = exchange_rates['symbol/USD']
         self.transactions = 0
 
     # necessary to find the price in USD
     # maybe better if I do not pass the data as a parameter ... 
     def getPriceAtRound(self, round):
-        conversionSymbol = "USD/" + self.symbol
-        return self.data[conversionSymbol].values[round]
-
-    def getData(self):
-        return self.data
+        return self.data[round]
     
     def getName(self):
         return self.name
@@ -149,14 +142,10 @@ class Currency:
 
 class Exchange_Rates:
     def __init__(self, exchange_rates_data):
-        
         self.data =  exchange_rates_data
 
     def getPriceAtRound(self, round, symbol):
         return self.data[symbol].values[round]
-    
-    def getType(self):
-        return self.type
 
 class OrderBook:
     """ 
@@ -174,55 +163,86 @@ class OrderBook:
                     "sell" : { "agent3": [10, 1027, ethereum], "agent4": [12, 1027, ethereum] }
                 },
         }
+
+        {
+            (‘ETH/USDT’, ‘USDT/ETH”) : 
+                {
+                    'ETH/USDT': { buy orders …  },
+                    'USDT/ETH' : { sell orders … }
+                },
+            (‘ETH/BNB’, ‘BNB/ETH’) : 
+                {
+                    ‘ETH/BNB“ { buy orders …},
+                    ‘BNB/ETH” : { sell orders
+                }
+                ...........
+        }
+
     """
 
     def __init__(self) -> None:
-        self.orders = {"ETH/USDT" : {"buy":{}, "sell":{}}} # all possible currency pairs
+        # self.orders = {"ETH/USDT" : {"buy":{}, "sell":{}}} # all possible currency pairs
+        self.orders = {
+            ('ETH/USDT', 'USDT/ETH') : { 'ETH/USDT' : {}, 'USDT/ETH' : {} },
+            ('ETH/BNB', 'BNB/ETH') : { 'ETH/BNB' : {}, 'BNB/ETH' : {} },
+            ('ETH/BTC', 'BTC/ETH') : { 'ETH/BTC' : {}, 'BTC/ETH' : {} },
+            ('BNB/BTC', 'BTC/BNB') : { 'BNB/BTC' : {}, 'BTC/BNB' : {} },
+            ('BNB/USDT', 'USDT/BNB') :{ 'BNB/USDT' : {}, 'USDT/BNB' : {} },
+            ('BTC/USDT', 'USDT/BTC') : { 'BTC/USDT' : {}, 'USDT/BTC' : {} },
+        }
+        # ^if you have the time obvs make this initialise in a nicer way ;)
 
     def addOrder(self, order):
         """
             adds an order object into self.orders {}
         """
-        orderType = order.order_type
-        buyCurrency = order.buyCurrency
-        sellCurrency = order.sellCurrency
-        amount = order.amountOfBuyingCurrency
+        order_type = order.order_type
+        buy_currency = order.buy_currency
+        sell_currency = order.sell_currency
+        amount = order.amount_of_buying_currency
         agent = order.agent
         limit_price = order.limit_price
 
-        exchangeSymbol = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["exchange_symbol"] # what is the exchange symbol e.g. "ETH/USDT"
-        exchangeDirection = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["direction"] # is it a buy or sell with respect to first currency
+        orderbook_key = self.getOrderBookKey(buy_currency, sell_currency)
+        exchange_direction = self.getExchangeSymbol(buy_currency, sell_currency)
 
-        # append it as a key-value pair
-        self.orders[exchangeSymbol][exchangeDirection][agent] = [amount, buyCurrency, sellCurrency, orderType, limit_price] # later will add price
+        self.orders[orderbook_key][exchange_direction][agent] = [amount, buy_currency, sell_currency, order_type, limit_price]
+
+    def getOrderBookKey(self, buy_currency, sell_currency):
+        buy_currency_symbol = buy_currency.symbol
+        sell_currency_symbol = sell_currency.symbol
+        exhange_symbol = buy_currency_symbol + "/" + sell_currency_symbol
+        for key in self.orders.keys():
+            key_0 = key[0]
+            key_1 = key[1]
+            if (key_0 == exhange_symbol or key_1 == exhange_symbol):
+                return key
+
+    def getExchangeSymbol(self, buy_currency, sell_currency):
+        return buy_currency.symbol + "/" + sell_currency.symbol
 
     def sortOrdersInOrderBook(self):
-        for exchange_symbols in self.orders.keys():
-            currency_pair_orders = self.orders[exchange_symbols]
-            currency_pair_orders["buy"] = {k: v for k, v in sorted(currency_pair_orders["buy"].items(), key=lambda item: item[1][-1], reverse = True)}
-            currency_pair_orders["sell"] = {k: v for k, v in sorted(currency_pair_orders["sell"].items(), key=lambda item: item[1][-1], reverse = False)}
-
-
-    # BUY --> ascending and SELL --> ascending
-    def sortNewOrder(self, exchangeSymbol, exchangeDirection):
-        ordering = exchangeDirection == "buy"
-        orders_of_type = self.orders[exchangeSymbol][exchangeDirection]
-        {k: v for k, v in sorted(orders_of_type.items(), key=lambda item: item[1][-1], reverse = ordering)}
+        # DOES NOT WORK YET
+        # for exchange_symbols in self.orders.keys():
+        #     currency_pair_orders = self.orders[exchange_symbols]
+        #     currency_pair_orders["buy"] = {k: v for k, v in sorted(currency_pair_orders["buy"].items(), key=lambda item: item[1][-1], reverse = True)}
+        #     currency_pair_orders["sell"] = {k: v for k, v in sorted(currency_pair_orders["sell"].items(), key=lambda item: item[1][-1], reverse = False)}
+        return 27
 
     def getOrders(self):
         return self.orders
     
     def updateOrder(self, order, amount):
+        # it receives an order array from the orderbook [amount, buy_currency, sell_currency, orderType, limit_price] ... 
         order[1][0] -= amount
     
-    def updateAgentOrderLimitPrice(self, agent, new_limit_price):
-        buyCurrency = agent.currentOrder.buyCurrency.getName()
-        sellCurrency = agent.currentOrder.sellCurrency.getName()
-        exchangeSymbol = currencyPairs[buyCurrency][sellCurrency]["exchange_symbol"]
-        exchangeDirection = currencyPairs[buyCurrency][sellCurrency]["direction"]
-        self.orders[exchangeSymbol][exchangeDirection][agent][-1] = new_limit_price
-
-        self.sortNewOrder(exchangeSymbol, exchangeDirection)
+    def updateAgentOrderLimitPriceInOrderBook(self, agent, new_limit_price):
+        # a bit of a weird method ... could it be deleted ?
+        buy_currency = agent.current_order.buy_currency
+        sell_currency = agent.current_order.sell_currency
+        orderbook_key = self.getOrderBookKey(buy_currency, sell_currency)
+        exchange_direction = self.getExchangeSymbol(buy_currency, sell_currency)
+        self.orders[orderbook_key][exchange_direction][agent][-1] = new_limit_price
 
     def printOrderBook(self):
         """ visual representation of order book """

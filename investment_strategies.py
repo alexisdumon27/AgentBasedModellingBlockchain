@@ -1,19 +1,17 @@
 from cmath import nan
 import random
 import numpy
-import pandas as pd
-from currency_pairs import currencyPairs
 
 
 class Order:
     """
         a data structure containing all the relevant information for the order request of an agent
     """
-    def __init__(self, orderType, buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time):
+    def __init__(self, orderType, buy_currency, sell_currency, amount_of_buying_currency, round, agent, limit_price, expiration_time):
         self.order_type = orderType # OPEN or CLOSE order
-        self.buyCurrency = buyCurrency # currency agent wants to buy
-        self.sellCurrency = sellCurrency # currency agent will sell in order to buy
-        self.amountOfBuyingCurrency = amountOfBuyingCurrency # amount of buy currency agent wants to own :: DEPEND ON EXCHANGE_RATE
+        self.buy_currency = buy_currency # currency agent wants to buy
+        self.sell_currency = sell_currency # currency agent will sell in order to buy
+        self.amount_of_buying_currency = amount_of_buying_currency # amount of buy currency agent wants to own :: DEPEND ON EXCHANGE_RATE
         self.timestep = round # 
         self.agent = agent #
         self.expiration_time = expiration_time
@@ -28,16 +26,14 @@ class Strategy:
         self.name = strategy_name
         self.exchange_rates_data = exchange_rates_data
         # agent_risk_level
-
-        self.order_id = 0
         pass
 
-    def getAmountOfBuyingCurrency(self, exchange_rate, direction, max_amount_to_sell):
+    def getAmountOfBuyingCurrency(self, exchange_rate, max_amount_to_sell):
         # should buy amount proportional to exchange_rate and it should not exceed the max amount of the currency it is selling
         amount = 0.00 # go through all the numbers until you reach the max amount that they can sell
         while amount < 1000000:
             amount += 0.01
-            if direction == "buy" and exchange_rate > 1:
+            if exchange_rate > 1:
                 if amount * exchange_rate > max_amount_to_sell:
                     amount -= 0.01
                     return amount
@@ -46,34 +42,32 @@ class Strategy:
                     amount -= 0.01
                     return amount
 
-    def getLimitPrice(self, direction, exchange_rate):
+    def getLimitPrice(self, exchange_rate):
         # https://arxiv.org/pdf/cond-mat/0103600.pdf
-        random_gauss_factor = self.getRandomDrawFromGaussian(direction) # to add randomness in limit_prices
+        random_gauss_factor = self.getRandomDrawFromGaussian() # to add randomness in limit_prices
         limit_price = 0
         # WHAT AM I DOING HERE ???
         while limit_price <= 0:
             limit_price = exchange_rate * random_gauss_factor
         return limit_price # agent willing to buy at a slightly higher price
     
-    def getRandomDrawFromGaussian(self, direction):
+    def getRandomDrawFromGaussian(self):
         # For orders: μ = 0.98 / 1.02, σmin = 0.01 and σmax = 0.003.
-        mean = 0.98
-        if direction == "buy":
-            mean = 1.02
+        mean = 1
         return numpy.random.normal(loc = mean, scale = random.uniform(0.003, 0.01))
 
     def makeOpenOrder(self, agent, round):
         """ wishes to exchange X for Y """
         currencies_in_wallet = random.sample(list(agent.wallet.keys()), len(list(agent.wallet.keys())))
-        currencies_in_market = random.sample(agent.currencyMarket.getAvailableCurrencies(), len(agent.currencyMarket.getAvailableCurrencies()))
+        currencies_in_market = random.sample(agent.currency_market.getAvailableCurrencies(), len(agent.currency_market.getAvailableCurrencies()))
         exchanging_currencies = self.findCurrencyPairToInvest(currencies_in_market, currencies_in_wallet, round) 
         if exchanging_currencies == None: 
             return None
         else:
             # creates an ORDER
-            buyCurrency = exchanging_currencies[0]
-            sellCurrency = exchanging_currencies[1]
-            return self.sendOrderRequest(agent, buyCurrency, sellCurrency)
+            buy_currency = exchanging_currencies[0]
+            sell_currency = exchanging_currencies[1]
+            return self.sendOrderRequest(agent, buy_currency, sell_currency)
 
     def findCurrencyPairToInvest(self, currencies_in_market, currencies_in_wallet, round):
         for possible_selling_currency in currencies_in_wallet:
@@ -90,51 +84,43 @@ class Strategy:
                     return [possible_buying_currency, possible_selling_currency]
         return None
 
-    def sendOrderRequest(self, agent, buyCurrency, sellCurrency):
+    def sendOrderRequest(self, agent, buy_currency, sell_currency):
         
-        exchange_rate_symbol = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["exchange_symbol"]
-        exchange_rate = agent.currencyMarket.getCurrenciesExchangeRate(exchange_rate_symbol, agent.round)
-        direction = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["direction"]
-        limit_price = self.getLimitPrice(direction, exchange_rate) # always given through (ETH/USDT)
-        amountOfBuyingCurrency = self.getAmountOfBuyingCurrency(limit_price, direction, agent.wallet[sellCurrency]) # AGENT WANTS TO BUY 10 of currency
+        exchange_rate_symbol = buy_currency.symbol + "/" + sell_currency.symbol
+        exchange_rate = agent.currency_market.getCurrenciesExchangeRate(exchange_rate_symbol, agent.round)
+
+        limit_price = self.getLimitPrice(exchange_rate)
+        amount_of_buying_currency = self.getAmountOfBuyingCurrency(limit_price, agent.wallet[sell_currency]) # AGENT WANTS TO BUY 10 of currency
         
         expiration_time = random.choice(range(2,5))
 
-        return Order("OPEN", buyCurrency, sellCurrency, amountOfBuyingCurrency, agent.round, agent, limit_price, expiration_time)
+        return Order("OPEN", buy_currency, sell_currency, amount_of_buying_currency, agent.round, agent, limit_price, expiration_time)
     
     def closingConditionMet(self, agent, round):
         """" Agent's strategy for when to close the position """
-        """
-            if support is broken and the market is in downward trend
-        """
-        investmentToClose = agent.currentInvestment
+        investmentToClose = agent.current_investment
 
-        buyCurrency = investmentToClose["soldCurrency"] # currency you used to invest
-        sellCurrency = investmentToClose["boughtCurrency"] # currency you invested in
+        buy_currency = investmentToClose["sold_currency"] # currency you used to invest
+        sell_currency = investmentToClose["bought_currency"] # currency you invested in
 
-        exchange_rate_symbol = buyCurrency.symbol + "/" + sellCurrency.symbol
-                
-        exchange_rate_data = self.exchange_rates_data[exchange_rate_symbol]
-        exchange_rate = agent.currencyMarket.getCurrenciesExchangeRate(exchange_rate_symbol, agent.round)
+        exchange_rate_symbol = buy_currency.symbol + "/" + sell_currency.symbol
 
         return self.haveStrategySpecificClosingConditionsBeenMet(round, exchange_rate_symbol)
     
     def makeCloseOrder(self, agent, round):
         """ wishes to exchange Y for X """
 
-        investmentToClose = agent.currentInvestment # close current investment // investment is a dictionary object
+        investment_to_close = agent.current_investment # close current investment // investment is a dictionary object
+        buy_currency = investment_to_close["sold_currency"] # currency you used to invest
+        sell_currency = investment_to_close["bought_currency"] # currency you invested in
+        amount_of_buying_currency = investment_to_close["amount"]
 
-        buyCurrency = investmentToClose["soldCurrency"] # currency you used to invest
-        sellCurrency = investmentToClose["boughtCurrency"] # currency you invested in
-        amountOfBuyingCurrency = investmentToClose["amount"] #
-        
-        symbol = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["exchange_symbol"]
-        direction = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["direction"]
-        exchange_rate = agent.currencyMarket.getCurrenciesExchangeRate(symbol, agent.round)
-        limit_price = self.getLimitPrice(direction, exchange_rate)
+        symbol = buy_currency.symbol + "/" + sell_currency.symbol
+        exchange_rate = agent.currency_market.getCurrenciesExchangeRate(symbol, agent.round)
+        limit_price = self.getLimitPrice(exchange_rate)
 
         expiration_time = random.choice(range(2,5))
-        return Order("CLOSE", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time)
+        return Order("CLOSE", buy_currency, sell_currency, amount_of_buying_currency, round, agent, limit_price, expiration_time)
 
 class RandomStrategy(Strategy):
 
@@ -153,31 +139,28 @@ class RandomStrategy(Strategy):
 
     def makeOpenOrder(self, agent, round):
         """ wishes to exchange X for Y """
-        self.order_id += 1
 
         agentWallet = agent.wallet
         currenciesInWallet = list(agentWallet.keys())
-        sellCurrency = random.choice(currenciesInWallet) # currency agent has in its wallet that he wants to exchange (selling this to buy)
+        sell_currency = random.choice(currenciesInWallet) # currency agent has in its wallet that he wants to exchange (selling this to buy)
 
-        currencies = agent.currencyMarket.getAvailableCurrencies() # list of available currencies in the market
-        buyCurrency = None
-        while buyCurrency == None:
+        currencies = agent.currency_market.getAvailableCurrencies() # list of available currencies in the market
+        buy_currency = None
+        while buy_currency == None:
             potentialCurrency = random.choice(currencies)
-            if potentialCurrency != sellCurrency:
-                buyCurrency = potentialCurrency
+            if potentialCurrency != sell_currency:
+                buy_currency = potentialCurrency
         
-        symbol = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["exchange_symbol"]
-        direction = currencyPairs[buyCurrency.getName()][sellCurrency.getName()]["direction"]
-        exchange_rate = agent.currencyMarket.getCurrenciesExchangeRate(symbol, agent.round)
+        exchange_symbol = buy_currency.symbol + "/" + sell_currency.symbol
+        exchange_rate = agent.currency_market.getCurrenciesExchangeRate(exchange_symbol, agent.round)
 
-        limit_price = self.getLimitPrice(direction, exchange_rate)
+        limit_price = self.getLimitPrice(exchange_rate)
         
-        amountOfBuyingCurrency = self.getAmountOfBuyingCurrency(exchange_rate, direction, agent.wallet[sellCurrency]) # AGENT WANTS TO BUY 10 of currency
+        amount_of_buying_currency = self.getAmountOfBuyingCurrency(exchange_rate, agent.wallet[sell_currency]) # AGENT WANTS TO BUY 10 of currency
 
         expiration_time = random.choice(range(2,5))
 
-        # AMOUNTOFSELLINGCURRENCY is useless here
-        return Order("OPEN", buyCurrency, sellCurrency, amountOfBuyingCurrency, round, agent, limit_price, expiration_time) # creates an ORDER
+        return Order("OPEN", buy_currency, sell_currency, amount_of_buying_currency, round, agent, limit_price, expiration_time) # creates an ORDER
 
 class PivotPointStrategy(Strategy):
     """
@@ -216,11 +199,12 @@ class PivotPointStrategy(Strategy):
 
     def getImportantPoints(self, exchange_rate_data, round):
         """ formula: pivot_point = (prev_high + prev_low + prev_close) / 3 """
-        window = round - 7 # 
-        exchange_rate_data_past_7_days = exchange_rate_data.iloc[range(window, round)]
-        max = exchange_rate_data_past_7_days.max()
-        min = exchange_rate_data_past_7_days.min()
-        close = exchange_rate_data_past_7_days.iloc[-1] # last value
+        day_in_minutes = 7 * 24 * 60
+        window = round - day_in_minutes # 
+        exchange_rate_data_past_day = exchange_rate_data.iloc[range(window, round)]
+        max = exchange_rate_data_past_day.max()
+        min = exchange_rate_data_past_day.min()
+        close = exchange_rate_data_past_day.iloc[-1] # last value
 
         pivot_point = (max + min + close) / 3
         return [pivot_point, max, min, close]
@@ -282,7 +266,8 @@ class MovingAverageStrategy(Strategy):
         return False
     
     def isPriceMovementShowingStrongBuy(self, symbol, round):
-        if self.isXDayMovingAverageRising(round, 5, symbol) and self.hasPriceCrossedFromBelowXDayMovingAverage(round, 5, symbol): 
+        _5_days_in_min = 5 * 24 * 60
+        if self.isXDayMovingAverageRising(round, _5_days_in_min, symbol) and self.hasPriceCrossedFromBelowXDayMovingAverage(round, _5_days_in_min, symbol): 
             return True
 
     def hasPriceCrossedFromBelowXDayMovingAverage(self, round, range, symbol):
@@ -304,8 +289,8 @@ class MovingAverageStrategy(Strategy):
         return False
 
     def isComparingMovingAveragesShowingStrongBuy(self, symbol, round):
-        shorter_period = 5
-        longer_period = 20
+        shorter_period = 5 * 24 * 60
+        longer_period = 20 * 24 * 60
         if (self.isXDayMovingAverageRising(round, shorter_period, symbol) and self.isXDayMovingAverageRising(round, longer_period, symbol)
             and self.hasShorterPeriodCrossedLongerPeriodFromBelow(round, shorter_period, longer_period, symbol) ):
             return True
@@ -331,7 +316,8 @@ class MovingAverageStrategy(Strategy):
         return total / period
 
     def isPriceMovementShowingStrongSell(self, symbol, round):
-        if self.isXDayMovingAverageFalling(round, 5, symbol) and self.hasPriceCrossedFromAboveXDayMovingAverage(round, 5, symbol): 
+        _5_days_in_min = 5 * 24 * 60
+        if self.isXDayMovingAverageFalling(round, _5_days_in_min, symbol) and self.hasPriceCrossedFromAboveXDayMovingAverage(round, _5_days_in_min, symbol): 
             return True
 
     def isXDayMovingAverageFalling(self, round, range, symbol):
@@ -352,8 +338,8 @@ class MovingAverageStrategy(Strategy):
         return False
 
     def isComparingMovingAveragesShowingStrongSell(self, symbol, round):
-        shorter_period = 5
-        longer_period = 20
+        shorter_period = 5 * 24 * 60
+        longer_period = 20 * 24 * 60
         if (self.isXDayMovingAverageFalling(round, shorter_period, symbol) and self.isXDayMovingAverageFalling(round, longer_period, symbol)
             and self.hasShorterPeriodCrossedLongerPeriodFromAbove(round, shorter_period, longer_period, symbol) ):
             return True
