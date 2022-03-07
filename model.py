@@ -5,29 +5,22 @@ import pandas as pd
 from investment_strategies import MACDStrategy, MovingAverageStrategy, PivotPointStrategy, RSIStrategy, Strategy, RandomStrategy
 from agents import MarketAgent
 from currency_market import CurrencyMarket, Currency
+from dataCollectorMethods import *
 
-def getNumberOfEthereumTransactions(model) :
-    return model.list_of_currencies[0].getNumOfTransactions()
+exchange_rates = pd.read_csv('Data/exchange_rates.csv')
 
-def totalTransactions(model):
-    total = 0
-    for currency in model.list_of_currencies:
-        total += currency.getNumOfTransactions()
-    return total
 
 # ethereumData = pd.read_csv('Data/cleanedEuthereumData.csv')
 # tetherData = pd.read_csv('Data/cleanedTetherData.csv')
 
-exchange_rates = pd.read_csv('Data/exchange_rates.csv')
-
 class MarketModel(Model):
-    def __init__(self, num_agents = 10):
+    def __init__(self, num_agents = 10, currency_0 = "BNB", currency_1 = "BTC"):
         self.round = 10 # index keeping count of the round of simulation
 
-        ethereum = Currency("ethereum", "ETH", "crypto", 100, exchange_rates['ETH/USD'])
-        tether = Currency('tether', "USDT", "fiat-backed", 100, exchange_rates['USDT/USD'])
-        binance = Currency('binance', "BNB", "fiat-backed", 100, exchange_rates['BNB/USD'])
-        bitcoin = Currency('bitcoin', "BTC", "fiat-backed", 100, exchange_rates['BTC/USD'])
+        ethereum = Currency("Ethereum", "ETH", "crypto", 100, exchange_rates['ETH/USD'])
+        tether = Currency('Tether', "USDT", "fiat-backed", 100, exchange_rates['USDT/USD'])
+        binance = Currency('Binance', "BNB", "fiat-backed", 100, exchange_rates['BNB/USD'])
+        bitcoin = Currency('Bitcoin', "BTC", "fiat-backed", 100, exchange_rates['BTC/USD'])
         
         self.list_of_currencies = []
         self.list_of_currencies.append(ethereum)
@@ -42,9 +35,35 @@ class MarketModel(Model):
         self.agents = [] # list that contains all MarketAgent objects
         self.createAgents(num_agents) #
 
+        self.bnb_usd = exchange_rates["BNB/USD"][self.round]
+        self.bnb_usdt = exchange_rates["BNB/USDT"][self.round]
+        self.bnb_eth = exchange_rates["BNB/ETH"][self.round]
+        self.bnb_btc = exchange_rates["BNB/BTC"][self.round]
+
+        self.currency_0 = currency_0
+        self.currency_1 = currency_1
+        self.desired_exchange_rate = exchange_rates[self.currency_0 + "/" + self.currency_1][self.round]
+
         #### for DATA collection ### 
         self.datacollector = DataCollector(
             model_reporters = {
+                                "BNB/USD" : getBNBtoUS,
+                                "BNB/USDT" : getBNBtoUSDT,
+                                "BNB/BTC" : getBNBtoBTC,
+                                "BNB/ETH" : getBNBtoETH,
+                                "desired_exchange" : getDesiredExchangeRate,
+
+                                # "ETH/USD" : getBNBDollarPrice,
+                                # "BTC/USD" : getBNBDollarPrice,
+                                # "USDT/USD" : getBNBDollarPrice,
+                                # "most_traded_currency_pair" : getMostTradedCurrPair,
+                                # "ten_most_wealthy_investors" : getMostWealthy,
+
+                                
+                                # "9_day_EMA_BNB/USDT": getBNB_9_day,
+                                # "12_day_EMA_BNB/BTC": ,
+                                # "26_day_EMA_BNB/ETH" ,
+
                                 # "num_of_transactions" : totalTransactions,
                                 # "num_of_ethereum_transactions": getNumberOfEthereumTransactions,
                                 # "tether_price": getTetherPrice,
@@ -80,8 +99,14 @@ class MarketModel(Model):
             self.agents.append(a)
 
     def step(self):
-        # self.currency_market.updateExchangeRates(self.round) # makes sure all exchange rates are up to date (IMPORTANT)
         
+        self.bnb_usd = exchange_rates["BNB/USD"][self.round]
+        self.bnb_usdt = exchange_rates["BNB/USDT"][self.round]
+        self.bnb_btc = exchange_rates["BNB/BTC"][self.round]
+        self.bnb_eth = exchange_rates["BNB/ETH"][self.round]
+        # self.currency_0 = 
+        self.desired_exchange_rate = exchange_rates[self.currency_0 + "/" + self.currency_1][self.round]
+
         self.schedule.step() # runs the step method for all Agents
         
         self.currency_market.orderBook.sortOrdersInOrderBook()
@@ -102,14 +127,14 @@ class MarketModel(Model):
 
         self.round += 1 # go to the next round
 
-        print ("-------- A step has happened -------------")
+        # print ("-------- A step has happened -------------")
     
 # --------------------------------------------------------------------------
 
-model = MarketModel(1000)
-for i in range(1000):
-    print (i)
-    model.step()
+# model = MarketModel(100)
+# for i in range(1000):
+#     print (i)
+#     model.step()
 
 
 print("")
