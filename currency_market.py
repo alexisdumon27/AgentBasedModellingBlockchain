@@ -8,13 +8,13 @@ class CurrencyMarket:
     def __init__(self, list_of_currencies, exchange_rates):
         self.currencies = list_of_currencies
         self.exchange_rates = exchange_rates
-        self.orderBook = OrderBook()
+        self.order_book = OrderBook()
         
     def getAvailableCurrencies(self):
         return self.currencies
     
     def getOrderBook(self):
-        return self.orderBook
+        return self.order_book
 
     def getCurrenciesExchangeRate(self, symbol, round):
         return self.exchange_rates[symbol][round]
@@ -63,8 +63,8 @@ class CurrencyMarket:
                         agent_key.updateCurrentState(order, sell_order_amount_selling_other_currency, other_amount, current_order_amount = 1)
                         other_agent_key.updateCurrentState(other_order, other_amount, sell_order_amount_selling_other_currency, order_status = other_order_type)
 
-                        # update agent_key's order in the orderBook -- removes amount sold by other_agent_key
-                        self.orderBook.updateOrder(order, sell_order_amount_selling_other_currency) # will be left with smaller amount remaining
+                        # update agent_key's order in the order_book -- removes amount sold by other_agent_key
+                        self.order_book.updateOrder(order, sell_order_amount_selling_other_currency) # will be left with smaller amount remaining
                         amount -= sell_order_amount_selling_other_currency
                         # adds other_order in the list of checked orders and to the list of keys to delete 
                         selling_orders_keys_to_delete.append(other_agent_key)
@@ -74,8 +74,8 @@ class CurrencyMarket:
                         agent_key.updateCurrentState(order, amount, buy_order_amount_selling_other_currency, order_status = order_type)
                         other_agent_key.updateCurrentState(other_order, buy_order_amount_selling_other_currency, amount, current_order_amount = 1)
 
-                        # update agent_key's order in the orderBook -- removes amount sold by other_agent_key
-                        self.orderBook.updateOrder(other_order, buy_order_amount_selling_other_currency) # will be left with smallet amount remaining
+                        # update agent_key's order in the order_book -- removes amount sold by other_agent_key
+                        self.order_book.updateOrder(other_order, buy_order_amount_selling_other_currency) # will be left with smallet amount remaining
 
                         # agent_key's order has been fulfilled completely // it is added to the list of keys to delete
                         buying_orders_keys_to_delete.append(agent_key)
@@ -178,17 +178,32 @@ class OrderBook:
                 ...........
         }
 
+        change to this... 
+        {
+            "ETH/USDT:USDT/ETH” : 
+                {
+                    'ETH/USDT': { buy orders …  },
+                    'USDT/ETH' : { sell orders … }
+                },
+            "ETH/BNB:BNB/ETH" : 
+                {
+                    ‘ETH/BNB“ { buy orders …},
+                    ‘BNB/ETH” : { sell orders
+                }
+                ...........
+        }
+
     """
 
     def __init__(self) -> None:
         # self.orders = {"ETH/USDT" : {"buy":{}, "sell":{}}} # all possible currency pairs
         self.orders = {
-            ('ETH/USDT', 'USDT/ETH') : { 'ETH/USDT' : {}, 'USDT/ETH' : {} },
-            ('ETH/BNB', 'BNB/ETH') : { 'ETH/BNB' : {}, 'BNB/ETH' : {} },
-            ('ETH/BTC', 'BTC/ETH') : { 'ETH/BTC' : {}, 'BTC/ETH' : {} },
-            ('BNB/BTC', 'BTC/BNB') : { 'BNB/BTC' : {}, 'BTC/BNB' : {} },
-            ('BNB/USDT', 'USDT/BNB') :{ 'BNB/USDT' : {}, 'USDT/BNB' : {} },
-            ('BTC/USDT', 'USDT/BTC') : { 'BTC/USDT' : {}, 'USDT/BTC' : {} },
+            "ETH/USDT:USDT/ETH" : { 'ETH/USDT' : {}, 'USDT/ETH' : {} },
+            "ETH/BNB:BNB/ETH" : { 'ETH/BNB' : {}, 'BNB/ETH' : {} },
+            "ETH/BTC:BTC/ETH" : { 'ETH/BTC' : {}, 'BTC/ETH' : {} },
+            "BNB/BTC:BTC/BNB" : { 'BNB/BTC' : {}, 'BTC/BNB' : {} },
+            "BNB/USDT:USDT/BNB" :{ 'BNB/USDT' : {}, 'USDT/BNB' : {} },
+            "BTC/USDT:USDT/BTC" : { 'BTC/USDT' : {}, 'USDT/BTC' : {} },
         }
         # ^if you have the time obvs make this initialise in a nicer way ;)
 
@@ -213,9 +228,8 @@ class OrderBook:
         sell_currency_symbol = sell_currency.symbol
         exhange_symbol = buy_currency_symbol + "/" + sell_currency_symbol
         for key in self.orders.keys():
-            key_0 = key[0]
-            key_1 = key[1]
-            if (key_0 == exhange_symbol or key_1 == exhange_symbol):
+            symbols = key.split(":")
+            if exhange_symbol in symbols:
                 return key
 
     def getExchangeSymbol(self, buy_currency, sell_currency):

@@ -6,6 +6,7 @@ from investment_strategies import MACDStrategy, MovingAverageStrategy, PivotPoin
 from agents import MarketAgent
 from currency_market import CurrencyMarket, Currency
 from dataCollectorMethods import *
+import json
 
 exchange_rates = pd.read_csv('Data/exchange_rates.csv')
 
@@ -47,31 +48,10 @@ class MarketModel(Model):
         #### for DATA collection ### 
         self.datacollector = DataCollector(
             model_reporters = {
-                                "BNB/USD" : getBNBtoUS,
-                                "BNB/USDT" : getBNBtoUSDT,
-                                "BNB/BTC" : getBNBtoBTC,
-                                "BNB/ETH" : getBNBtoETH,
-                                "desired_exchange" : getDesiredExchangeRate,
-
-                                # "ETH/USD" : getBNBDollarPrice,
-                                # "BTC/USD" : getBNBDollarPrice,
-                                # "USDT/USD" : getBNBDollarPrice,
-                                # "most_traded_currency_pair" : getMostTradedCurrPair,
-                                # "ten_most_wealthy_investors" : getMostWealthy,
-
-                                
-                                # "9_day_EMA_BNB/USDT": getBNB_9_day,
-                                # "12_day_EMA_BNB/BTC": ,
-                                # "26_day_EMA_BNB/ETH" ,
-
-                                # "num_of_transactions" : totalTransactions,
-                                # "num_of_ethereum_transactions": getNumberOfEthereumTransactions,
-                                # "tether_price": getTetherPrice,
-                                # "ethereum_price": getEthereumPrice,
                             },
             agent_reporters= {
                 "Wallets" : "wallet"
-            }
+            },
         )
         self.running = True
         self.datacollector.collect(self)
@@ -104,12 +84,12 @@ class MarketModel(Model):
         self.bnb_usdt = exchange_rates["BNB/USDT"][self.round]
         self.bnb_btc = exchange_rates["BNB/BTC"][self.round]
         self.bnb_eth = exchange_rates["BNB/ETH"][self.round]
-        # self.currency_0 = 
+
         self.desired_exchange_rate = exchange_rates[self.currency_0 + "/" + self.currency_1][self.round]
 
         self.schedule.step() # runs the step method for all Agents
         
-        self.currency_market.orderBook.sortOrdersInOrderBook()
+        self.currency_market.order_book.sortOrdersInOrderBook()
 
         # print ("OrderBook BEFORE transactions: ")
         # self.currency_market.getOrderBook().printOrderBook() # to know what the order book looks like before transactions
@@ -118,6 +98,19 @@ class MarketModel(Model):
 
         # print ("OrderBook AFTER transactions: ")
         # self.currency_market.getOrderBook().printOrderBook()
+
+        orders = {
+            "ETH/USDT:USDT/ETH" : { 'ETH/USDT' : {}, 'USDT/ETH' : {} },
+            "ETH/BNB:BNB/ETH" : { 'ETH/BNB' : {}, 'BNB/ETH' : {} },
+            "ETH/BTC:BTC/ETH" : { 'ETH/BTC' : {}, 'BTC/ETH' : {} },
+            "BNB/BTC:BTC/BNB" : { 'BNB/BTC' : {}, 'BTC/BNB' : {} },
+            "BNB/USDT:USDT/BNB" :{ 'BNB/USDT' : {}, 'USDT/BNB' : {} },
+            "BTC/USDT:USDT/BTC" : { 'BTC/USDT' : {}, 'USDT/BTC' : {} },
+        }
+        order_book_data = self.currency_market.getOrderBook().orders
+        simplified_order_book = self.simplifyOrderBook(order_book_data)
+        with open('orderBookData.JSON', 'w') as json_file:
+            json.dump(simplified_order_book, json_file)
 
         # for i in self.agents:
         #     print(i, ", wallet: ", i.wallet)
@@ -129,12 +122,35 @@ class MarketModel(Model):
 
         # print ("-------- A step has happened -------------")
     
+    # desperatily needs to be cleaned !!! Perhaps BLEACH IT!!!
+    def simplifyOrderBook(self, order_book_data):
+        orders = {
+            "ETH/USDT:USDT/ETH" : { 'ETH/USDT' : {}, 'USDT/ETH' : {} },
+            "ETH/BNB:BNB/ETH" : { 'ETH/BNB' : {}, 'BNB/ETH' : {} },
+            "ETH/BTC:BTC/ETH" : { 'ETH/BTC' : {}, 'BTC/ETH' : {} },
+            "BNB/BTC:BTC/BNB" : { 'BNB/BTC' : {}, 'BTC/BNB' : {} },
+            "BNB/USDT:USDT/BNB" :{ 'BNB/USDT' : {}, 'USDT/BNB' : {} },
+            "BTC/USDT:USDT/BTC" : { 'BTC/USDT' : {}, 'USDT/BTC' : {} },
+        }
+        for item in order_book_data.items():
+            symbol_orders = order_book_data[item[0]]
+            for order in symbol_orders:
+                if symbol_orders[order]:
+                    # get the key
+                    # unwrap the array
+                    for agent_key in symbol_orders[order].keys():
+                        value_array = symbol_orders[order][agent_key]
+                        amount = value_array[0]
+                        limit_price = value_array[-1]
+                        temp = {"amount":amount, "limit_price":limit_price}
+                        orders[item[0]][order] = temp
+        return orders
 # --------------------------------------------------------------------------
 
-# model = MarketModel(100)
-# for i in range(1000):
-#     print (i)
-#     model.step()
+model = MarketModel(3)
+for i in range(1):
+    print (i)
+    model.step()
 
 
 print("")
