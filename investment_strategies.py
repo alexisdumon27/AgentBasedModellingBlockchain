@@ -28,20 +28,14 @@ class Strategy:
         # agent_risk_level
         pass
 
-    def getAmountOfBuyingCurrency(self, exchange_rate, max_amount_to_sell):
-        # should buy amount proportional to exchange_rate and it should not exceed the max amount of the currency it is selling
-        amount = 0.00 # go through all the numbers until you reach the max amount that they can sell
-        while amount < 1000000:
-            amount += 0.01
-            if exchange_rate > 1:
-                if amount * exchange_rate > max_amount_to_sell:
-                    amount -= 0.01
-                    return amount
-            else:
-                if amount > max_amount_to_sell:
-                    amount -= 0.01
-                    return amount
-
+    def getAmountOfBuyingCurrency(self, exchange_rate, limit_price, max_amount_to_sell):
+        # should buy amount proportional to exchange_rate and it should not exceed the max amount of the currency it can sell
+        if exchange_rate > 1:
+            return (max_amount_to_sell / limit_price) - 0.1
+        else:
+            exchange_price = 1 / limit_price
+            return (max_amount_to_sell / exchange_price) - 0.1
+        
     def getLimitPrice(self, exchange_rate):
         # https://arxiv.org/pdf/cond-mat/0103600.pdf
         random_gauss_factor = self.getRandomDrawFromGaussian() # to add randomness in limit_prices
@@ -49,7 +43,9 @@ class Strategy:
         # WHAT AM I DOING HERE ???
         while limit_price <= 0:
             limit_price = exchange_rate * random_gauss_factor
-        return limit_price # agent willing to buy at a slightly higher price
+        if limit_price <= 1:
+            return 1 / limit_price # makes limit_price always one sided
+        return limit_price 
     
     def getRandomDrawFromGaussian(self):
         # For orders: μ = 0.98 / 1.02, σmin = 0.01 and σmax = 0.003.
@@ -90,7 +86,7 @@ class Strategy:
         exchange_rate = agent.currency_market.getCurrenciesExchangeRate(exchange_rate_symbol, agent.round)
 
         limit_price = self.getLimitPrice(exchange_rate)
-        amount_of_buying_currency = self.getAmountOfBuyingCurrency(limit_price, agent.wallet[sell_currency]) # AGENT WANTS TO BUY 10 of currency
+        amount_of_buying_currency = self.getAmountOfBuyingCurrency(exchange_rate, limit_price, agent.wallet[sell_currency]) # AGENT WANTS TO BUY 10 of currency
         
         expiration_time = random.choice(range(2,5))
 
@@ -156,7 +152,7 @@ class RandomStrategy(Strategy):
 
         limit_price = self.getLimitPrice(exchange_rate)
         
-        amount_of_buying_currency = self.getAmountOfBuyingCurrency(exchange_rate, agent.wallet[sell_currency]) # AGENT WANTS TO BUY 10 of currency
+        amount_of_buying_currency = self.getAmountOfBuyingCurrency(exchange_rate, limit_price, agent.wallet[sell_currency])
 
         expiration_time = random.choice(range(2,5))
 
