@@ -55,6 +55,8 @@ class CurrencyMarket:
 
                     # calculate the exchange
                     avg_price = (other_limit_price + limit_price) / 2
+                    print (other_limit_price, " : ", limit_price)
+                    print (avg_price)
                     buy_order_amount_selling_other_currency = amount * avg_price 
                     sell_order_amount_selling_other_currency = other_amount / avg_price
 
@@ -140,45 +142,9 @@ class Currency:
     def addTransaction(self):
         self.transactions += 1
 
-class Exchange_Rates:
-    def __init__(self, exchange_rates_data):
-        self.data =  exchange_rates_data
-
-    def getPriceAtRound(self, round, symbol):
-        return self.data[symbol].values[round]
-
 class OrderBook:
     """ 
         data structure which assembles order objects into a useful dictionary
-        orderbook = { 
-            "ETH/USDT" : <-- this is ultimately what I want
-                {
-                    "buy": { "agent1": [ 'amount', 'limit_price'], "agent2": [12, 1027] },
-                    "sell" : { "agent3": [10, 1027], "agent4": [12, 1027] }
-                },
-                
-            "BTC/ETH" :
-                {
-                    "buy": { "agent1": [10, 1027, bitcoin], "agent2": [12, 1027, bitcoin]},
-                    "sell" : { "agent3": [10, 1027, ethereum], "agent4": [12, 1027, ethereum] }
-                },
-        }
-
-        {
-            (‘ETH/USDT’, ‘USDT/ETH”) : 
-                {
-                    'ETH/USDT': { buy orders …  },
-                    'USDT/ETH' : { sell orders … }
-                },
-            (‘ETH/BNB’, ‘BNB/ETH’) : 
-                {
-                    ‘ETH/BNB“ { buy orders …},
-                    ‘BNB/ETH” : { sell orders
-                }
-                ...........
-        }
-
-        change to this... 
         {
             "ETH/USDT:USDT/ETH” : 
                 {

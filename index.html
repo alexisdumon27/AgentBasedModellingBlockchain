@@ -4,33 +4,33 @@
 <head>
   <script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.noStyle.js"></script>
   <script type="text/javascript" src="orderBookData.JSON"></script>
+  <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/dist/styles/ag-grid.css">
   <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/dist/styles/ag-theme-alpine.css">
 </head>
 <body>
   <h1>Orderbooks</h1>
-  <div id="myGrid" style="height: 600px;width:500px;" class="ag-theme-alpine"></div>
+  <div class = "currency_pair">
+    <div id="eth_usdt_grid" style="height: 600px;width:600px; display: inline-block;" class="ag-theme-alpine"></div>
+    <div id="usdt_eth_grid" style="height: 600px;width:600px; display: inline-block;" class="ag-theme-alpine"></div>
+  </div>
+    
+    
 
   <script type="text/javascript" charset="utf-8">
 
     const testData = {"ETH/USDT:USDT/ETH": {"ETH/USDT": {"0": {"amount": 27, "limit_price": 127, "exchange_price": 0.0027}, "1": {"amount": 13046.074985975187, "limit_price": 130.46174985975188, "exchange_price": 0.007665081919221637}}, "USDT/ETH": {"0": {"amount": 13046.074985975187, "limit_price": 130.46174985975188, "exchange_price": 0.007665081919221637}, "1": {"amount": 13046.074985975187, "limit_price": 130.46174985975188, "exchange_price": 0.007665081919221637}}}, "ETH/BNB:BNB/ETH": {"ETH/BNB": {}, "BNB/ETH": {}}, "ETH/BTC:BTC/ETH": {"ETH/BTC": {}, "BTC/ETH": {}}, "BNB/BTC:BTC/BNB": {"BNB/BTC": {}, "BTC/BNB": {}}, "BNB/USDT:USDT/BNB": {"BNB/USDT": {}, "USDT/BNB": {"0": {"amount": 1372.3055568517361, "limit_price": 13.724055568517361, "exchange_price": 0.07286475889051156}}}, "BTC/USDT:USDT/BTC": {"BTC/USDT": {}, "USDT/BTC": {}}}
 
-    const columnDefs = [
-      { field: "amount" },
-      { field: "exchange_price" },
-      { field: "limit_price" }
-    ];
-
-    // let the grid know which columns to use
-    const gridOptions = {
-      columnDefs: columnDefs
-    };
-
     const url = new URL("http://localhost:5000")
+    
     fetch(url)
         .then(response=>response.json())
-        .then(data=>{ updateOrderbooksDisplay(data); })
+        .then(data => orderbookData = data)
+        .then((orderBookData) => createAnOrderBookTable(orderbookData["ETH/USDT:USDT/ETH"]["USDT/ETH"], "USDT/ETH", "usdt_eth_grid"))
+        .then((orderBookData) => createAnOrderBookTable(orderbookData["ETH/USDT:USDT/ETH"]["ETH/USDT"], "ETH/USDT", "eth_usdt_grid" ))
+        .then ( () => console.log("done second one"))
 
+// .then(data => obj = data)
     function updateOrderbooksDisplay(data) {
         // this works!!!
         possible_exchanges = ["ETH/USDT:USDT/ETH", "ETH/BNB:BNB/ETH", "ETH/BTC:BTC/ETH", "BNB/BTC:BTC/BNB", "BNB/USDT:USDT/BNB", "BTC/USDT:USDT/BTC"]
@@ -38,33 +38,68 @@
 
         console.log("prout prout");
 
-        eth_usdt_data = []
+        row_data = []
+
         for (let i = 0; i < possible_exchanges.length; i++) {
             possible_exchange_data = data[possible_exchanges[i]]
-            console.log(possible_exchange_data)
             directions = possible_directions[possible_exchanges[i]]
-            console.log(directions)
             for (let j = 0; j < directions.length; j++) {
                 direction = directions[j]
                 direction_data = possible_exchange_data[direction]
-                console.log(direction_data)
-                console.log("length: " + direction_data.length)
-                for (let w = 0; w < 100; w++) {
+                let row = {}
+                for (let w = 0; w < 100; w++) { // orders   
                     if (direction_data[w] == null) { break }
                     if (possible_exchanges[i] == "ETH/USDT:USDT/ETH") {
-                        eth_usdt_data.push(direction_data[w])
                         console.log(direction_data[w])
+                        if (direction == "ETH/USDT") {
+                            row['amount_eth_usdt'] = direction_data[w]['amount']
+                            row['limit_price_eth_usdt'] = direction_data[w]['exchange_price']
+                            row['exchange_price_eth_usdt'] = direction_data[w]['limit_price']
+                        } else {
+                            row['amount_usdt_eth'] = direction_data[w]['amount']
+                            row['limit_price_usdt_eth'] = direction_data[w]['exchange_price']
+                            row['exchange_price_usdt_eth'] = direction_data[w]['limit_price']
+                        }
+                        row_data.push(row)
                     }
                 }
             }
         }
         // create the grid passing in the div to use together with the columns & data we want to use
-        const eGridDiv = document.querySelector('#myGrid');
+        const eGridDiv = document.querySelector('#eth_usdt_grid');
         new agGrid.Grid(eGridDiv, gridOptions);
-        gridOptions.api.setRowData(eth_usdt_data);
+        gridOptions.api.setRowData(row_data);
     }
+    
+    function createAnOrderBookTable(data, exchange_symbol, grid_id) {
+        var direction_data = data
+        let field_name_amount = "amount_" + exchange_symbol
+        let field_name_exchange_price = "exchange_price_" + exchange_symbol
+        let field_name_limit_price = "limit_price_" + exchange_symbol
+        let data_rows = []
+        for (let j = 0; j < 100; j++) {
+            let row = {}
+            if (direction_data[j] == null) { break }
+            field_name_amount = "amount_" + exchange_symbol
+            field_name_exchange_price = "exchange_price_" + exchange_symbol
+            field_name_limit_price = "limit_price_" + exchange_symbol
 
-    document.getElementById("orderbook_table").innerHTML = 5 + 6;
+            row[field_name_amount] = direction_data[j]['amount']
+            row[field_name_exchange_price] = direction_data[j]['exchange_price']
+            row[field_name_limit_price] = direction_data[j]['limit_price']
+            data_rows.push(row)
+        }
+
+        var eGridDiv = document.querySelector("#" + grid_id);
+        var gridOptions = {
+            columnDefs: [ { headerName: exchange_symbol, children: [
+                            { headerName: "Amount", field: field_name_amount },
+                            { headerName: "Exchange Price", field: field_name_exchange_price },
+                            { headerName: "Limit Price", field: field_name_limit_price }]
+                    },]};
+        new agGrid.Grid(eGridDiv, gridOptions);
+        gridOptions.api.setRowData(data_rows);
+    }
     
   </script>
 </body>

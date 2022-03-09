@@ -48,7 +48,7 @@ class MarketAgent(Agent):
             else: 
                 # UPDATE the limit_price of the order (could be too low or too high)
                 self.updateCurrentOrderLimitPrice() # updates for agent
-                self.currency_market.orderBook.updateAgentOrderLimitPriceInOrderBook(self, self.current_order.limit_price) # updates the orderbook withe agents new limit price
+                self.currency_market.order_book.updateAgentOrderLimitPriceInOrderBook(self, self.current_order.limit_price) # updates the orderbook withe agents new limit price
         elif self.has_made_open_order and self.open_transaction_was_successfull and not self.has_made_closing_order and not self.closing_transaction_was_successfull:
             if self.strategy.closingConditionMet(self, self.round):
                 self.makeOrder("CLOSE") # current_order is also updated 
@@ -60,7 +60,7 @@ class MarketAgent(Agent):
             else: 
                 # UPDATE the limit_price of the order (could be too low or too high)
                 self.updateCurrentOrderLimitPrice() # updates for agent
-                self.currency_market.orderBook.updateAgentOrderLimitPriceInOrderBook(self, self.current_order.limit_price) # updates the orderbook with agents new limit price
+                self.currency_market.order_book.updateAgentOrderLimitPriceInOrderBook(self, self.current_order.limit_price) # updates the orderbook with agents new limit price
         elif self.has_made_open_order and self.open_transaction_was_successfull and self.has_made_closing_order and self.closing_transaction_was_successfull:
             # if agent has openned order, done open transac, closed order, and done closing transac
             self.initialiseParameters()

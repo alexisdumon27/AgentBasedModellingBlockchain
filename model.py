@@ -136,14 +136,15 @@ class MarketModel(Model):
             symbol_orders = order_book_data[item[0]]
             for order in symbol_orders:
                 if symbol_orders[order]:
-                    # get the key
-                    # unwrap the array
+                    i = 0
                     for agent_key in symbol_orders[order].keys():
                         value_array = symbol_orders[order][agent_key]
                         amount = value_array[0]
                         limit_price = value_array[-1]
-                        temp = {"amount":amount, "limit_price":limit_price}
-                        orders[item[0]][order] = temp
+                        exchange_price = 1 / limit_price
+                        temp = {"amount":amount, "limit_price":limit_price, "exchange_price": exchange_price}
+                        orders[item[0]][order][i] = temp
+                        i += 1
         return orders
 # --------------------------------------------------------------------------
 
