@@ -9,17 +9,63 @@
 </head>
 <body>
   <h1>Orderbooks</h1>
-
   <div id="myGrid" style="height: 600px;width:500px;" class="ag-theme-alpine"></div>
 
   <script type="text/javascript" charset="utf-8">
 
-const url = new URL("http://localhost:5000")
+    const testData = {"ETH/USDT:USDT/ETH": {"ETH/USDT": {"0": {"amount": 27, "limit_price": 127, "exchange_price": 0.0027}, "1": {"amount": 13046.074985975187, "limit_price": 130.46174985975188, "exchange_price": 0.007665081919221637}}, "USDT/ETH": {"0": {"amount": 13046.074985975187, "limit_price": 130.46174985975188, "exchange_price": 0.007665081919221637}, "1": {"amount": 13046.074985975187, "limit_price": 130.46174985975188, "exchange_price": 0.007665081919221637}}}, "ETH/BNB:BNB/ETH": {"ETH/BNB": {}, "BNB/ETH": {}}, "ETH/BTC:BTC/ETH": {"ETH/BTC": {}, "BTC/ETH": {}}, "BNB/BTC:BTC/BNB": {"BNB/BTC": {}, "BTC/BNB": {}}, "BNB/USDT:USDT/BNB": {"BNB/USDT": {}, "USDT/BNB": {"0": {"amount": 1372.3055568517361, "limit_price": 13.724055568517361, "exchange_price": 0.07286475889051156}}}, "BTC/USDT:USDT/BTC": {"BTC/USDT": {}, "USDT/BTC": {}}}
 
+    const columnDefs = [
+      { field: "amount" },
+      { field: "exchange_price" },
+      { field: "limit_price" }
+    ];
+
+    // let the grid know which columns to use
+    const gridOptions = {
+      columnDefs: columnDefs
+    };
+
+    const url = new URL("http://localhost:5000")
     fetch(url)
         .then(response=>response.json())
-        .then(data=>{ console.log(data); })
+        .then(data=>{ updateOrderbooksDisplay(data); })
 
+    function updateOrderbooksDisplay(data) {
+        // this works!!!
+        possible_exchanges = ["ETH/USDT:USDT/ETH", "ETH/BNB:BNB/ETH", "ETH/BTC:BTC/ETH", "BNB/BTC:BTC/BNB", "BNB/USDT:USDT/BNB", "BTC/USDT:USDT/BTC"]
+        possible_directions = {"ETH/USDT:USDT/ETH" : ["ETH/USDT", "USDT/ETH"], "ETH/BNB:BNB/ETH": ["ETH/BNB", "BNB/ETH"], "ETH/BTC:BTC/ETH":["ETH/BTC", "BTC/ETH"], "BNB/BTC:BTC/BNB": ["BNB/BTC", "BTC/BNB"], "BNB/USDT:USDT/BNB": ["BNB/USDT","USDT/BNB"], "BTC/USDT:USDT/BTC": ["BTC/USDT", "USDT/BTC"]}
+
+        console.log("prout prout");
+
+        eth_usdt_data = []
+        for (let i = 0; i < possible_exchanges.length; i++) {
+            possible_exchange_data = data[possible_exchanges[i]]
+            console.log(possible_exchange_data)
+            directions = possible_directions[possible_exchanges[i]]
+            console.log(directions)
+            for (let j = 0; j < directions.length; j++) {
+                direction = directions[j]
+                direction_data = possible_exchange_data[direction]
+                console.log(direction_data)
+                console.log("length: " + direction_data.length)
+                for (let w = 0; w < 100; w++) {
+                    if (direction_data[w] == null) { break }
+                    if (possible_exchanges[i] == "ETH/USDT:USDT/ETH") {
+                        eth_usdt_data.push(direction_data[w])
+                        console.log(direction_data[w])
+                    }
+                }
+            }
+        }
+        // create the grid passing in the div to use together with the columns & data we want to use
+        const eGridDiv = document.querySelector('#myGrid');
+        new agGrid.Grid(eGridDiv, gridOptions);
+        gridOptions.api.setRowData(eth_usdt_data);
+    }
+
+    document.getElementById("orderbook_table").innerHTML = 5 + 6;
+    
   </script>
 </body>
 </html>
