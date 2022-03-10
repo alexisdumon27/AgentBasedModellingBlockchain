@@ -13,9 +13,9 @@
 </head>
 <body>
   <h1 >Orderbooks</h1>
-  <div>
-    <div id="eth_usdt_grid" style="height: 600px;width:600px; display: inline-block;" class="ag-theme-alpine"></div>
-    <div id="usdt_eth_grid" style="height: 600px;width:600px; display: inline-block;" class="ag-theme-alpine"></div>
+  <div style="margin-left: auto; margin-right: auto; width: 100%">
+    <div id="eth_usdt_grid" style="height: 600px;width:500px; display: inline-block;" class="ag-theme-alpine"></div>
+    <div id="usdt_eth_grid" style="height: 600px;width:500px; display: inline-block;" class="ag-theme-alpine"></div>
   </div>
   <div>
     <div id="eth_btc_grid" style="height: 600px;width:600px; display: inline-block;" class="ag-theme-alpine"></div>
@@ -38,10 +38,12 @@
     <div id="btc_usdt_grid" style="height: 600px;width:600px; display: inline-block;" class="ag-theme-alpine"></div>
   </div>
 
-  <div id="wealth_bar_chart" style="width: 100%; height: 100%"></div>
+  <div id="wealth_bar_chart" style="width: 100%; height: 300px"></div>
   <div id="tooltip" class="custom-tooltip"></div>
 
-  <div id="distribution_pie_chart" style="width: 100%; height: 100%"></div>
+  <div id="distribution_pie_chart" style="width: 100%; height: 700px; margin: 0; padding: 0"></div>
+
+  <div id="transactions_line_chart" style="width: 100%; height: 700px; margin: 0; padding: 0"></div>
 
   <script type="text/javascript" charset="utf-8">
 
@@ -112,17 +114,62 @@
     }
 
     function makeTransactionNumbersGraph(data){
-        console.log(data)
-        console.log("1")
+        let name = "num_transactions_"
+        let row_data_0 = []
+        let row_data_1 = []
+        let row_data_2 = []
+        let row_data_3 = []
+        let row_data_4 = []
+        let row_data_5 = []
+        let row_data_6 = []
+        let row_data_7 = []
+        let row_data_8 = []
+        let row_data_9 = []
+        let row_data_10 = []
+        let row_data_11 = []
+
+        row_data_0.push(["ETH/USDT", data[name + "eth_usdt"]])
+        row_data_1.push(["USDT/ETH", data[name + "usdt_eth"]])
+        row_data_2.push(["ETH/BTC", data[name + "eth_btc"]])
+        row_data_3.push(["BTC/ETH", data[name + "btc_eth"]])
+        row_data_4.push(["ETH/BNB", data[name + "eth_bnb"]])
+        row_data_5.push(["BNB/ETH", data[name + "bnb_eth"]])
+        row_data_6.push(["BTC/USDT", data[name + "btc_usdt"]])
+        row_data_7.push(["USDT/BTC", data[name + "usdt_btc"]])
+        row_data_8.push(["BTC/BNB", data[name + "btc_bnb"]])
+        row_data_9.push(["BNB/BTC", data[name + "bnb_btc"]])
+        row_data_10.push(["BNB/USDT", data[name + "bnb_usdt"]])
+        row_data_11.push(["USDT/BNB", data[name + "usdt_bnb"]])
+
+        // create a chart
+        chart = anychart.line();
+        var series0 = chart.line(row_data_0.map);
+        var series1 = chart.line(row_data_1);
+        var series2 = chart.line(row_data_2);
+        var series3 = chart.line(row_data_3);
+        var series4 = chart.line(row_data_4);
+        var series5 = chart.line(row_data_5);
+        var series6 = chart.line(row_data_6);
+        var series7 = chart.line(row_data_7);
+        var series8 = chart.line(row_data_8);
+        var series9 = chart.line(row_data_9);
+        var series10 = chart.line(row_data_10);
+        var series11 = chart.line(row_data_11);
+
+        // set the container id
+        chart.container("transactions_line_chart");
+
+        // initiate drawing the chart
+        chart.draw();
     }
 
     function makeWealthDistributionPieChart(data) {
         let name = "wealth_distribution_"
-        row_data = []
-        row_data.push("MACD", data[name + 'macd'])
-        row_data.push("RSI", data[name + 'rsi'])
-        row_data.push("Moving Average", data[name + 'moving_average'])
-        row_data.push("Pivot Point", data[name + 'pivot_point'])
+        let row_data = []
+        row_data.push(["MACD", data[name + 'macd']])
+        row_data.push(["RSI", data[name + 'rsi']])
+        row_data.push(["Moving Average", data[name + 'moving_average']])
+        row_data.push(["Pivot Point", data[name + 'pivot_point']])
 
         var data = anychart.data.set(row_data);
 
