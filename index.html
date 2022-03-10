@@ -3,74 +3,84 @@
 <html>
 <head>
   <script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.noStyle.js"></script>
+  <script src="https://cdn.anychart.com/releases/8.0.0/js/anychart-base.min.js"></script>
+  <script src="https://cdn.anychart.com/releases/8.0.1/js/anychart-core.min.js"></script>
+  <script src="https://cdn.anychart.com/releases/8.0.1/js/anychart-pie.min.js"></script>
   <script type="text/javascript" src="orderBookData.JSON"></script>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/dist/styles/ag-grid.css">
   <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/dist/styles/ag-theme-alpine.css">
 </head>
 <body>
-  <h1>Orderbooks</h1>
-  <div class = "currency_pair">
+  <h1 >Orderbooks</h1>
+  <div>
     <div id="eth_usdt_grid" style="height: 600px;width:600px; display: inline-block;" class="ag-theme-alpine"></div>
     <div id="usdt_eth_grid" style="height: 600px;width:600px; display: inline-block;" class="ag-theme-alpine"></div>
   </div>
-    
-    
+  <div>
+    <div id="eth_btc_grid" style="height: 600px;width:600px; display: inline-block;" class="ag-theme-alpine"></div>
+    <div id="btc_eth_grid" style="height: 600px;width:600px; display: inline-block;" class="ag-theme-alpine"></div>
+  </div>
+  <div>
+    <div id="eth_bnb_grid" style="height: 600px;width:600px; display: inline-block;" class="ag-theme-alpine"></div>
+    <div id="bnb_eth_grid" style="height: 600px;width:600px; display: inline-block;" class="ag-theme-alpine"></div>
+  </div>
+  <div>
+    <div id="bnb_btc_grid" style="height: 600px;width:600px; display: inline-block;" class="ag-theme-alpine"></div>
+    <div id="btc_bnb_grid" style="height: 600px;width:600px; display: inline-block;" class="ag-theme-alpine"></div>
+  </div>
+  <div>
+    <div id="bnb_usdt_grid" style="height: 600px;width:600px; display: inline-block;" class="ag-theme-alpine"></div>
+    <div id="usdt_bnb_grid" style="height: 600px;width:600px; display: inline-block;" class="ag-theme-alpine"></div>
+  </div>
+  <div>
+    <div id="usdt_btc_grid" style="height: 600px;width:600px; display: inline-block;" class="ag-theme-alpine"></div>
+    <div id="btc_usdt_grid" style="height: 600px;width:600px; display: inline-block;" class="ag-theme-alpine"></div>
+  </div>
+
+  <div id="wealth_bar_chart" style="width: 100%; height: 100%"></div>
+  <div id="tooltip" class="custom-tooltip"></div>
+
+  <div id="distribution_pie_chart" style="width: 100%; height: 100%"></div>
 
   <script type="text/javascript" charset="utf-8">
 
     const testData = {"ETH/USDT:USDT/ETH": {"ETH/USDT": {"0": {"amount": 27, "limit_price": 127, "exchange_price": 0.0027}, "1": {"amount": 13046.074985975187, "limit_price": 130.46174985975188, "exchange_price": 0.007665081919221637}}, "USDT/ETH": {"0": {"amount": 13046.074985975187, "limit_price": 130.46174985975188, "exchange_price": 0.007665081919221637}, "1": {"amount": 13046.074985975187, "limit_price": 130.46174985975188, "exchange_price": 0.007665081919221637}}}, "ETH/BNB:BNB/ETH": {"ETH/BNB": {}, "BNB/ETH": {}}, "ETH/BTC:BTC/ETH": {"ETH/BTC": {}, "BTC/ETH": {}}, "BNB/BTC:BTC/BNB": {"BNB/BTC": {}, "BTC/BNB": {}}, "BNB/USDT:USDT/BNB": {"BNB/USDT": {}, "USDT/BNB": {"0": {"amount": 1372.3055568517361, "limit_price": 13.724055568517361, "exchange_price": 0.07286475889051156}}}, "BTC/USDT:USDT/BTC": {"BTC/USDT": {}, "USDT/BTC": {}}}
 
-    const url = new URL("http://localhost:5000")
-    
-    fetch(url)
+    const url_for_orderbook = new URL("http://localhost:5000")
+    fetch(url_for_orderbook)
         .then(response=>response.json())
         .then(data => orderbookData = data)
         .then((orderBookData) => createAnOrderBookTable(orderbookData["ETH/USDT:USDT/ETH"]["USDT/ETH"], "USDT/ETH", "usdt_eth_grid"))
-        .then((orderBookData) => createAnOrderBookTable(orderbookData["ETH/USDT:USDT/ETH"]["ETH/USDT"], "ETH/USDT", "eth_usdt_grid" ))
+        .then((orderBookData) => createAnOrderBookTable(orderbookData["ETH/USDT:USDT/ETH"]["ETH/USDT"], "ETH/USDT", "eth_usdt_grid"))
+        .then((orderBookData) => createAnOrderBookTable(orderbookData["ETH/BTC:BTC/ETH"]["ETH/BTC"], "ETH/BTC", "eth_btc_grid"))
+        .then((orderBookData) => createAnOrderBookTable(orderbookData["ETH/BTC:BTC/ETH"]["BTC/ETH"], "BTC/ETH", "btc_eth_grid"))
+        .then((orderBookData) => createAnOrderBookTable(orderbookData["ETH/BNB:BNB/ETH"]["ETH/BNB"], "ETH/BNB", "eth_bnb_grid"))
+        .then((orderBookData) => createAnOrderBookTable(orderbookData["ETH/BNB:BNB/ETH"]["BNB/ETH"], "BNB/ETH", "bnb_eth_grid"))
+        .then((orderBookData) => createAnOrderBookTable(orderbookData["BNB/BTC:BTC/BNB"]["BNB/BTC"], "BNB/BTC", "bnb_btc_grid"))
+        .then((orderBookData) => createAnOrderBookTable(orderbookData["BNB/BTC:BTC/BNB"]["BTC/BNB"], "BTC/BNB", "btc_bnb_grid"))
+        .then((orderBookData) => createAnOrderBookTable(orderbookData["BNB/USDT:USDT/BNB"]["BNB/USDT"], "BNB/USDT", "bnb_usdt_grid"))
+        .then((orderBookData) => createAnOrderBookTable(orderbookData["BNB/USDT:USDT/BNB"]["USDT/BNB"], "USDT/BNB", "usdt_bnb_grid"))
+        .then((orderBookData) => createAnOrderBookTable(orderbookData["BTC/USDT:USDT/BTC"]["BTC/USDT"], "BTC/USDT", "btc_usdt_grid"))
+        .then((orderBookData) => createAnOrderBookTable(orderbookData["BTC/USDT:USDT/BTC"]["USDT/BTC"], "USDT/BTC", "usdt_btc_grid"))
         .then ( () => console.log("done second one"))
 
-// .then(data => obj = data)
-    function updateOrderbooksDisplay(data) {
-        // this works!!!
-        possible_exchanges = ["ETH/USDT:USDT/ETH", "ETH/BNB:BNB/ETH", "ETH/BTC:BTC/ETH", "BNB/BTC:BTC/BNB", "BNB/USDT:USDT/BNB", "BTC/USDT:USDT/BTC"]
-        possible_directions = {"ETH/USDT:USDT/ETH" : ["ETH/USDT", "USDT/ETH"], "ETH/BNB:BNB/ETH": ["ETH/BNB", "BNB/ETH"], "ETH/BTC:BTC/ETH":["ETH/BTC", "BTC/ETH"], "BNB/BTC:BTC/BNB": ["BNB/BTC", "BTC/BNB"], "BNB/USDT:USDT/BNB": ["BNB/USDT","USDT/BNB"], "BTC/USDT:USDT/BTC": ["BTC/USDT", "USDT/BTC"]}
+    const url_for_transaction_data = new URL("http://localhost:5000/transactions")
+    fetch(url_for_transaction_data)
+        .then(response => response.json())
+        .then(data => makeTransactionNumbersGraph(data))
+        .then(console.log("yeahllhoe"))
 
-        console.log("prout prout");
+    const url_for_wealth_distribution_data = new URL("http://localhost:5000/distribution")
+    fetch(url_for_wealth_distribution_data)
+        .then(response => response.json())
+        .then(data => makeWealthDistributionPieChart(data))
 
-        row_data = []
+    const url_for_wealthiest_agents_data = new URL("http://localhost:5000/wealth")
+    fetch(url_for_wealthiest_agents_data)
+        .then(response => response.json())
+        .then(data => makeWealthyAgentsBarChart(data))
 
-        for (let i = 0; i < possible_exchanges.length; i++) {
-            possible_exchange_data = data[possible_exchanges[i]]
-            directions = possible_directions[possible_exchanges[i]]
-            for (let j = 0; j < directions.length; j++) {
-                direction = directions[j]
-                direction_data = possible_exchange_data[direction]
-                let row = {}
-                for (let w = 0; w < 100; w++) { // orders   
-                    if (direction_data[w] == null) { break }
-                    if (possible_exchanges[i] == "ETH/USDT:USDT/ETH") {
-                        console.log(direction_data[w])
-                        if (direction == "ETH/USDT") {
-                            row['amount_eth_usdt'] = direction_data[w]['amount']
-                            row['limit_price_eth_usdt'] = direction_data[w]['exchange_price']
-                            row['exchange_price_eth_usdt'] = direction_data[w]['limit_price']
-                        } else {
-                            row['amount_usdt_eth'] = direction_data[w]['amount']
-                            row['limit_price_usdt_eth'] = direction_data[w]['exchange_price']
-                            row['exchange_price_usdt_eth'] = direction_data[w]['limit_price']
-                        }
-                        row_data.push(row)
-                    }
-                }
-            }
-        }
-        // create the grid passing in the div to use together with the columns & data we want to use
-        const eGridDiv = document.querySelector('#eth_usdt_grid');
-        new agGrid.Grid(eGridDiv, gridOptions);
-        gridOptions.api.setRowData(row_data);
-    }
-    
     function createAnOrderBookTable(data, exchange_symbol, grid_id) {
         var direction_data = data
         let field_name_amount = "amount_" + exchange_symbol
@@ -100,7 +110,95 @@
         new agGrid.Grid(eGridDiv, gridOptions);
         gridOptions.api.setRowData(data_rows);
     }
-    
+
+    function makeTransactionNumbersGraph(data){
+        console.log(data)
+        console.log("1")
+    }
+
+    function makeWealthDistributionPieChart(data) {
+        let name = "wealth_distribution_"
+        row_data = []
+        row_data.push("MACD", data[name + 'macd'])
+        row_data.push("RSI", data[name + 'rsi'])
+        row_data.push("Moving Average", data[name + 'moving_average'])
+        row_data.push("Pivot Point", data[name + 'pivot_point'])
+
+        var data = anychart.data.set(row_data);
+
+        var series_0 = data.mapAs({x: 0, value: 1});
+
+        // create a chart and set the data
+        var chart = anychart.pie(series_0);
+
+        // set the container id
+        chart.container("distribution_pie_chart");
+        chart.title("Wealth Distribution by Strategy pie chart")
+        // initiate drawing the chart
+        chart.draw();
+    }
+
+    // https://www.anychart.com/
+    function makeWealthyAgentsBarChart(data) {
+        row_data = []
+        for (let i = 0; i < 10; i ++ ) {
+            let name = "wealthy_" + i
+            row_data.push([i + 1, data[name]["amount_in_usd"], data[name]["strategy"], data[name]['num_of_transactions'], data[name]['most_traded_currency_pair']])
+        }
+        var data = anychart.data.set(row_data);
+
+        var series_0 = data.mapAs({x: 0, value: 1});
+
+        // create a column chart
+        var chart = anychart.column(series_0);
+
+        var series = chart.getSeries(0);
+
+        // disable the built-in tooltips
+        series.tooltip(false);
+        
+        // set the selection mode to single
+        chart.interactivity().selectionMode("single-select");
+        
+        var tooltip = document.getElementById("tooltip");
+
+        /* show a custom tooltip
+        when the mouse is over a column */
+        chart.listen("pointMouseOver", function(e) {
+
+        // show the tooltip
+        tooltip.style.visibility = "visible"; 
+
+        // set the text of the tooltip
+        tooltip.innerHTML = "Amount in USD: "+ data.row(e.pointIndex)[1] + ", Strategy name: " + data.row(e.pointIndex)[2] +
+                 ", Number of Transactions: "+ data.row(e.pointIndex)[3] + ", Most traded currency pair: "+ data.row(e.pointIndex)[4];
+        });
+
+        /* hide the custom tooltip
+        when the mouse is out of a column */
+        chart.listen("pointMouseOut", function() {
+            tooltip.style.visibility = "hidden";
+        });
+
+        // set the position of custom tooltips
+        chart.listen("mouseMove", function(e) {
+            var clientX = e["offsetX"];
+            var clientY = e["offsetY"];
+
+            tooltip.style.left = clientX + 20 + "px";
+            tooltip.style.top = clientY + 10 + "px";
+            tooltip.style.zIndex = 10000;
+            tooltip.style.border = "solid black 2px";
+        });
+
+        // set the chart title
+        chart.title("Current Top 10 Wealthiest Agents");
+        // draw
+        chart.container("wealth_bar_chart");
+        chart.draw();
+    }
+
+
   </script>
 </body>
 </html>

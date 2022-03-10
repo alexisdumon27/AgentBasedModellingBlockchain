@@ -36,15 +36,6 @@ class MarketModel(Model):
         self.agents = [] # list that contains all MarketAgent objects
         self.createAgents(num_agents) #
 
-        self.bnb_usd = exchange_rates["BNB/USD"][self.round]
-        self.bnb_usdt = exchange_rates["BNB/USDT"][self.round]
-        self.bnb_eth = exchange_rates["BNB/ETH"][self.round]
-        self.bnb_btc = exchange_rates["BNB/BTC"][self.round]
-
-        self.currency_0 = currency_0
-        self.currency_1 = currency_1
-        self.desired_exchange_rate = exchange_rates[self.currency_0 + "/" + self.currency_1][self.round]
-
         #### for DATA collection ### 
         self.datacollector = DataCollector(
             model_reporters = {
@@ -57,11 +48,11 @@ class MarketModel(Model):
         self.datacollector.collect(self)
 
     def createAgents(self, num_agents):
-        random_strategy = RandomStrategy("Random strategy", exchange_rates)
-        pivot_point_strategy = PivotPointStrategy("Pivot point strategy", exchange_rates)
-        moving_average_strategy = MovingAverageStrategy("Moving average strategy", exchange_rates)
-        macd_strategy = MACDStrategy('MACD Strategy', exchange_rates)
-        rsi_strategy = RSIStrategy("RSI Strategy", exchange_rates)
+        random_strategy = RandomStrategy("random", exchange_rates)
+        pivot_point_strategy = PivotPointStrategy("pivot_point", exchange_rates)
+        moving_average_strategy = MovingAverageStrategy("moving_average", exchange_rates)
+        macd_strategy = MACDStrategy('macd', exchange_rates)
+        rsi_strategy = RSIStrategy("rsi", exchange_rates)
 
         for i in range(num_agents): 
             strategy = random_strategy
@@ -79,50 +70,67 @@ class MarketModel(Model):
             self.agents.append(a)
 
     def step(self):
-        
-        self.bnb_usd = exchange_rates["BNB/USD"][self.round]
-        self.bnb_usdt = exchange_rates["BNB/USDT"][self.round]
-        self.bnb_btc = exchange_rates["BNB/BTC"][self.round]
-        self.bnb_eth = exchange_rates["BNB/ETH"][self.round]
-
-        self.desired_exchange_rate = exchange_rates[self.currency_0 + "/" + self.currency_1][self.round]
-
         self.schedule.step() # runs the step method for all Agents
         
         self.currency_market.order_book.sortOrdersInOrderBook()
 
-        # print ("OrderBook BEFORE transactions: ")
-        # self.currency_market.getOrderBook().printOrderBook() # to know what the order book looks like before transactions
-
         self.currency_market.price_clearing_mechanism() # do all transactions
 
-        # print ("OrderBook AFTER transactions: ")
-        # self.currency_market.getOrderBook().printOrderBook()
-
-        orders = {
-            "ETH/USDT:USDT/ETH" : { 'ETH/USDT' : {}, 'USDT/ETH' : {} },
-            "ETH/BNB:BNB/ETH" : { 'ETH/BNB' : {}, 'BNB/ETH' : {} },
-            "ETH/BTC:BTC/ETH" : { 'ETH/BTC' : {}, 'BTC/ETH' : {} },
-            "BNB/BTC:BTC/BNB" : { 'BNB/BTC' : {}, 'BTC/BNB' : {} },
-            "BNB/USDT:USDT/BNB" :{ 'BNB/USDT' : {}, 'USDT/BNB' : {} },
-            "BTC/USDT:USDT/BTC" : { 'BTC/USDT' : {}, 'USDT/BTC' : {} },
-        }
         order_book_data = self.currency_market.getOrderBook().orders
         simplified_order_book = self.simplifyOrderBook(order_book_data)
         with open('orderBookData.JSON', 'w') as json_file:
             json.dump(simplified_order_book, json_file)
 
-        # for i in self.agents:
-        #     print(i, ", wallet: ", i.wallet)
-        #     print ("wallet value: ", i.currentUSDValueOfWallet, ", diff: ", i.currentUSDValueOfWallet - i.initialUSDValueOfWallet)
+        transaction_data = {
+            # num of transactions with each currency # easy to calculate aggregated results # graph
+            "num_transactions_eth_usdt" : [1, 2, 3],
+            "num_transactions_usdt_eth" : [4, 7, 7],
+            "num_transactions_eth_bnb" : [5, 18, 27],
+            "num_transactions_bnb_eth" : [3, 19, 33],
+            "num_transactions_eth_btc" : [3, 29, 33],
+            "num_transactions_btc_eth" : [2, 19, 21],
+            "num_transactions_bnb_usdt" : [1, 19, 33],
+            "num_transactions_usdt_bnb" : [3, 19, 33],
+            "num_transactions_bnb_btc" : [3, 19, 12],
+            "num_transactions_btc_bnb" : [3, 19, 37],
+            "num_transactions_btc_usdt" : [0, 1, 3],
+            "num_transactions_usdt_btc" : [0, 9, 10],
+        }
+        with open('transactionData.JSON', 'w') as json_file:
+            json.dump(transaction_data, json_file)
 
+        wealthiest_agents_data = {
+            # top 10 wealthiest agents -- would be nice to make into a bar chart
+            "wealthy_0" : {"amount_in_usd": 1027, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
+            "wealthy_1" : {"amount_in_usd": 927, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
+            "wealthy_2" : {"amount_in_usd": 827, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
+            "wealthy_3" : {"amount_in_usd": 727, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
+            "wealthy_4" : {"amount_in_usd": 627, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
+            "wealthy_5" : {"amount_in_usd": 527, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
+            "wealthy_6" : {"amount_in_usd": 427, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
+            "wealthy_7" : {"amount_in_usd": 327, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
+            "wealthy_8" : {"amount_in_usd": 227, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
+            "wealthy_9" : {"amount_in_usd": 127, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
+        }
+        with open('wealthiestAgentsData.JSON', 'w') as json_file:
+            json.dump(wealthiest_agents_data, json_file)
+
+        wealth_distribution_data = {
+            # wealth distribution per strategy relative to number of agents (Adds up to 100 pie chart!!!)
+            "wealth_distribution_random": 40,
+            "wealth_distribution_pivot_point": 20,
+            "wealth_distribution_moving_average": 20,
+            "wealth_distribution_macd": 10,
+            "wealth_distribution_rsi": 10
+        }
+        
+        with open('wealthDistributionData.JSON', 'w') as json_file:
+            json.dump(wealth_distribution_data, json_file)
+        
         self.datacollector.collect(self)
-
         self.round += 1 # go to the next round
-
-        # print ("-------- A step has happened -------------")
     
-    # desperatily needs to be cleaned !!! Perhaps BLEACH IT!!!
+    # desperatily needs to be cleaned !!! Perhaps BLEACHED!!!
     def simplifyOrderBook(self, order_book_data):
         orders = {
             "ETH/USDT:USDT/ETH" : { 'ETH/USDT' : {}, 'USDT/ETH' : {} },
