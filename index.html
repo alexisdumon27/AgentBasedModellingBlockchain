@@ -6,6 +6,7 @@
   <script src="https://cdn.anychart.com/releases/8.0.0/js/anychart-base.min.js"></script>
   <script src="https://cdn.anychart.com/releases/8.0.1/js/anychart-core.min.js"></script>
   <script src="https://cdn.anychart.com/releases/8.0.1/js/anychart-pie.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script type="text/javascript" src="orderBookData.JSON"></script>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/dist/styles/ag-grid.css">
@@ -43,7 +44,9 @@
 
   <div id="distribution_pie_chart" style="width: 100%; height: 700px; margin: 0; padding: 0"></div>
 
-  <div id="transactions_line_chart" style="width: 100%; height: 700px; margin: 0; padding: 0"></div>
+  <div>
+    <canvas id="transactions_line_chart"></canvas>
+  </div>
 
   <script type="text/javascript" charset="utf-8">
 
@@ -115,52 +118,92 @@
 
     function makeTransactionNumbersGraph(data){
         let name = "num_transactions_"
-        let row_data_0 = []
-        let row_data_1 = []
-        let row_data_2 = []
-        let row_data_3 = []
-        let row_data_4 = []
-        let row_data_5 = []
-        let row_data_6 = []
-        let row_data_7 = []
-        let row_data_8 = []
-        let row_data_9 = []
-        let row_data_10 = []
-        let row_data_11 = []
 
-        row_data_0.push(["ETH/USDT", data[name + "eth_usdt"]])
-        row_data_1.push(["USDT/ETH", data[name + "usdt_eth"]])
-        row_data_2.push(["ETH/BTC", data[name + "eth_btc"]])
-        row_data_3.push(["BTC/ETH", data[name + "btc_eth"]])
-        row_data_4.push(["ETH/BNB", data[name + "eth_bnb"]])
-        row_data_5.push(["BNB/ETH", data[name + "bnb_eth"]])
-        row_data_6.push(["BTC/USDT", data[name + "btc_usdt"]])
-        row_data_7.push(["USDT/BTC", data[name + "usdt_btc"]])
-        row_data_8.push(["BTC/BNB", data[name + "btc_bnb"]])
-        row_data_9.push(["BNB/BTC", data[name + "bnb_btc"]])
-        row_data_10.push(["BNB/USDT", data[name + "bnb_usdt"]])
-        row_data_11.push(["USDT/BNB", data[name + "usdt_bnb"]])
+        const transaction_data = {
+            labels: Array.from(Array(data[name+"eth_usdt"].length).keys()),
+            datasets: [{
+                label: 'ETH/USDT',
+                data: data[name + "eth_usdt"],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            },
+            {
+                label: 'USDT/ETH',
+                data: data[name + "usdt_eth"],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            },{
+                label: 'ETH/BTC',
+                data: data[name + "eth_btc"],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            },
+            {
+                label: 'BTC/ETH',
+                data: data[name + "btc_eth"],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            },{
+                label: 'ETH/BNB',
+                data: data[name + "eth_bnb"],
+                fill: false,
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            },
+            {
+                label: 'BNB/ETH',
+                data: data[name + "bnb_eth"],
+                fill: false,
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            },{
+                label: 'BTC/USDT',
+                data: data[name + "btc_usdt"],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            },
+            {
+                label: 'USDT/BTC',
+                data: data[name + "usdt_btc"],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            },{
+                label: 'BNB/BTC',
+                data: data[name + "bnb_btc"],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            },
+            {
+                label: 'BTC/BNB',
+                data: data[name + "btc_bnb"],
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            },{
+                label: 'USDT/BNB',
+                data: data[name + "usdt_bnb"],
+                fill: false,
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            },
+            {
+                label: 'BNB/USDT',
+                data: data[name + "bnb_usdt"],
+                fill: false,
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }
+            ]
+        };
+        const config = {
+            type: 'line',
+            data: transaction_data,
+            options: {}
+        };
+        const myChart = new Chart(
+            document.getElementById('transactions_line_chart'),
+            config
+            );
 
-        // create a chart
-        chart = anychart.line();
-        var series0 = chart.line(row_data_0.map);
-        var series1 = chart.line(row_data_1);
-        var series2 = chart.line(row_data_2);
-        var series3 = chart.line(row_data_3);
-        var series4 = chart.line(row_data_4);
-        var series5 = chart.line(row_data_5);
-        var series6 = chart.line(row_data_6);
-        var series7 = chart.line(row_data_7);
-        var series8 = chart.line(row_data_8);
-        var series9 = chart.line(row_data_9);
-        var series10 = chart.line(row_data_10);
-        var series11 = chart.line(row_data_11);
-
-        // set the container id
-        chart.container("transactions_line_chart");
-
-        // initiate drawing the chart
-        chart.draw();
     }
 
     function makeWealthDistributionPieChart(data) {
