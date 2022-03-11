@@ -1,3 +1,4 @@
+from unicodedata import name
 from numpy import random
 import pandas as pd
 
@@ -9,6 +10,16 @@ class CurrencyMarket:
         self.currencies = list_of_currencies
         self.exchange_rates = exchange_rates
         self.order_book = OrderBook()
+        self.num_of_transactions_dict = { # for data collection !!!
+            "total" : [],
+            "ETH/USDT:USDT/ETH" : [],
+            "ETH/BNB:BNB/ETH" : [],
+            "ETH/BTC:BTC/ETH" : [],
+            "BNB/BTC:BTC/BNB" : [],
+            "BNB/USDT:USDT/BNB" : [],
+            "BTC/USDT:USDT/BTC" : []
+        }
+
         
     def getAvailableCurrencies(self):
         return self.currencies
@@ -19,13 +30,11 @@ class CurrencyMarket:
     def getCurrenciesExchangeRate(self, symbol, round):
         return self.exchange_rates[symbol][round]
 
-    def matchBuyAndSellOrders(self, buy_orders, sell_orders):
+    def matchBuyAndSellOrders(self, buy_orders, sell_orders, possible_currency_exchange):
         # which is buy_orders and sell_orders is arbitrary -- does not make a difference
 
         buying_orders_keys_to_delete = [] # lists of the keys of the orders to delete
         selling_orders_keys_to_delete = []
-
-        number_of_transactions = 0
 
         # Match buying orders with selling orders based on limit_price and amount
         for order in buy_orders.items():
@@ -51,14 +60,13 @@ class CurrencyMarket:
                         A sell order of index j matches a buy order of index i, and
                         vice versa, only if other_limit_price ≤ limit_price, or if one of the two limit prices, or both, are equal to zero
                     """
-                    number_of_transactions += 1
-
                     # calculate the exchange
                     avg_price = (other_limit_price + limit_price) / 2
-                    print (other_limit_price, " : ", limit_price)
-                    print (avg_price)
                     buy_order_amount_selling_other_currency = amount * avg_price 
                     sell_order_amount_selling_other_currency = other_amount / avg_price
+
+                    self.num_of_transactions_dict['total'][-1] += 1 # add one to the last entry in the cumulative total array
+                    self.num_of_transactions_dict[possible_currency_exchange][-1] += 1 # add one to the respective total array
 
                     # agent_key -- wants a bigger exchange; other_agent_key satisfied but not AgentKey
                     if self.isBuyOrderBiggerThanSellOrder(buy_order_values, sell_order_values, buy_order_amount_selling_other_currency, sell_order_amount_selling_other_currency): 
@@ -86,8 +94,7 @@ class CurrencyMarket:
                             selling_orders_keys_to_delete.append(other_agent_key)
                             other_agent_key.updateOrderStatus(other_order_type)
                         break # exit the loop to match buying agent with a selling agent -- buying agent is satisfied!
-        
-        # print ("In this round there were: ", number_of_transactions, " transactions")
+                
         # delete keys from orderbook
         for i in buying_orders_keys_to_delete:
             del buy_orders[i]
@@ -99,13 +106,25 @@ class CurrencyMarket:
     def price_clearing_mechanism(self):
         """ ............ """
         orderbook = self.getOrderBook().getOrders()
-        for possible_currency_exchanges in orderbook:
-            orders = orderbook[possible_currency_exchanges] # returns dictionary  { 'ETH/USDT' : {agent 1 : [] ... }, 'USDT/ETH': { agent 2: [] ... }}
+        self.num_of_transactions_this_round = 0
+        self.addNewRoundToNumOfTransactionsDict()
+        for possible_currency_exchange in orderbook:
+            orders = orderbook[possible_currency_exchange] # returns dictionary  { 'ETH/USDT' : {agent 1 : [] ... }, 'USDT/ETH': { agent 2: [] ... }}
             exchange_symbol_keys = list(orders.keys())
             exchange_direction_0_orders = orders[exchange_symbol_keys[0]]
             exchange_direction_1_orders = orders[exchange_symbol_keys[1]]
             
-            self.matchBuyAndSellOrders(exchange_direction_0_orders, exchange_direction_1_orders)
+            self.matchBuyAndSellOrders(exchange_direction_0_orders, exchange_direction_1_orders, possible_currency_exchange)
+
+        # if len(self.num_of_transactions) == 0:
+        #     self.num_of_transactions.append(self.num_of_transactions_this_round)
+        # else: self.num_of_transactions.append(self.num_of_transactions_this_round + self.num_of_transactions[-1]) # cumulative counter
+
+    def addNewRoundToNumOfTransactionsDict(self):
+        for item in self.num_of_transactions_dict:
+            array_of_transactions = self.num_of_transactions_dict[item]
+            if len(array_of_transactions) == 0: array_of_transactions.append(0)
+            else: array_of_transactions.append(array_of_transactions[-1])
 
     def isBuyOrderBiggerThanSellOrder(self, buy_order_values, sell_order_values, buy_order_amount_selling, sell_order_amount_amount_selling):
         amount = buy_order_values[0]
@@ -171,7 +190,6 @@ class OrderBook:
             "BNB/USDT:USDT/BNB" :{ 'BNB/USDT' : {}, 'USDT/BNB' : {} },
             "BTC/USDT:USDT/BTC" : { 'BTC/USDT' : {}, 'USDT/BTC' : {} },
         }
-        # ^if you have the time obvs make this initialise in a nicer way ;)
 
     def addOrder(self, order):
         """
@@ -217,7 +235,6 @@ class OrderBook:
         order[1][0] -= amount
     
     def updateAgentOrderLimitPriceInOrderBook(self, agent, new_limit_price):
-        # a bit of a weird method ... could it be deleted ?
         buy_currency = agent.current_order.buy_currency
         sell_currency = agent.current_order.sell_currency
         orderbook_key = self.getOrderBookKey(buy_currency, sell_currency)

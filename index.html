@@ -7,7 +7,7 @@
   <script src="https://cdn.anychart.com/releases/8.0.1/js/anychart-core.min.js"></script>
   <script src="https://cdn.anychart.com/releases/8.0.1/js/anychart-pie.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script type="text/javascript" src="orderBookData.JSON"></script>
+  <script src="http://code.jquery.com/jquery-3.1.1.js"></script>
   <link rel="stylesheet" href="style.css">
   <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/dist/styles/ag-grid.css">
   <link rel="stylesheet" href="https://unpkg.com/ag-grid-community/dist/styles/ag-theme-alpine.css">
@@ -50,9 +50,12 @@
 
   <script type="text/javascript" charset="utf-8">
 
-    const testData = {"ETH/USDT:USDT/ETH": {"ETH/USDT": {"0": {"amount": 27, "limit_price": 127, "exchange_price": 0.0027}, "1": {"amount": 13046.074985975187, "limit_price": 130.46174985975188, "exchange_price": 0.007665081919221637}}, "USDT/ETH": {"0": {"amount": 13046.074985975187, "limit_price": 130.46174985975188, "exchange_price": 0.007665081919221637}, "1": {"amount": 13046.074985975187, "limit_price": 130.46174985975188, "exchange_price": 0.007665081919221637}}}, "ETH/BNB:BNB/ETH": {"ETH/BNB": {}, "BNB/ETH": {}}, "ETH/BTC:BTC/ETH": {"ETH/BTC": {}, "BTC/ETH": {}}, "BNB/BTC:BTC/BNB": {"BNB/BTC": {}, "BTC/BNB": {}}, "BNB/USDT:USDT/BNB": {"BNB/USDT": {}, "USDT/BNB": {"0": {"amount": 1372.3055568517361, "limit_price": 13.724055568517361, "exchange_price": 0.07286475889051156}}}, "BTC/USDT:USDT/BTC": {"BTC/USDT": {}, "USDT/BTC": {}}}
 
     const url_for_orderbook = new URL("http://localhost:5000")
+    const url_for_transaction_data = new URL("http://localhost:5000/transactions")
+    const url_for_wealth_distribution_data = new URL("http://localhost:5000/distribution")
+    const url_for_wealthiest_agents_data = new URL("http://localhost:5000/wealth")
+
     fetch(url_for_orderbook)
         .then(response=>response.json())
         .then(data => orderbookData = data)
@@ -68,23 +71,20 @@
         .then((orderBookData) => createAnOrderBookTable(orderbookData["BNB/USDT:USDT/BNB"]["USDT/BNB"], "USDT/BNB", "usdt_bnb_grid"))
         .then((orderBookData) => createAnOrderBookTable(orderbookData["BTC/USDT:USDT/BTC"]["BTC/USDT"], "BTC/USDT", "btc_usdt_grid"))
         .then((orderBookData) => createAnOrderBookTable(orderbookData["BTC/USDT:USDT/BTC"]["USDT/BTC"], "USDT/BTC", "usdt_btc_grid"))
-        .then ( () => console.log("done second one"))
+    
 
-    const url_for_transaction_data = new URL("http://localhost:5000/transactions")
     fetch(url_for_transaction_data)
         .then(response => response.json())
         .then(data => makeTransactionNumbersGraph(data))
-        .then(console.log("yeahllhoe"))
 
-    const url_for_wealth_distribution_data = new URL("http://localhost:5000/distribution")
     fetch(url_for_wealth_distribution_data)
         .then(response => response.json())
         .then(data => makeWealthDistributionPieChart(data))
 
-    const url_for_wealthiest_agents_data = new URL("http://localhost:5000/wealth")
     fetch(url_for_wealthiest_agents_data)
         .then(response => response.json())
         .then(data => makeWealthyAgentsBarChart(data))
+
 
     function createAnOrderBookTable(data, exchange_symbol, grid_id) {
         var direction_data = data
@@ -114,85 +114,81 @@
                     },]};
         new agGrid.Grid(eGridDiv, gridOptions);
         gridOptions.api.setRowData(data_rows);
+        setInterval(function() {
+            var datas = $.getJSON( url_for_orderbook, {
+                format: "json"
+            }).done(function( data ) {
+                var direction_data = data[getExchangeSymbolKey(exchange_symbol)][exchange_symbol]
+                var data_rows = []
+                for (let j = 0; j < 100; j++) {
+                    let row = {}
+                    if (direction_data[j] == null) { break }
+                    row[field_name_amount] = direction_data[j]['amount']
+                    row[field_name_exchange_price] = direction_data[j]['exchange_price']
+                    row[field_name_limit_price] = direction_data[j]['limit_price']
+                    data_rows.push(row)
+                }
+                // data appears to be wrong !!!
+                gridOptions.api.setRowData(data_rows);  
+            })
+        }, 500)
+    }
+
+    const exchangeSymbolKeys = ["ETH/USDT:USDT/ETH", "ETH/BTC:BTC/ETH", "ETH/BNB:BNB/ETH", "BNB/BTC:BTC/BNB", "BNB/USDT:USDT/BNB", "BTC/USDT:USDT/BTC"]
+    function getExchangeSymbolKey(exchange) {
+        for (let i = 0; i < exchangeSymbolKeys.length; i++) {
+            exchange_0 = exchangeSymbolKeys[i].split(":")[0]
+            exchange_1 = exchangeSymbolKeys[i].split(":")[1]
+            if (exchange_0 == exchange || exchange_1 == exchange) {
+                return  exchangeSymbolKeys[i]
+            }
+        }
     }
 
     function makeTransactionNumbersGraph(data){
         let name = "num_transactions_"
 
         const transaction_data = {
-            labels: Array.from(Array(data[name+"eth_usdt"].length).keys()),
+            labels: Array.from(Array(data[name+"ETH/USDT:USDT/ETH"].length).keys()), // length of random one as the x labels (may change later)
             datasets: [{
-                label: 'ETH/USDT',
-                data: data[name + "eth_usdt"],
-                borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1
-            },
-            {
-                label: 'USDT/ETH',
-                data: data[name + "usdt_eth"],
-                borderColor: 'rgb(75, 192, 192)',
+                label: 'ETH and USDT',
+                data: data[name + "ETH/USDT:USDT/ETH"],
+                borderColor: 'rgb(75, 172, 192)',
                 tension: 0.1
             },{
-                label: 'ETH/BTC',
-                data: data[name + "eth_btc"],
-                borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1
-            },
-            {
-                label: 'BTC/ETH',
-                data: data[name + "btc_eth"],
-                borderColor: 'rgb(75, 192, 192)',
+                label: 'ETH and BNB',
+                data: data[name + "ETH/BNB:BNB/ETH"],
+                borderColor: 'rgb(27, 192, 192)',
                 tension: 0.1
             },{
-                label: 'ETH/BNB',
-                data: data[name + "eth_bnb"],
+                label: 'ETH and BTC',
+                data: data[name + "ETH/BTC:BTC/ETH"],
+                borderColor: 'rgb(75, 192, 127)',
+                tension: 0.1
+            },{
+                label: 'BNB and BTC',
+                data: data[name + "BNB/BTC:BTC/BNB"],
+                borderColor: 'rgb(27, 192, 127)',
+                tension: 0.1
+            },{
+                label: 'BNB and USDT',
+                data: data[name + "BNB/USDT:USDT/BNB"],
                 fill: false,
-                borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1
-            },
-            {
-                label: 'BNB/ETH',
-                data: data[name + "bnb_eth"],
-                fill: false,
-                borderColor: 'rgb(75, 192, 192)',
+                borderColor: 'rgb(175, 27, 27)',
                 tension: 0.1
             },{
-                label: 'BTC/USDT',
-                data: data[name + "btc_usdt"],
-                borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1
-            },
-            {
-                label: 'USDT/BTC',
-                data: data[name + "usdt_btc"],
-                borderColor: 'rgb(75, 192, 192)',
+                label: 'BTC and USDT',
+                data: data[name + "BTC/USDT:USDT/BTC"],
+                fill: false,
+                borderColor: 'rgb(77, 77, 77)',
                 tension: 0.1
             },{
-                label: 'BNB/BTC',
-                data: data[name + "bnb_btc"],
-                borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1
-            },
-            {
-                label: 'BTC/BNB',
-                data: data[name + "btc_bnb"],
-                borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1
-            },{
-                label: 'USDT/BNB',
-                data: data[name + "usdt_bnb"],
+                label: 'Total',
+                data: data[name + "total"],
                 fill: false,
-                borderColor: 'rgb(75, 192, 192)',
+                borderColor: 'rgb(27, 27, 27)',
                 tension: 0.1
-            },
-            {
-                label: 'BNB/USDT',
-                data: data[name + "bnb_usdt"],
-                fill: false,
-                borderColor: 'rgb(75, 192, 192)',
-                tension: 0.1
-            }
-            ]
+            }]
         };
         const config = {
             type: 'line',
@@ -203,12 +199,22 @@
             document.getElementById('transactions_line_chart'),
             config
             );
+        // setInterval(function() {
+        //     var datas = $.getJSON( url_for_transaction_data, {
+        //         format: "json"
+        //     }).done(function( data ) {
+        //         function addData(chart, label, data) {
+        //             chart.data.labels.push(label);
+        //         }  
+        //     })
+        // }, 500)
 
     }
 
     function makeWealthDistributionPieChart(data) {
         let name = "wealth_distribution_"
         let row_data = []
+        row_data.push(["Random", data[name + 'random']])
         row_data.push(["MACD", data[name + 'macd']])
         row_data.push(["RSI", data[name + 'rsi']])
         row_data.push(["Moving Average", data[name + 'moving_average']])
@@ -231,7 +237,8 @@
     // https://www.anychart.com/
     function makeWealthyAgentsBarChart(data) {
         row_data = []
-        for (let i = 0; i < 10; i ++ ) {
+        number_of_agents = Object.keys(data).length
+        for (let i = 0; i < number_of_agents; i ++ ) {
             let name = "wealthy_" + i
             row_data.push([i + 1, data[name]["amount_in_usd"], data[name]["strategy"], data[name]['num_of_transactions'], data[name]['most_traded_currency_pair']])
         }

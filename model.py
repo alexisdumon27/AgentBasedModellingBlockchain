@@ -10,10 +10,6 @@ import json
 
 exchange_rates = pd.read_csv('Data/exchange_rates.csv')
 
-
-# ethereumData = pd.read_csv('Data/cleanedEuthereumData.csv')
-# tetherData = pd.read_csv('Data/cleanedTetherData.csv')
-
 class MarketModel(Model):
     def __init__(self, num_agents = 10, currency_0 = "BNB", currency_1 = "BTC"):
         self.round = 10 # index keeping count of the round of simulation
@@ -54,18 +50,32 @@ class MarketModel(Model):
         macd_strategy = MACDStrategy('macd', exchange_rates)
         rsi_strategy = RSIStrategy("rsi", exchange_rates)
 
-        for i in range(num_agents): 
-            strategy = random_strategy
-            if i % 7 == 1:
-                strategy = pivot_point_strategy
-            elif i % 7 == 2:
-                strategy = moving_average_strategy
-            elif i % 7 == 3:
-                strategy = macd_strategy
-            elif i % 7 == 4:
-                strategy = rsi_strategy
+        # list of agents using each strategy
+        self.agents_using_each_strategy_dict = {
+            "random" : [],
+            "pivot_point" : [],
+            "moving_average" : [],
+            "macd" : [],
+            "rsi": []
+        }
 
-            a = MarketAgent(i, self, strategy, self.currency_market) # does nothing for now... 
+        for i in range(num_agents): 
+            a = None
+            if i % 7 == 1:
+                a = MarketAgent(i, self, pivot_point_strategy, self.currency_market)
+                self.agents_using_each_strategy_dict["pivot_point"].append(a)
+            elif i % 7 == 2:
+                a = MarketAgent(i, self, moving_average_strategy, self.currency_market)
+                self.agents_using_each_strategy_dict["moving_average"].append(a)
+            elif i % 7 == 3:
+                a = MarketAgent(i, self, macd_strategy, self.currency_market)
+                self.agents_using_each_strategy_dict["macd"].append(a)
+            elif i % 7 == 4:
+                a = MarketAgent(i, self, rsi_strategy, self.currency_market)
+                self.agents_using_each_strategy_dict["rsi"].append(a)
+            else:
+                a = MarketAgent(i, self, random_strategy, self.currency_market)
+                self.agents_using_each_strategy_dict["random"].append(a)
             self.schedule.add(a)
             self.agents.append(a)
 
@@ -82,54 +92,65 @@ class MarketModel(Model):
             json.dump(simplified_order_book, json_file)
 
         transaction_data = {
-            # num of transactions with each currency # easy to calculate aggregated results # graph
-            "num_transactions_eth_usdt" : [1, 2, 3],
-            "num_transactions_usdt_eth" : [4, 7, 7],
-            "num_transactions_eth_bnb" : [5, 18, 27],
-            "num_transactions_bnb_eth" : [3, 19, 33],
-            "num_transactions_eth_btc" : [3, 29, 33],
-            "num_transactions_btc_eth" : [2, 19, 21],
-            "num_transactions_bnb_usdt" : [1, 19, 33],
-            "num_transactions_usdt_bnb" : [3, 19, 33],
-            "num_transactions_bnb_btc" : [3, 19, 12],
-            "num_transactions_btc_bnb" : [3, 19, 37],
-            "num_transactions_btc_usdt" : [0, 1, 3],
-            "num_transactions_usdt_btc" : [0, 9, 10],
+            # num of transactions with each currency and total !!! works !!!!!!!!
+            "num_transactions_total" : self.currency_market.num_of_transactions_dict['total'],
+            "num_transactions_ETH/USDT:USDT/ETH" : self.currency_market.num_of_transactions_dict['ETH/USDT:USDT/ETH'],
+            "num_transactions_ETH/BNB:BNB/ETH" : self.currency_market.num_of_transactions_dict['ETH/BNB:BNB/ETH'],
+            "num_transactions_ETH/BTC:BTC/ETH" : self.currency_market.num_of_transactions_dict['ETH/BTC:BTC/ETH'],
+            "num_transactions_BNB/BTC:BTC/BNB" : self.currency_market.num_of_transactions_dict['BNB/BTC:BTC/BNB'],
+            "num_transactions_BNB/USDT:USDT/BNB" : self.currency_market.num_of_transactions_dict['BNB/USDT:USDT/BNB'],
+            "num_transactions_BTC/USDT:USDT/BTC" : self.currency_market.num_of_transactions_dict['BTC/USDT:USDT/BTC']
         }
         with open('transactionData.JSON', 'w') as json_file:
             json.dump(transaction_data, json_file)
 
-        wealthiest_agents_data = {
-            # top 10 wealthiest agents -- would be nice to make into a bar chart
-            "wealthy_0" : {"amount_in_usd": 1027, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
-            "wealthy_1" : {"amount_in_usd": 927, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
-            "wealthy_2" : {"amount_in_usd": 827, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
-            "wealthy_3" : {"amount_in_usd": 727, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
-            "wealthy_4" : {"amount_in_usd": 627, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
-            "wealthy_5" : {"amount_in_usd": 527, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
-            "wealthy_6" : {"amount_in_usd": 427, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
-            "wealthy_7" : {"amount_in_usd": 327, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
-            "wealthy_8" : {"amount_in_usd": 227, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
-            "wealthy_9" : {"amount_in_usd": 127, "strategy": "strategy_name", "num_of_transactions":10, "most_traded_currency_pair" : "ETH/USDT" },
-        }
+        wealthiest_agents_data = self.getWealthiestAgentsInformation(self.getTenWealthiestAgents())
         with open('wealthiestAgentsData.JSON', 'w') as json_file:
             json.dump(wealthiest_agents_data, json_file)
 
-        wealth_distribution_data = {
-            # wealth distribution per strategy relative to number of agents (Adds up to 100 pie chart!!!)
-            "wealth_distribution_random": 40,
-            "wealth_distribution_pivot_point": 20,
-            "wealth_distribution_moving_average": 20,
-            "wealth_distribution_macd": 10,
-            "wealth_distribution_rsi": 10
-        }
-        
+        wealth_distribution_data = self.getWealthDistributionByStrategy()
         with open('wealthDistributionData.JSON', 'w') as json_file:
             json.dump(wealth_distribution_data, json_file)
         
         self.datacollector.collect(self)
         self.round += 1 # go to the next round
     
+    def getTenWealthiestAgents(self):
+        return sorted(self.schedule.agents, key=lambda x: x.currentUSDValueOfWallet, reverse=True)[:10] # sorts in descending order and keeps first 10
+
+    def getWealthiestAgentsInformation(self, agents):
+        wealthy_dict = {
+        }
+        name = "wealthy_"
+        for i in range(len(agents)):
+            wealthy_number_key = name + str(i)
+            wealthy_dict[wealthy_number_key] = {"amount_in_usd": 0, "strategy": "", "num_of_transactions": 0, "most_traded_currency_pair" : "" }
+            wealthy_dict[wealthy_number_key]["amount_in_usd"] = agents[i].currentUSDValueOfWallet
+            wealthy_dict[wealthy_number_key]["strategy"] = agents[i].strategy.name
+            wealthy_dict[wealthy_number_key]["num_of_transactions"] = 10 # not implemented yet
+            wealthy_dict[wealthy_number_key]["most_traded_currency_pair"] = "ETH/USDT" # not implemented yet
+        return wealthy_dict
+
+    def getWealthDistributionByStrategy(self):
+        random_agents = self.agents_using_each_strategy_dict["random"]
+        moving_avg_agents = self.agents_using_each_strategy_dict["pivot_point"]
+        pivot_point_agents = self.agents_using_each_strategy_dict["moving_average"]
+        macd_agents = self.agents_using_each_strategy_dict["macd"]
+        rsi_agents = self.agents_using_each_strategy_dict["rsi"]
+        wealth_distribution_data = {
+            "wealth_distribution_random": 0,
+            "wealth_distribution_pivot_point": 0,
+            "wealth_distribution_moving_average": 0,
+            "wealth_distribution_macd": 0,
+            "wealth_distribution_rsi": 0
+        }
+        wealth_distribution_data["wealth_distribution_random"] = sum(agent.currentUSDValueOfWallet for agent in random_agents)
+        wealth_distribution_data["wealth_distribution_moving_average"] = sum(agent.currentUSDValueOfWallet for agent in moving_avg_agents)
+        wealth_distribution_data["wealth_distribution_pivot_point"] = sum(agent.currentUSDValueOfWallet for agent in pivot_point_agents)
+        wealth_distribution_data["wealth_distribution_macd"] = sum(agent.currentUSDValueOfWallet for agent in macd_agents)
+        wealth_distribution_data["wealth_distribution_rsi"] = sum(agent.currentUSDValueOfWallet for agent in rsi_agents)
+        return wealth_distribution_data
+
     # desperatily needs to be cleaned !!! Perhaps BLEACHED!!!
     def simplifyOrderBook(self, order_book_data):
         orders = {
@@ -156,11 +177,11 @@ class MarketModel(Model):
         return orders
 # --------------------------------------------------------------------------
 
-model = MarketModel(3)
-for i in range(1):
+
+model = MarketModel(50)
+for i in range(1000):
     print (i)
     model.step()
-
 
 print("")
 print("END RESULT")
