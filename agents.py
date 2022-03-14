@@ -4,12 +4,12 @@ from mesa import Agent
 
 class MarketAgent(Agent):
 
-    def __init__(self, unique_id, model, strategy, currency_market):
+    def __init__(self, unique_id, model, strategy, risk_level, currency_market):
         self.unique_id = unique_id
         self.model = model
         self.round = model.round
         self.currency_market = currency_market
-
+        self.risk_level = risk_level
         # randomly initialised fields
         self.strategy = strategy
 
@@ -41,6 +41,8 @@ class MarketAgent(Agent):
         self.round = self.model.round
         
         if not self.has_made_open_order and not self.has_made_closing_order and not self.has_made_closing_order and not self.closing_transaction_was_successfull:
+            # check if it should make an order
+            # Following their strategy should it make an order?
             self.makeOrder("OPEN") # current_order is also updated
             if self.hasACurrentOrder():
                 self.has_made_open_order = True
@@ -49,9 +51,9 @@ class MarketAgent(Agent):
             if self.current_order.expiration_time > 0:
                 self.current_order.expiration_time -= 1
             else: 
-                # UPDATE the limit_price of the order (could be too low or too high)
+                # UPDATE the limit_price of the order
                 self.updateCurrentOrderLimitPrice() # updates for agent
-                self.currency_market.order_book.updateAgentOrderLimitPriceInOrderBook(self, self.current_order.limit_price) # updates the orderbook withe agents new limit price
+                self.currency_market.order_book.updateAgentOrderLimitPriceInOrderBook(self, self.current_order.limit_price) # updates the orderbook with the agent's new limit price
         elif self.has_made_open_order and self.open_transaction_was_successfull and not self.has_made_closing_order and not self.closing_transaction_was_successfull:
             if self.strategy.closingConditionMet(self, self.round):
                 self.makeOrder("CLOSE") # current_order is also updated 
@@ -61,14 +63,14 @@ class MarketAgent(Agent):
             if self.current_order.expiration_time > 0:
                 self.current_order.expiration_time -= 1
             else: 
-                # UPDATE the limit_price of the order (could be too low or too high)
+                # UPDATE the limit_price of the order
                 self.updateCurrentOrderLimitPrice() # updates for agent
                 self.currency_market.order_book.updateAgentOrderLimitPriceInOrderBook(self, self.current_order.limit_price) # updates the orderbook with agents new limit price
         elif self.has_made_open_order and self.open_transaction_was_successfull and self.has_made_closing_order and self.closing_transaction_was_successfull:
             # if agent has openned order, done open transac, closed order, and done closing transac
             self.initialiseParameters()
         
-        self.currentUSDValueOfWallet = self.getUSDWalletValue()
+        self.currentUSDValueOfWallet = self.getUSDWalletValue() # gets updated every round
         
     def hasACurrentInvestment(self):
         if self.current_investment == {"amount": 0, "bought_currency": None, "sold_currency": None}:
@@ -87,12 +89,12 @@ class MarketAgent(Agent):
         self.current_investment = {"amount": 0, "bought_currency": None, "sold_currency":None}
 
     def makeOrder(self, orderType):
-        # looks at what strategy returns // will be abstracted by currency_market and strategy object
         if orderType == "OPEN":
-            possibleOrder = self.strategy.makeOpenOrder(self, self.round)
+            possibleOrder = self.strategy.tryToMakeOpenOrder(self, self.round)
         elif orderType == "CLOSE":
             possibleOrder = self.strategy.makeCloseOrder(self, self.round)
-
+        
+        # was it a good time to make an order?
         if possibleOrder != None:
             self.current_order = possibleOrder
             self.currency_market.getOrderBook().addOrder(self.current_order)
@@ -149,3 +151,11 @@ class MarketAgent(Agent):
 
         if order_status != None: self.updateOrderStatus(order_status)
         if current_order_amount != None: self.updateCurrentOrderAmount(bought_currency_amount)
+    
+    def shouldAgentMakeAnOrder(risk_level) :
+        if risk_level == "averse" :
+            return random.choice(["1, 1, 1, 2, 2"]) == 1
+        elif risk_level == "neutral" :
+            return random.choice(["1,2,3"]) == 1
+        elif risk_level == "taker":
+            return True

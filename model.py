@@ -1,3 +1,4 @@
+import random
 from mesa import Model
 from mesa.time import RandomActivation, BaseScheduler
 from mesa.datacollection import DataCollector
@@ -50,6 +51,8 @@ class MarketModel(Model):
         macd_strategy = MACDStrategy('macd', exchange_rates)
         rsi_strategy = RSIStrategy("rsi", exchange_rates)
 
+        risk_levels = ["averse", "neutral", "taker"]
+
         # list of agents using each strategy
         self.agents_using_each_strategy_dict = {
             "random" : [],
@@ -60,21 +63,22 @@ class MarketModel(Model):
         }
 
         for i in range(num_agents): 
+            risk_level = random.choice(risk_levels)
             a = None
             if i % 7 == 1:
-                a = MarketAgent(i, self, pivot_point_strategy, self.currency_market)
+                a = MarketAgent(i, self, pivot_point_strategy, risk_level, self.currency_market)
                 self.agents_using_each_strategy_dict["pivot_point"].append(a)
             elif i % 7 == 2:
-                a = MarketAgent(i, self, moving_average_strategy, self.currency_market)
+                a = MarketAgent(i, self, moving_average_strategy, risk_level, self.currency_market)
                 self.agents_using_each_strategy_dict["moving_average"].append(a)
             elif i % 7 == 3:
-                a = MarketAgent(i, self, macd_strategy, self.currency_market)
+                a = MarketAgent(i, self, macd_strategy, risk_level, self.currency_market)
                 self.agents_using_each_strategy_dict["macd"].append(a)
             elif i % 7 == 4:
-                a = MarketAgent(i, self, rsi_strategy, self.currency_market)
+                a = MarketAgent(i, self, rsi_strategy, risk_level, self.currency_market)
                 self.agents_using_each_strategy_dict["rsi"].append(a)
             else:
-                a = MarketAgent(i, self, random_strategy, self.currency_market)
+                a = MarketAgent(i, self, random_strategy, risk_level, self.currency_market)
                 self.agents_using_each_strategy_dict["random"].append(a)
             self.schedule.add(a)
             self.agents.append(a)
@@ -113,7 +117,7 @@ class MarketModel(Model):
             json.dump(wealth_distribution_data, json_file)
         
         self.datacollector.collect(self)
-        self.round += 60 # go to the next round
+        self.round += 1 # go to the next round
     
     def getTenWealthiestAgents(self):
         return sorted(self.schedule.agents, key=lambda x: x.currentUSDValueOfWallet, reverse=True)[:10] # sorts in descending order and keeps first 10
