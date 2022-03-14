@@ -1,4 +1,4 @@
-from cmath import nan
+from cmath import nan, pi
 import random
 import numpy
 
@@ -52,11 +52,11 @@ class Strategy:
         mean = 1
         return numpy.random.normal(loc = mean, scale = random.uniform(0.003, 0.01))
 
-    def makeOpenOrder(self, agent, round):
+    def tryToMakeOpenOrder(self, agent, round):
         """ wishes to exchange X for Y """
         currencies_in_wallet = agent.getCurrenciesInWalletWithPositiveBalance()
         currencies_in_market = random.sample(agent.currency_market.getAvailableCurrencies(), len(agent.currency_market.getAvailableCurrencies()))
-        exchanging_currencies = self.findCurrencyPairToInvest(currencies_in_market, currencies_in_wallet, round) 
+        exchanging_currencies = self.findCurrencyPairToInvest(currencies_in_market, currencies_in_wallet, round, agent.risk_level) 
         if exchanging_currencies == None: 
             return None
         else:
@@ -65,7 +65,7 @@ class Strategy:
             sell_currency = exchanging_currencies[1]
             return self.sendOrderRequest(agent, buy_currency, sell_currency)
 
-    def findCurrencyPairToInvest(self, currencies_in_market, currencies_in_wallet, round):
+    def findCurrencyPairToInvest(self, currencies_in_market, currencies_in_wallet, round, agent_risk_level):
         for possible_selling_currency in currencies_in_wallet:
             possible_selling_currency_symbol = possible_selling_currency.symbol
 
@@ -76,7 +76,7 @@ class Strategy:
 
                 exchange_rate_symbol = possible_buying_currency_symbol + "/" + possible_selling_currency_symbol # is this the right way around ?
                 
-                if self.evaluateIndicators(round, exchange_rate_symbol): # this method is subclass specific !!!
+                if self.shouldAgentOpenOrderWithThisCurrencyPair(round, exchange_rate_symbol, agent_risk_level): # this method is subclass specific !!!
                     return [possible_buying_currency, possible_selling_currency]
         return None
 
@@ -101,7 +101,7 @@ class Strategy:
 
         exchange_rate_symbol = buy_currency.symbol + "/" + sell_currency.symbol
 
-        return self.haveStrategySpecificClosingConditionsBeenMet(round, exchange_rate_symbol)
+        return self.shouldAgentCloseCurrentOrder(round, exchange_rate_symbol, agent.risk_level)
     
     def makeCloseOrder(self, agent, round):
         """ wishes to exchange Y for X """
@@ -133,7 +133,7 @@ class RandomStrategy(Strategy):
         number = random.choice([0,1])
         return 1 == number
 
-    def makeOpenOrder(self, agent, round):
+    def tryToMakeOpenOrder(self, agent, round):
         """ wishes to exchange X for Y """
 
         agentWallet = agent.wallet
@@ -166,38 +166,65 @@ class PivotPointStrategy(Strategy):
         super().__init__(strategy_name, exchange_rates_data)
         self.exchange_rates_data = exchange_rates_data
     
-    def haveStrategySpecificClosingConditionsBeenMet(self, round, symbol):
+    def shouldAgentCloseCurrentOrder(self, round, symbol, agent_risk_level):
         """" Agent's strategy for when to close the position """
         # get support and the pivot points
         symbol_exchange_rate_data = self.exchange_rates_data[symbol]
         important_points = self.getImportantPoints(symbol_exchange_rate_data, round)
         high = important_points[1]
+        low = important_points[2]
         pivot_point = important_points[0]
         support = self.calculateSupport(high, pivot_point)
+        second_support = self.calculateSecondSupport(low, high, pivot_point)
+        current_exchange_rate_price = symbol_exchange_rate_data[round]
 
-        if self.isMarketTrendDown(pivot_point, symbol_exchange_rate_data):
-            if self.hasBrokenSupportLevel(support, symbol_exchange_rate_data):
+        if agent_risk_level == "averse":
+            if self.isMarketTrendDown(pivot_point, current_exchange_rate_price):
                 return True
-                
-        return False
+        elif agent_risk_level == "neutral":
+            if self.isMarketTrendDown(pivot_point, current_exchange_rate_price):
+                if self.hasBrokenSupportLevel(support, current_exchange_rate_price):
+                    return True
+        elif agent_risk_level == "taker":
+              if self.isMarketTrendDown(pivot_point, current_exchange_rate_price):
+                if self.hasBrokenSupportLevel(support, current_exchange_rate_price):
+                    if self.isCloserToSecondSupportLevelThanPivotPoint(second_support, pivot_point, current_exchange_rate_price):
+                        return True 
+        else: return False
 
-    def evaluateIndicators(self, round, symbol):
+    def shouldAgentOpenOrderWithThisCurrencyPair(self, round, symbol, agent_risk_level):
         symbol_exchange_rate_data = self.exchange_rates_data[symbol]
         important_points = self.getImportantPoints(symbol_exchange_rate_data, round)
         low = important_points[2]
+        high = important_points[1]
         pivot_point = important_points[0]
         resistance = self.calculateResistance(low, pivot_point)
-
+        second_resistance = self.calculateSecondResistance(low, high, pivot_point)
         current_exchange_rate_price = symbol_exchange_rate_data[round]
-        if self.isMarketTrendUp(pivot_point, current_exchange_rate_price):
-            if self.hasBrokenResistanceLevel(resistance, current_exchange_rate_price):
+
+        # a risk taker will only check if we are trading above the pivot point
+        if agent_risk_level == "taker":
+            if self.isMarketTrendUp(pivot_point, current_exchange_rate_price):
                 return True
+        # a neutral risk agent will check if marketTrendIsUp and wether the price has broken the resistance level
+        elif agent_risk_level == "neutral": 
+            if self.isMarketTrendUp(pivot_point, current_exchange_rate_price):
+                if self.hasBrokenResistanceLevel(resistance, current_exchange_rate_price):
+                    return True
+        # a risk averse agent will check if marketTrendIsUp, price has broken resistance level and if price going towards second_resistance
+        elif agent_risk_level == "averse":
+            if self.isMarketTrendUp(pivot_point, current_exchange_rate_price):
+                if self.hasBrokenResistanceLevel(resistance, current_exchange_rate_price):
+                    if self.isCloserToSecondResistanceLevelThanPivotPoint(second_resistance, pivot_point, current_exchange_rate_price):
+                        return True
+        else: False
+        # does not change performance and makes it more readable ^
 
     def getImportantPoints(self, exchange_rate_data, round):
         """ formula: pivot_point = (prev_high + prev_low + prev_close) / 3 """
-        day_in_minutes = 7 * 24 * 60
-        window = round - day_in_minutes # 
-        exchange_rate_data_past_day = exchange_rate_data.iloc[range(window, round)]
+        day_in_hours = 7 * 24
+        window = round - day_in_hours
+        exchange_rate_data_past_day = exchange_rate_data.iloc[range(window, round)] # window to previous round
         max = exchange_rate_data_past_day.max()
         min = exchange_rate_data_past_day.min()
         close = exchange_rate_data_past_day.iloc[-1] # last value
@@ -209,9 +236,27 @@ class PivotPointStrategy(Strategy):
         """ formula: resistance = 2 * P - L """
         return 2 * pivot_point - low
     
+    def calculateSecondResistance(self, low, high, pivot_point):
+        """ formula: R2 = P + (H − L) """
+        return pivot_point + high - low
+
+    def isCloserToSecondResistanceLevelThanPivotPoint(self, second_resistance, pivot_point, exchange_rate):
+        if abs(second_resistance - exchange_rate) < abs(pivot_point - exchange_rate):
+            return True
+        return False
+
+    def isCloserToSecondSupportLevelThanPivotPoint(self, second_support, pivot_point, exchange_rate):
+        if abs(second_support - exchange_rate) < abs(pivot_point - exchange_rate):
+            return True
+        return False
+
     def calculateSupport(self, high, pivot_point):
         """ formula: resistance = 2*P - H """
         return 2 * pivot_point - high
+
+    def calculateSecondSupport(self, low, high, pivot_point):
+        """ formula: S2 = P − (H − L) """
+        return pivot_point - high + low
 
     def isMarketTrendUp(self, pivot_point, current_exchange):
         if current_exchange > pivot_point:
@@ -241,7 +286,7 @@ class MovingAverageStrategy(Strategy):
         super().__init__(strategy_name, exchange_rates_data)
         self.exchange_rates_data = exchange_rates_data
     
-    def haveStrategySpecificClosingConditionsBeenMet(self, round, symbol):
+    def shouldAgentCloseCurrentOrder(self, round, symbol, agent_risk_level):
         """" Agent's strategy for when to close the position """
         # get support and the pivot points
         if self.isPriceMovementShowingStrongSell(symbol, round):
@@ -252,7 +297,8 @@ class MovingAverageStrategy(Strategy):
         
         return False
 
-    def evaluateIndicators(self, round, symbol):
+    def shouldAgentOpenOrderWithThisCurrencyPair(self, round, symbol, agent_risk_level):
+        """ should an open position be made  """
         if self.isPriceMovementShowingStrongBuy(symbol, round):
             return True
 
@@ -262,8 +308,8 @@ class MovingAverageStrategy(Strategy):
         return False
     
     def isPriceMovementShowingStrongBuy(self, symbol, round):
-        _5_days_in_min = 5 * 24 * 60
-        if self.isXDayMovingAverageRising(round, _5_days_in_min, symbol) and self.hasPriceCrossedFromBelowXDayMovingAverage(round, _5_days_in_min, symbol): 
+        _5_days_in_hours = 3 * 24
+        if self.isXDayMovingAverageRising(round, _5_days_in_hours, symbol) and self.hasPriceCrossedFromBelowXDayMovingAverage(round, _5_days_in_hours, symbol): 
             return True
 
     def hasPriceCrossedFromBelowXDayMovingAverage(self, round, range, symbol):
@@ -285,8 +331,8 @@ class MovingAverageStrategy(Strategy):
         return False
 
     def isComparingMovingAveragesShowingStrongBuy(self, symbol, round):
-        shorter_period = 5 * 24 * 60
-        longer_period = 20 * 24 * 60
+        shorter_period = 5 * 24
+        longer_period = 20 * 24
         if (self.isXDayMovingAverageRising(round, shorter_period, symbol) and self.isXDayMovingAverageRising(round, longer_period, symbol)
             and self.hasShorterPeriodCrossedLongerPeriodFromBelow(round, shorter_period, longer_period, symbol) ):
             return True
@@ -312,8 +358,8 @@ class MovingAverageStrategy(Strategy):
         return total / period
 
     def isPriceMovementShowingStrongSell(self, symbol, round):
-        _5_days_in_min = 5 * 24 * 60
-        if self.isXDayMovingAverageFalling(round, _5_days_in_min, symbol) and self.hasPriceCrossedFromAboveXDayMovingAverage(round, _5_days_in_min, symbol): 
+        _5_days_in_hours = 5 * 24
+        if self.isXDayMovingAverageFalling(round, _5_days_in_hours, symbol) and self.hasPriceCrossedFromAboveXDayMovingAverage(round, _5_days_in_hours, symbol): 
             return True
 
     def isXDayMovingAverageFalling(self, round, range, symbol):
@@ -334,8 +380,8 @@ class MovingAverageStrategy(Strategy):
         return False
 
     def isComparingMovingAveragesShowingStrongSell(self, symbol, round):
-        shorter_period = 5 * 24 * 60
-        longer_period = 20 * 24 * 60
+        shorter_period = 5 * 24
+        longer_period = 20 * 24
         if (self.isXDayMovingAverageFalling(round, shorter_period, symbol) and self.isXDayMovingAverageFalling(round, longer_period, symbol)
             and self.hasShorterPeriodCrossedLongerPeriodFromAbove(round, shorter_period, longer_period, symbol) ):
             return True
@@ -359,7 +405,7 @@ class MACDStrategy(Strategy):
         super().__init__(strategy_name, exchange_rates_data)
         self.exchange_rates_data = exchange_rates_data
     
-    def haveStrategySpecificClosingConditionsBeenMet(self, round, symbol):
+    def shouldAgentCloseCurrentOrder(self, round, symbol, agent_risk_level):
         """" Agent's strategy for when to close the position """
         # get support and the pivot points
         if self.hasCrossedSignalLineFromAbove(symbol, round):
@@ -373,7 +419,7 @@ class MACDStrategy(Strategy):
         
         return False
 
-    def evaluateIndicators(self, round, symbol):        
+    def shouldAgentOpenOrderWithThisCurrencyPair(self, round, symbol, agent_risk_level):        
         if self.hasCrossedSignalLineFromBelow(symbol, round):
             return True
 
@@ -503,7 +549,7 @@ class RSIStrategy(Strategy):
         super().__init__(strategy_name, exchange_rates_data)
         self.exchange_rates_data = exchange_rates_data
         
-    def haveStrategySpecificClosingConditionsBeenMet(self, round, symbol):
+    def shouldAgentCloseCurrentOrder(self, round, symbol, agent_risk_level):
         """" Agent's strategy for when to close the position """
         if self.hasRSICrossedOverboughtSignal(round, symbol):
             return True
@@ -511,7 +557,8 @@ class RSIStrategy(Strategy):
             return True
         return False
 
-    def evaluateIndicators(self, round, symbol):
+    def shouldAgentOpenOrderWithThisCurrencyPair(self, round, symbol, agent_risk_level):
+
         if self.hasRSICrossedOversoldSignal(round, symbol):
             return True
         if self.hasDownwardWeakness(round, symbol):
@@ -524,11 +571,12 @@ class RSIStrategy(Strategy):
             If the price falls to a new low, but the indicator does not, that may be a sign of the downtrend weakness.
         """
         current_exchange_rate = self.exchange_rates_data[symbol].iloc[round]
-        min_exchange_rate_past_10_days = self.exchange_rates_data[symbol].iloc[round-9:round+1].min()
+        _10_days_in_hours = 10 * 24
+        min_exchange_rate_past_10_days = self.exchange_rates_data[symbol].iloc[round - _10_days_in_hours:round+1].min()
         if current_exchange_rate == min_exchange_rate_past_10_days:
             current_rsi = self.getRelativeStrengthIndex(round, symbol)
             column_name = "rsi_" + symbol
-            min_rsi_past_10_days = self.exchange_rates_data[column_name].iloc[round-9:round+1].min()
+            min_rsi_past_10_days = self.exchange_rates_data[column_name].iloc[round - _10_days_in_hours:round+1].min()
             if current_rsi == min_rsi_past_10_days:
                 return True
         return False
@@ -547,11 +595,12 @@ class RSIStrategy(Strategy):
             If the price falls to a new low, but the indicator does not, that may be a sign of the downtrend weakness.
         """
         current_exchange_rate = self.exchange_rates_data[symbol].iloc[round]
-        max_exchange_rate_past_10_days = self.exchange_rates_data[symbol].iloc[round-9:round+1].max()
+        _10_days_in_hours = 10 * 24
+        max_exchange_rate_past_10_days = self.exchange_rates_data[symbol].iloc[round - _10_days_in_hours:round+1].max()
         if current_exchange_rate == max_exchange_rate_past_10_days:
             current_rsi = self.getRelativeStrengthIndex(round, symbol)
             column_name = "rsi_" + symbol
-            max_rsi_past_10_days = self.exchange_rates_data[column_name].iloc[round-9:round+1].max()
+            max_rsi_past_10_days = self.exchange_rates_data[column_name].iloc[round - _10_days_in_hours:round+1].max()
             if current_rsi == max_rsi_past_10_days:
                 return True
         return False
