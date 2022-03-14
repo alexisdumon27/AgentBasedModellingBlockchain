@@ -54,7 +54,7 @@ class Strategy:
 
     def makeOpenOrder(self, agent, round):
         """ wishes to exchange X for Y """
-        currencies_in_wallet = random.sample(list(agent.wallet.keys()), len(list(agent.wallet.keys())))
+        currencies_in_wallet = agent.getCurrenciesInWalletWithPositiveBalance()
         currencies_in_market = random.sample(agent.currency_market.getAvailableCurrencies(), len(agent.currency_market.getAvailableCurrencies()))
         exchanging_currencies = self.findCurrencyPairToInvest(currencies_in_market, currencies_in_wallet, round) 
         if exchanging_currencies == None: 
@@ -88,7 +88,7 @@ class Strategy:
         limit_price = self.getLimitPrice(exchange_rate)
         amount_of_buying_currency = self.getAmountOfBuyingCurrency(exchange_rate, limit_price, agent.wallet[sell_currency]) # AGENT WANTS TO BUY 10 of currency
         
-        expiration_time = random.choice(range(2,5))
+        expiration_time = random.choice(range(200,500))
 
         return Order("OPEN", buy_currency, sell_currency, amount_of_buying_currency, agent.round, agent, limit_price, expiration_time)
     
@@ -115,7 +115,7 @@ class Strategy:
         exchange_rate = agent.currency_market.getCurrenciesExchangeRate(symbol, agent.round)
         limit_price = self.getLimitPrice(exchange_rate)
 
-        expiration_time = random.choice(range(2,5))
+        expiration_time = random.choice(range(200,500))
         return Order("CLOSE", buy_currency, sell_currency, amount_of_buying_currency, round, agent, limit_price, expiration_time)
 
 class RandomStrategy(Strategy):

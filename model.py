@@ -11,7 +11,7 @@ import json
 exchange_rates = pd.read_csv('Data/exchange_rates.csv')
 
 class MarketModel(Model):
-    def __init__(self, num_agents = 10, currency_0 = "BNB", currency_1 = "BTC"):
+    def __init__(self, num_agents = 10):
         self.round = 10 # index keeping count of the round of simulation
 
         ethereum = Currency("Ethereum", "ETH", "crypto", 100, exchange_rates['ETH/USD'])
@@ -90,7 +90,7 @@ class MarketModel(Model):
         simplified_order_book = self.simplifyOrderBook(order_book_data)
         with open('orderBookData.JSON', 'w') as json_file:
             json.dump(simplified_order_book, json_file)
-
+        # if self.round == 999: self.getInitialOrderbookTable() to JSON
         transaction_data = {
             # num of transactions with each currency and total !!! works !!!!!!!!
             "num_transactions_total" : self.currency_market.num_of_transactions_dict['total'],
@@ -113,7 +113,7 @@ class MarketModel(Model):
             json.dump(wealth_distribution_data, json_file)
         
         self.datacollector.collect(self)
-        self.round += 1 # go to the next round
+        self.round += 60 # go to the next round
     
     def getTenWealthiestAgents(self):
         return sorted(self.schedule.agents, key=lambda x: x.currentUSDValueOfWallet, reverse=True)[:10] # sorts in descending order and keeps first 10
@@ -175,10 +175,20 @@ class MarketModel(Model):
                         orders[item[0]][order][i] = temp
                         i += 1
         return orders
+
+    def getInitialOrderbookTable(self):
+        return {
+            "ETH/USDT:USDT/ETH" : { 'ETH/USDT' : {}, 'USDT/ETH' : {} },
+            "ETH/BNB:BNB/ETH" : { 'ETH/BNB' : {}, 'BNB/ETH' : {} },
+            "ETH/BTC:BTC/ETH" : { 'ETH/BTC' : {}, 'BTC/ETH' : {} },
+            "BNB/BTC:BTC/BNB" : { 'BNB/BTC' : {}, 'BTC/BNB' : {} },
+            "BNB/USDT:USDT/BNB" :{ 'BNB/USDT' : {}, 'USDT/BNB' : {} },
+            "BTC/USDT:USDT/BTC" : { 'BTC/USDT' : {}, 'USDT/BTC' : {} },
+        }
 # --------------------------------------------------------------------------
 
 
-model = MarketModel(50)
+model = MarketModel(500)
 for i in range(1000):
     print (i)
     model.step()

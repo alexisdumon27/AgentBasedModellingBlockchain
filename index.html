@@ -114,24 +114,24 @@
                     },]};
         new agGrid.Grid(eGridDiv, gridOptions);
         gridOptions.api.setRowData(data_rows);
-        setInterval(function() {
-            var datas = $.getJSON( url_for_orderbook, {
-                format: "json"
-            }).done(function( data ) {
-                var direction_data = data[getExchangeSymbolKey(exchange_symbol)][exchange_symbol]
-                var data_rows = []
-                for (let j = 0; j < 100; j++) {
-                    let row = {}
-                    if (direction_data[j] == null) { break }
-                    row[field_name_amount] = direction_data[j]['amount']
-                    row[field_name_exchange_price] = direction_data[j]['exchange_price']
-                    row[field_name_limit_price] = direction_data[j]['limit_price']
-                    data_rows.push(row)
-                }
-                // data appears to be wrong !!!
-                gridOptions.api.setRowData(data_rows);  
-            })
-        }, 500)
+        // setInterval(function() {
+        //     var datas = $.getJSON( url_for_orderbook, {
+        //         format: "json"
+        //     }).done(function( data ) {
+        //         var direction_data = data[getExchangeSymbolKey(exchange_symbol)][exchange_symbol]
+        //         var data_rows = []
+        //         for (let j = 0; j < 100; j++) {
+        //             let row = {}
+        //             if (direction_data[j] == null) { break }
+        //             row[field_name_amount] = direction_data[j]['amount']
+        //             row[field_name_exchange_price] = direction_data[j]['exchange_price']
+        //             row[field_name_limit_price] = direction_data[j]['limit_price']
+        //             data_rows.push(row)
+        //         }
+        //         // data appears to be wrong !!!
+        //         gridOptions.api.setRowData(data_rows);  
+        //     })
+        // }, 500)
     }
 
     const exchangeSymbolKeys = ["ETH/USDT:USDT/ETH", "ETH/BTC:BTC/ETH", "ETH/BNB:BNB/ETH", "BNB/BTC:BTC/BNB", "BNB/USDT:USDT/BNB", "BTC/USDT:USDT/BTC"]
@@ -236,8 +236,8 @@
 
     // https://www.anychart.com/
     function makeWealthyAgentsBarChart(data) {
-        row_data = []
-        number_of_agents = Object.keys(data).length
+        let row_data = []
+        var number_of_agents = Object.keys(data).length
         for (let i = 0; i < number_of_agents; i ++ ) {
             let name = "wealthy_" + i
             row_data.push([i + 1, data[name]["amount_in_usd"], data[name]["strategy"], data[name]['num_of_transactions'], data[name]['most_traded_currency_pair']])
@@ -253,6 +253,7 @@
 
         // disable the built-in tooltips
         series.tooltip(false);
+        // series_0.tooltip(false);
         
         // set the selection mode to single
         chart.interactivity().selectionMode("single-select");
@@ -262,13 +263,9 @@
         /* show a custom tooltip
         when the mouse is over a column */
         chart.listen("pointMouseOver", function(e) {
-
-        // show the tooltip
-        tooltip.style.visibility = "visible"; 
-
-        // set the text of the tooltip
-        tooltip.innerHTML = "Amount in USD: "+ data.row(e.pointIndex)[1] + ", Strategy name: " + data.row(e.pointIndex)[2] +
-                 ", Number of Transactions: "+ data.row(e.pointIndex)[3] + ", Most traded currency pair: "+ data.row(e.pointIndex)[4];
+            tooltip.style.visibility = "visible"; 
+            tooltip.innerHTML = "Amount in USD: "+ data.row(e.pointIndex)[1] + ", Strategy name: " + data.row(e.pointIndex)[2] +
+                    ", Number of Transactions: "+ data.row(e.pointIndex)[3] + ", Most traded currency pair: "+ data.row(e.pointIndex)[4];
         });
 
         /* hide the custom tooltip
@@ -293,7 +290,28 @@
         // draw
         chart.container("wealth_bar_chart");
         chart.draw();
-    }
+
+        setInterval( function () {
+            var datas = $.getJSON( url_for_wealthiest_agents_data, {
+                format: "json"
+            }).done(function( data ) {
+                row_data = []
+                let new_number_of_agents = Object.keys(data).length
+                for (let i = 0; i < new_number_of_agents; i ++ ) {
+                    let name = "wealthy_" + i
+                    row_data.push([i + 1, data[name]["amount_in_usd"], data[name]["strategy"], data[name]['num_of_transactions'], data[name]['most_traded_currency_pair']])
+                }
+                data = anychart.data.set(row_data);
+                for (let i = 0; i < new_number_of_agents; i ++ ) {
+                    series_0.set(
+                        i,      // get index of column column
+                        "value",    // get parameter to update
+                        row_data[i][1],
+                    );
+                }
+            }, 2000)
+            }) 
+        }
 
 
   </script>

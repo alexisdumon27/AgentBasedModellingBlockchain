@@ -1,3 +1,5 @@
+from locale import currency
+import random
 from mesa import Agent
 
 class MarketAgent(Agent):
@@ -28,6 +30,7 @@ class MarketAgent(Agent):
     # start with $100 worth of all possible currencies
     def createWallet(self):
         for currency in self.currency_market.getAvailableCurrencies():
+            # give 100 $ worth of every currency
             self.wallet[currency] = 100 # start with 100 of both currencies
 
     # what happens during one round of the simulation for one agent
@@ -93,6 +96,13 @@ class MarketAgent(Agent):
         if possibleOrder != None:
             self.current_order = possibleOrder
             self.currency_market.getOrderBook().addOrder(self.current_order)
+
+    def getCurrenciesInWalletWithPositiveBalance(self):
+        currency_balance_above_zero = []
+        for currency_key in self.wallet.keys():
+            if self.wallet[currency_key] > 0:
+                currency_balance_above_zero.append(currency_key)
+        return random.sample(currency_balance_above_zero, len(currency_balance_above_zero))
 
     def updateWallet(self, bought_currency, sold_currency, bought_currency_amount, sold_currency_amount):
         self.wallet[bought_currency] += bought_currency_amount
