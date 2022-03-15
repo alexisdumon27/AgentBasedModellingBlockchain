@@ -29,9 +29,16 @@ class MarketAgent(Agent):
     
     # start with $100 worth of all possible currencies
     def createWallet(self):
-        for currency in self.currency_market.getAvailableCurrencies():
-            # give 100 $ worth of every currency
-            self.wallet[currency] = 100 # start with 100 of both currencies
+        # choose 2 currencies and put $100 worth for each
+        i = 0
+        for currency in random.sample(self.currency_market.getAvailableCurrencies(), len(self.currency_market.getAvailableCurrencies())):
+            if i == 0 or i == 1:
+            # give 100 $ worth to 2 out of all currencies
+                price_curr = currency.getPriceAtRound(self.round)
+                self.wallet[currency] = 100 / price_curr # start with 100 of both currencies
+            else: self.wallet[currency] = 0
+            i += 1
+        print (self.wallet.items())
 
     # what happens during one round of the simulation for one agent
     ## a limited amount of agents get to perform their step actions per turn 
@@ -151,11 +158,3 @@ class MarketAgent(Agent):
 
         if order_status != None: self.updateOrderStatus(order_status)
         if current_order_amount != None: self.updateCurrentOrderAmount(bought_currency_amount)
-    
-    def shouldAgentMakeAnOrder(risk_level) :
-        if risk_level == "averse" :
-            return random.choice(["1, 1, 1, 2, 2"]) == 1
-        elif risk_level == "neutral" :
-            return random.choice(["1,2,3"]) == 1
-        elif risk_level == "taker":
-            return True

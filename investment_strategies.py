@@ -563,7 +563,7 @@ class MACDStrategy(Strategy):
                 if self.IsThereConvergenceBetweenMACDAndPriceDownward(symbol, round):
                     return True
         elif agent_risk_level == "taker":
-            if self.hasCrossedSignalLineFromAbove(symbol, round) and self.hasMACDLineHasCrossedSignalLineFromAbove and self.IsThereConvergenceBetweenMACDAndPriceDownward(symbol, round)
+            if self.hasCrossedSignalLineFromAbove(symbol, round) and self.hasMACDLineHasCrossedSignalLineFromAbove and self.IsThereConvergenceBetweenMACDAndPriceDownward(symbol, round):
                 return True
         return False
 
