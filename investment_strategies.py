@@ -555,27 +555,37 @@ class MACDStrategy(Strategy):
     def shouldAgentCloseCurrentOrder(self, round, symbol, agent_risk_level):
         """" Agent's strategy for when to close the position """
         # get support and the pivot points
-        if self.hasCrossedSignalLineFromAbove(symbol, round):
-            return True
-
-        if self.hasCrossedOverXAxisFromAbove(symbol, round):
-            return True
-        
-        if self.IsThereConvergenceBetweenMACDAndPriceDownward(symbol, round):
-            return True
-        
+        if agent_risk_level == "averse":
+            if self.hasCrossedSignalLineFromAbove(symbol, round) or self.hasCrossedOverXAxisFromAbove(symbol, round) or self.IsThereConvergenceBetweenMACDAndPriceDownward(symbol, round):
+                return True
+        elif agent_risk_level == "neutral":
+            if self.hasCrossedSignalLineFromAbove(symbol, round) or self.hasCrossedOverXAxisFromAbove(symbol, round):
+                if self.IsThereConvergenceBetweenMACDAndPriceDownward(symbol, round):
+                    return True
+        elif agent_risk_level == "taker":
+            if self.hasCrossedSignalLineFromAbove(symbol, round) and self.hasMACDLineHasCrossedSignalLineFromAbove and self.IsThereConvergenceBetweenMACDAndPriceDownward(symbol, round)
+                return True
         return False
 
-    def shouldAgentOpenOrderWithThisCurrencyPair(self, round, symbol, agent_risk_level):        
-        if self.hasCrossedSignalLineFromBelow(symbol, round):
-            return True
-
-        if self.hasCrossedOverXAxisFromBelow(symbol, round):
-            return True
-        
-        if self.IsThereConvergenceBetweenMACDAndPriceUpward(symbol,round):
-            return True
-        
+    def shouldAgentOpenOrderWithThisCurrencyPair(self, round, symbol, agent_risk_level):   
+        """
+            MACD line crosses the Signal line. If it does so from below then bullish trend is indicated
+            If the MACD line becomes positive (crosses from below), it is usually a bullish signal.
+            A convergence pattern occurs when the MACD line's trend is the same as the price movement.
+        """
+        # a risk taker will 
+        if agent_risk_level == "taker":
+            if self.hasCrossedSignalLineFromBelow(symbol, round) or self.hasCrossedOverXAxisFromBelow(symbol, round) or self.IsThereConvergenceBetweenMACDAndPriceUpward(symbol,round):
+                return True
+        # risk neutral will 
+        elif agent_risk_level == "neutral":
+            if self.hasCrossedSignalLineFromBelow(symbol, round) or self.hasCrossedOverXAxisFromBelow(symbol, round):
+                if self.IsThereConvergenceBetweenMACDAndPriceUpward(symbol,round):
+                    return True
+        # risk averse will
+        elif agent_risk_level == "averse":
+            if self.hasCrossedSignalLineFromBelow(symbol, round) and self.hasCrossedOverXAxisFromBelow(symbol, round) and self.IsThereConvergenceBetweenMACDAndPriceUpward(symbol,round):
+                    return True     
         return False
     
     def getXDayExponentialMovingAverage(self, round, period, symbol):
@@ -705,11 +715,18 @@ class RSIStrategy(Strategy):
         return False
 
     def shouldAgentOpenOrderWithThisCurrencyPair(self, round, symbol, agent_risk_level):
-
-        if self.hasRSICrossedOversoldSignal(round, symbol):
-            return True
-        if self.hasDownwardWeakness(round, symbol):
-            return True
+        # a risk taker will use 40-60 as threshold or look if there is downward weakness
+        if agent_risk_level == "taker":
+            if self.hasRSICrossedOversoldSignal(round, symbol, 40) or self.hasDownwardWeakness(round, symbol):
+                return True
+        # risk neutral will use 30 - 70 - TRUE and Downward weakness
+        elif agent_risk_level == "neutral":
+            if self.hasRSICrossedOversoldSignal(round, symbol, 30) or self.hasDownwardWeakness(round, symbol):
+                return True
+        # risk averse will use 30-70 and only invest if below 30 
+        elif agent_risk_level == "averse":
+            if self.hasRSICrossedOversoldSignal(round, symbol, 30):
+                return True   
         return False
     
     def hasDownwardWeakness(self, round, symbol):
@@ -728,11 +745,11 @@ class RSIStrategy(Strategy):
                 return True
         return False
 
-    def hasRSICrossedOversoldSignal(self, round, exchange_rate_data):
-        previous_rsi = self.getRelativeStrengthIndex(round - 1, exchange_rate_data)
-        current_rsi = self.getRelativeStrengthIndex(round, exchange_rate_data)
-        if previous_rsi == None or current_rsi == None: return False
-        if previous_rsi > current_rsi and current_rsi < 30:
+    def hasRSICrossedOversoldSignal(self, round, symbol, threshold):
+        """ oversold signal is indication to BUY """
+        current_rsi = self.getRelativeStrengthIndex(round, symbol)
+        if current_rsi == None: return False
+        elif current_rsi < threshold:
             return True
         return False
 
@@ -752,11 +769,11 @@ class RSIStrategy(Strategy):
                 return True
         return False
 
-    def hasRSICrossedOverboughtSignal(self, round, exchange_rate_data):
-        previous_rsi = self.getRelativeStrengthIndex(round - 1, exchange_rate_data)
-        current_rsi = self.getRelativeStrengthIndex(round, exchange_rate_data)
-        if previous_rsi == None or current_rsi == None: return False
-        if previous_rsi < current_rsi and current_rsi > 70:
+    def hasRSICrossedOverboughtSignal(self, round, symbol, threshold):
+        """ overbought signal is indication to SELL """
+        current_rsi = self.getRelativeStrengthIndex(round, symbol)
+        if current_rsi == None: return False
+        elif current_rsi > threshold:
             return True
         return False
 
