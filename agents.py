@@ -30,12 +30,13 @@ class MarketAgent(Agent):
     # start with $100 worth of all possible currencies
     def createWallet(self):
         # choose 2 currencies and put $100 worth for each
+        starting_amount_based_on_risk_level = {"averse": 100, "neutral": 270, "taker": 500}
         i = 0
         for currency in random.sample(self.currency_market.getAvailableCurrencies(), len(self.currency_market.getAvailableCurrencies())):
             if i == 0 or i == 1:
             # give 100 $ worth to 2 out of all currencies
                 price_curr = currency.getPriceAtRound(self.round)
-                self.wallet[currency] = 100 / price_curr # start with 100 of both currencies
+                self.wallet[currency] = starting_amount_based_on_risk_level[self.risk_level] / price_curr # start with 100 of both currencies
             else: self.wallet[currency] = 0
             i += 1
         print (self.wallet.items())
