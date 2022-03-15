@@ -130,12 +130,11 @@ class RandomStrategy(Strategy):
 
     def closingConditionMet(self, agent, round):
         """" Agent's strategy for when to close the position """
-        number = random.choice([0,1])
+        number = random.choice([0,0,0,0,0,1]) # one in six chance
         return 1 == number
 
     def tryToMakeOpenOrder(self, agent, round):
         """ wishes to exchange X for Y """
-
         agentWallet = agent.wallet
         currenciesInWallet = list(agentWallet.keys())
         sell_currency = random.choice(currenciesInWallet) # currency agent has in its wallet that he wants to exchange (selling this to buy)
@@ -160,7 +159,7 @@ class RandomStrategy(Strategy):
 
 class PivotPointStrategy(Strategy):
     """
-        Follows Relative Strength Index indicator
+        Follows Pivot Point and Support and Resistance indicators
     """
     def __init__(self, strategy_name, exchange_rates_data):
         super().__init__(strategy_name, exchange_rates_data)
@@ -223,7 +222,7 @@ class PivotPointStrategy(Strategy):
     def getImportantPoints(self, exchange_rate_data, round):
         """ formula: pivot_point = (prev_high + prev_low + prev_close) / 3 """
         day_in_hours = 7 * 24
-        window = round - day_in_hours
+        window = round - day_in_hours # looks a week back
         exchange_rate_data_past_day = exchange_rate_data.iloc[range(window, round)] # window to previous round
         max = exchange_rate_data_past_day.max()
         min = exchange_rate_data_past_day.min()
@@ -245,11 +244,6 @@ class PivotPointStrategy(Strategy):
             return True
         return False
 
-    def isCloserToSecondSupportLevelThanPivotPoint(self, second_support, pivot_point, exchange_rate):
-        if abs(second_support - exchange_rate) < abs(pivot_point - exchange_rate):
-            return True
-        return False
-
     def calculateSupport(self, high, pivot_point):
         """ formula: resistance = 2*P - H """
         return 2 * pivot_point - high
@@ -258,6 +252,11 @@ class PivotPointStrategy(Strategy):
         """ formula: S2 = P − (H − L) """
         return pivot_point - high + low
 
+    def isCloserToSecondSupportLevelThanPivotPoint(self, second_support, pivot_point, exchange_rate):
+        if abs(second_support - exchange_rate) < abs(pivot_point - exchange_rate):
+            return True
+        return False
+    
     def isMarketTrendUp(self, pivot_point, current_exchange):
         if current_exchange > pivot_point:
             return True
@@ -287,30 +286,75 @@ class MovingAverageStrategy(Strategy):
         self.exchange_rates_data = exchange_rates_data
     
     def shouldAgentCloseCurrentOrder(self, round, symbol, agent_risk_level):
-        """" Agent's strategy for when to close the position """
-        # get support and the pivot points
-        if self.isPriceMovementShowingStrongSell(symbol, round):
-            return True
-
-        if self.isComparingMovingAveragesShowingStrongSell(symbol, round):
-            return True
+        """" Agent's strategy for when to close the position depends on risk_level the lower the tolerance the most likely it closes """
+        if agent_risk_level == "averse": # will close if it sees sign weak or strong
+            if self.isPriceMovementShowingStrongSell(symbol, round) or self.isPriceMovementShowingWeakSell(symbol, round, 5):
+                return True
+            elif self.isComparingMovingAveragesShowingStrongSell(symbol, round) or self.isComparingMovingAveragesShowingWeakSell(symbol, round):
+                return True
+        elif agent_risk_level == "neutral": # closes if strong sell
+            if self.isPriceMovementShowingStrongSell(symbol, round):
+                return True
+            if self.isComparingMovingAveragesShowingStrongSell(symbol, round):
+                return True
+        elif agent_risk_level == "taker": # closes if strong sell for SMA and EMA
+            if self.isPriceMovementShowingStrongSell(symbol, round, 5) and self.isPriceMovementShowingStrongSellEMA(symbol, round, 9):
+                return True
+            elif self.isComparingMovingAveragesShowingStrongSell(symbol, round) and self.isComparingEMAShowingStrongSell(symbol, round):
+                return True
         
         return False
 
     def shouldAgentOpenOrderWithThisCurrencyPair(self, round, symbol, agent_risk_level):
         """ should an open position be made  """
-        if self.isPriceMovementShowingStrongBuy(symbol, round):
-            return True
+        # risk taker will invest even if weak or strong buy
+        if agent_risk_level == "taker":
+            if self.isPriceMovementShowingStrongBuy(symbol, round, 5) or self.isPriceMovementShowingWeakBuy(symbol, round, 5):
+                return True
+            elif self.isComparingMovingAveragesShowingStrongBuy(symbol, round) or self.isComparingMovingAveragesShowingWeakBuy(symbol, round):
+                return True
+        
+        # risk neutral will only invest if strong buy
+        elif agent_risk_level == "neutral":
+            if self.isPriceMovementShowingStrongBuy(symbol, round, 5):
+                return True
+            elif self.isComparingMovingAveragesShowingStrongBuy(symbol, round):
+                return True
 
-        if self.isComparingMovingAveragesShowingStrongBuy(symbol, round):
-            return True
+        # risk averse strong buy SMA and EMA
+        elif agent_risk_level == "averse":
+            if self.isPriceMovementShowingStrongBuy(symbol, round, 5) and self.isPriceMovementShowingStrongBuyEMA(symbol, round, 9):
+                return True
+            elif self.isComparingMovingAveragesShowingStrongBuy(symbol, round) and self.isComparingEMAShowingStrongBuy(symbol, round):
+                return True
         
         return False
     
-    def isPriceMovementShowingStrongBuy(self, symbol, round):
-        _5_days_in_hours = 3 * 24
-        if self.isXDayMovingAverageRising(round, _5_days_in_hours, symbol) and self.hasPriceCrossedFromBelowXDayMovingAverage(round, _5_days_in_hours, symbol): 
+    def isPriceMovementShowingStrongBuy(self, symbol, round, time_considered_in_days):
+        X_days_in_hours = time_considered_in_days * 24
+        if self.isXDayMovingAverageRising(round, X_days_in_hours, symbol) and self.hasPriceCrossedFromBelowXDayMovingAverage(round, X_days_in_hours, symbol): 
             return True
+        return False
+
+    def isPriceMovementShowingStrongBuyEMA(self, symbol, round, time_considered_in_days):
+        # must keep the time in days to obtain correct data in exchange rates dataframe passing 9, 12 or 26
+        if self.isXDayEMARising(round, time_considered_in_days, symbol) and self.hasPriceCrossedFromBelowXDayEMA(round, time_considered_in_days, symbol): 
+            return True
+        return False
+
+    def isPriceMovementShowingWeakBuy(self, symbol, round, time_considered_in_days):
+        """ if current price crosses from below a falling moving average curve than it signals a weak buy """
+        X_days_in_hours = time_considered_in_days * 24
+        if self.isXDayMovingAverageFalling(round, X_days_in_hours, symbol) and self.hasPriceCrossedFromBelowXDayMovingAverage(round, X_days_in_hours, symbol): 
+            return True
+        return False
+
+    def isPriceMovementShowingWeakSell(self, symbol, round, time_considered_in_days):
+        """  a weak sell if falling current price is crossed by a rising longer period curve. """
+        X_days_in_hours = time_considered_in_days * 24
+        if self.isXDayMovingAverageRising(round, X_days_in_hours, symbol) and self.hasPriceCrossedFromAboveXDayMovingAverage(round, X_days_in_hours, symbol): 
+            return True
+        return False
 
     def hasPriceCrossedFromBelowXDayMovingAverage(self, round, range, symbol):
         current_price = self.exchange_rates_data[symbol][round]
@@ -322,11 +366,30 @@ class MovingAverageStrategy(Strategy):
             return True
         return False
 
+    def hasPriceCrossedFromBelowXDayEMA(self, round, time_range, symbol):
+        # time_range: 9, 12, 26
+        current_price = self.exchange_rates_data[symbol][round]
+        previous_price = self.exchange_rates_data[symbol][round - 1]
+        current_ema = self.getXDayExponentialMovingAverage(round, time_range, symbol)
+        previous_ema = self.getXDayExponentialMovingAverage(round - 1, time_range, symbol)
+
+        if previous_price < previous_ema and current_price > current_ema:
+            return True
+        return False
+
     def isXDayMovingAverageRising(self, round, range, symbol):
         """ rising if current round moving avg higher than previous round """
         current_moving_average_X_day = self.getXDayMovingAverage(round, range, symbol)
         previous_moving_average_X_day = self.getXDayMovingAverage(round - 1, range, symbol)
         if current_moving_average_X_day > previous_moving_average_X_day:
+            return True
+        return False
+
+    def isXDayEMARising(self, round, time_range, symbol):
+        # time_range 9, 12, 26
+        current_ema_X_day = self.getXDayExponentialMovingAverage(round, time_range, symbol)
+        previous_ema_X_day = self.getXDayExponentialMovingAverage(round - 1, time_range, symbol)
+        if current_ema_X_day > previous_ema_X_day:
             return True
         return False
 
@@ -336,6 +399,30 @@ class MovingAverageStrategy(Strategy):
         if (self.isXDayMovingAverageRising(round, shorter_period, symbol) and self.isXDayMovingAverageRising(round, longer_period, symbol)
             and self.hasShorterPeriodCrossedLongerPeriodFromBelow(round, shorter_period, longer_period, symbol) ):
             return True
+    
+    def isComparingEMAShowingStrongBuy(self, symbol, round):
+        shorter_period_in_days = 9 # replaced by params
+        longer_period_in_days = 26 # replaced by params
+        if (self.isXDayEMARising(round, shorter_period_in_days, symbol) and self.isXDayEMARising(round, longer_period_in_days, symbol)
+            and self.hasShorterPeriodCrossedLongerPeriodFromBelowEMA(round, shorter_period_in_days, longer_period_in_days, symbol) ):
+            return True
+
+    def isComparingMovingAveragesShowingWeakBuy(self, symbol, round):
+        """  if a rising lower period curve crosses from below another falling longer period curve than weak buy is indicated """
+        shorter_period = 5 * 24
+        longer_period = 20 * 24
+        if (self.isXDayMovingAverageRising(round, shorter_period, symbol) and self.isXDayMovingAverageFalling(round, longer_period, symbol)
+            and self.hasShorterPeriodCrossedLongerPeriodFromBelow(round, shorter_period, longer_period, symbol) ):
+            return True
+        return False
+
+    def isComparingMovingAveragesShowingWeakSell(self, symbol, round):
+        shorter_period = 5 * 24
+        longer_period = 20 * 24
+        if (self.isXDayMovingAverageFalling(round, shorter_period, symbol) and self.isXDayMovingAverageRising(round, longer_period, symbol)
+            and self.hasShorterPeriodCrossedLongerPeriodFromAbove(round, shorter_period, longer_period, symbol) ):
+            return True
+        return False
 
     def hasShorterPeriodCrossedLongerPeriodFromBelow(self, round, shorter_period, longer_period, symbol):
         previous_short_period_day_moving_average = self.getXDayMovingAverage(round - 1, shorter_period, symbol)
@@ -347,9 +434,30 @@ class MovingAverageStrategy(Strategy):
         if previous_short_period_day_moving_average < previous_long_period_day_moving_average and current_short_period_day_moving_average > current_long_period_day_moving_average:
             return True
         return False
+    
+    def hasShorterPeriodCrossedLongerPeriodFromBelowEMA(self, round, shorter_period, longer_period, symbol):
+        previous_short_period_day_moving_average = self.getXDayExponentialMovingAverage(round - 1, shorter_period, symbol)
+        current_short_period_day_moving_average = self.getXDayExponentialMovingAverage(round, shorter_period, symbol)
 
+        previous_long_period_day_moving_average = self.getXDayExponentialMovingAverage(round - 1, longer_period, symbol)
+        current_long_period_day_moving_average = self.getXDayExponentialMovingAverage(round, longer_period, symbol)
+
+        if previous_short_period_day_moving_average < previous_long_period_day_moving_average and current_short_period_day_moving_average > current_long_period_day_moving_average:
+            return True
+        return False
+
+    def hasShorterPeriodCrossedLongerPeriodFromBelowEMA(self, round, shorter_period, longer_period, symbol):
+        previous_short_period_day_moving_average = self.getXDayExponentialMovingAverage(round - 1, shorter_period, symbol)
+        current_short_period_day_moving_average = self.getXDayExponentialMovingAverage(round, shorter_period, symbol)
+
+        previous_long_period_day_moving_average = self.getXDayExponentialMovingAverage(round - 1, longer_period, symbol)
+        current_long_period_day_moving_average = self.getXDayExponentialMovingAverage(round, longer_period, symbol)
+
+        if previous_short_period_day_moving_average > previous_long_period_day_moving_average and current_short_period_day_moving_average < current_long_period_day_moving_average:
+            return True
+        return False
+        
     def getXDayMovingAverage(self, round, period, symbol):
-        # exchange_rate_data is already currency specific
         if round < period:
             period = round
         total = 0
@@ -357,10 +465,33 @@ class MovingAverageStrategy(Strategy):
             total += self.exchange_rates_data[symbol][round - i]
         return total / period
 
-    def isPriceMovementShowingStrongSell(self, symbol, round):
-        _5_days_in_hours = 5 * 24
+    def getXDayExponentialMovingAverage(self, round, period, symbol):
+        """ using pandas ewm formula -- returns a pandas column """
+        """ 9_ema_BNB/BTC, 12_ema_BNB/BTC, 26_ema_BNB/BTC """
+        column_name = str(period) + "_ema_" + symbol
+        return self.exchange_rates_data[column_name].iloc[round]
+
+    def isPriceMovementShowingStrongSell(self, symbol, round, time_frame):
+        _5_days_in_hours = time_frame * 24
         if self.isXDayMovingAverageFalling(round, _5_days_in_hours, symbol) and self.hasPriceCrossedFromAboveXDayMovingAverage(round, _5_days_in_hours, symbol): 
             return True
+        return False
+
+    def isPriceMovementShowingStrongSellEMA(self, symbol, round, time_frame):
+        if self.isXDayEMARising(round, time_frame, symbol) and self.hasPriceCrossedFromAboveXDayEMA(round, time_frame, symbol): 
+            return True
+        return False
+
+    def hasPriceCrossedFromAboveXDayEMA(self, round, time_range, symbol):
+        # time_range: 9, 12, 26
+        current_price = self.exchange_rates_data[symbol][round]
+        previous_price = self.exchange_rates_data[symbol][round - 1]
+        current_ema = self.getXDayExponentialMovingAverage(round, time_range, symbol)
+        previous_ema = self.getXDayExponentialMovingAverage(round - 1, time_range, symbol)
+
+        if previous_price > previous_ema and current_price < current_ema:
+            return True
+        return False
 
     def isXDayMovingAverageFalling(self, round, range, symbol):
         current_moving_average_X_day = self.getXDayMovingAverage(round, range, symbol)
@@ -369,6 +500,13 @@ class MovingAverageStrategy(Strategy):
             return True
         return False
     
+    def isXDayEMAFalling(self, round, range, symbol):
+        current_moving_average_X_day = self.getXDayExponentialMovingAverage(round, range, symbol)
+        previous_moving_average_X_day = self.getXDayExponentialMovingAverage(round - 1, range, symbol)
+        if current_moving_average_X_day < previous_moving_average_X_day:
+            return True
+        return False
+
     def hasPriceCrossedFromAboveXDayMovingAverage(self, round, range, symbol):
         current_price = self.exchange_rates_data[symbol][round]
         previous_price = self.exchange_rates_data[symbol][round - 1]
@@ -385,7 +523,16 @@ class MovingAverageStrategy(Strategy):
         if (self.isXDayMovingAverageFalling(round, shorter_period, symbol) and self.isXDayMovingAverageFalling(round, longer_period, symbol)
             and self.hasShorterPeriodCrossedLongerPeriodFromAbove(round, shorter_period, longer_period, symbol) ):
             return True
+        return False
     
+    def isComparingEMAShowingStrongSell(self, symbol, round):
+        shorter_period = 9
+        longer_period = 26
+        if (self.isXDayEMAFalling(round, shorter_period, symbol) and self.isXDayEMAFalling(round, longer_period, symbol)
+            and self.hasShorterPeriodCrossedLongerPeriodFromAbove(round, shorter_period, longer_period, symbol) ):
+            return True
+        return False
+
     def hasShorterPeriodCrossedLongerPeriodFromAbove(self, round, shorter_period, longer_period, symbol):
         previous_short_period_day_moving_average = self.getXDayMovingAverage(round - 1, shorter_period, symbol)
         current_short_period_day_moving_average = self.getXDayMovingAverage(round, shorter_period, symbol)
