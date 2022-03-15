@@ -88,7 +88,7 @@ class Strategy:
         limit_price = self.getLimitPrice(exchange_rate)
         amount_of_buying_currency = self.getAmountOfBuyingCurrency(exchange_rate, limit_price, agent.wallet[sell_currency]) # AGENT WANTS TO BUY 10 of currency
         
-        expiration_time = random.choice(range(200,500))
+        expiration_time = random.choice(range(24, 168)) # 1 step == 1 hour --> 1 day to 7 days
 
         return Order("OPEN", buy_currency, sell_currency, amount_of_buying_currency, agent.round, agent, limit_price, expiration_time)
     
@@ -115,7 +115,7 @@ class Strategy:
         exchange_rate = agent.currency_market.getCurrenciesExchangeRate(symbol, agent.round)
         limit_price = self.getLimitPrice(exchange_rate)
 
-        expiration_time = random.choice(range(200,500))
+        expiration_time = random.choice(range(1, 24)) # want to close ASAP so willing to change much quicker
         return Order("CLOSE", buy_currency, sell_currency, amount_of_buying_currency, round, agent, limit_price, expiration_time)
 
 class RandomStrategy(Strategy):
