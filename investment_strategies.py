@@ -29,7 +29,6 @@ class Strategy:
 
     def getAmountOfBuyingCurrency(self, exchange_rate, limit_price, max_amount_to_sell):
         # should buy amount proportional to exchange_rate and it should not exceed the max amount of the currency it can sell
-        print ("--> ", max_amount_to_sell)
         if exchange_rate > 1:
             if exchange_rate > limit_price:
                 return max_amount_to_sell / limit_price
@@ -59,8 +58,6 @@ class Strategy:
     def tryToMakeOpenOrder(self, agent, round):
         """ wishes to exchange X for Y """
         currencies_in_wallet = agent.getCurrenciesInWalletWithPositiveBalance()
-        print (agent.unique_id ,": ", agent.wallet.items())
-        print (agent.unique_id ,": ", agent.getCurrenciesInWalletWithPositiveBalance())
         currencies_in_market = random.sample(agent.currency_market.getAvailableCurrencies(), len(agent.currency_market.getAvailableCurrencies()))
         exchanging_currencies = self.findCurrencyPairToInvest(currencies_in_market, currencies_in_wallet, round, agent.risk_level) 
         if exchanging_currencies == None: 
@@ -72,13 +69,10 @@ class Strategy:
             return self.sendOrderRequest(agent, buy_currency, sell_currency)
 
     def findCurrencyPairToInvest(self, currencies_in_market, currencies_in_wallet, round, agent_risk_level):
-        print ("Finding currency pairs to invest in ... ")
         for possible_selling_currency in currencies_in_wallet:
             possible_selling_currency_symbol = possible_selling_currency.symbol
-            print ("Selling: ", possible_selling_currency)
             for possible_buying_currency in currencies_in_market:
                 possible_buying_currency_symbol = possible_buying_currency.symbol
-                print ("Buying: ", possible_buying_currency)
                 if possible_selling_currency_symbol == possible_buying_currency_symbol: continue
 
                 exchange_rate_symbol = possible_buying_currency_symbol + "/" + possible_selling_currency_symbol # is this the right way around ?
@@ -94,8 +88,6 @@ class Strategy:
 
         limit_price = self.getLimitPrice(exchange_rate)
         amount_of_buying_currency = self.getAmountOfBuyingCurrency(exchange_rate, limit_price, agent.wallet[sell_currency]) # AGENT WANTS TO BUY 10 of currency
-        print ("exchange rate: ", exchange_rate, " and limit price: ", limit_price)
-        print (agent.unique_id, " just sold ", sell_currency, " for ", amount_of_buying_currency , " of ", buy_currency )
         expiration_time = random.choice(range(24, 168)) # 1 step == 1 hour --> 1 day to 7 days
 
         return Order("OPEN", buy_currency, sell_currency, amount_of_buying_currency, agent.round, agent, limit_price, expiration_time)
@@ -157,7 +149,6 @@ class RandomStrategy(Strategy):
         exchange_rate = agent.currency_market.getCurrenciesExchangeRate(exchange_symbol, agent.round)
 
         limit_price = self.getLimitPrice(exchange_rate)
-        print ("do you come here ??? ")
         amount_of_buying_currency = self.getAmountOfBuyingCurrency(exchange_rate, limit_price, agent.wallet[sell_currency])
 
         expiration_time = random.choice(range(2,5))
@@ -295,12 +286,12 @@ class MovingAverageStrategy(Strategy):
     def shouldAgentCloseCurrentOrder(self, round, symbol, agent_risk_level):
         """" Agent's strategy for when to close the position depends on risk_level the lower the tolerance the most likely it closes """
         if agent_risk_level == "averse": # will close if it sees sign weak or strong
-            if self.isPriceMovementShowingStrongSell(symbol, round) or self.isPriceMovementShowingWeakSell(symbol, round, 5):
+            if self.isPriceMovementShowingStrongSell(symbol, round, 5) or self.isPriceMovementShowingWeakSell(symbol, round, 5):
                 return True
             elif self.isComparingMovingAveragesShowingStrongSell(symbol, round) or self.isComparingMovingAveragesShowingWeakSell(symbol, round):
                 return True
         elif agent_risk_level == "neutral": # closes if strong sell
-            if self.isPriceMovementShowingStrongSell(symbol, round):
+            if self.isPriceMovementShowingStrongSell(symbol, round, 5):
                 return True
             if self.isComparingMovingAveragesShowingStrongSell(symbol, round):
                 return True
@@ -715,10 +706,16 @@ class RSIStrategy(Strategy):
         
     def shouldAgentCloseCurrentOrder(self, round, symbol, agent_risk_level):
         """" Agent's strategy for when to close the position """
-        if self.hasRSICrossedOverboughtSignal(round, symbol):
-            return True
-        if self.hasUpwardWeakness(self, round, symbol):
-            return True
+
+        if agent_risk_level == "averse":
+            if self.hasRSICrossedOverboughtSignal(round, symbol, 40) or self.hasUpwardWeakness(round, symbol):
+                return True
+        elif agent_risk_level == "neutral":
+            if self.hasRSICrossedOverboughtSignal(round, symbol, 30) or self.hasUpwardWeakness(round, symbol):
+                return True
+        elif agent_risk_level == "taker":
+            if self.hasRSICrossedOverboughtSignal(round, symbol, 30):
+                return True   
         return False
 
     def shouldAgentOpenOrderWithThisCurrencyPair(self, round, symbol, agent_risk_level):
