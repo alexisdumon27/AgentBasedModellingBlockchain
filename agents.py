@@ -39,13 +39,11 @@ class MarketAgent(Agent):
                 self.wallet[currency] = starting_amount_based_on_risk_level[self.risk_level] / price_curr # start with 100 of both currencies
             else: self.wallet[currency] = 0
             i += 1
-        print (self.wallet.items())
 
     # what happens during one round of the simulation for one agent
     ## a limited amount of agents get to perform their step actions per turn 
     def step(self):
         """ if it was chosen as a trading agent this turn; then it adds an order to the order book list """
-
         self.round = self.model.round
         
         if not self.has_made_open_order and not self.has_made_closing_order and not self.has_made_closing_order and not self.closing_transaction_was_successfull:

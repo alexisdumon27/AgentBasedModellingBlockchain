@@ -116,10 +116,6 @@ class CurrencyMarket:
             
             self.matchBuyAndSellOrders(exchange_direction_0_orders, exchange_direction_1_orders, possible_currency_exchange)
 
-        # if len(self.num_of_transactions) == 0:
-        #     self.num_of_transactions.append(self.num_of_transactions_this_round)
-        # else: self.num_of_transactions.append(self.num_of_transactions_this_round + self.num_of_transactions[-1]) # cumulative counter
-
     def addNewRoundToNumOfTransactionsDict(self):
         for item in self.num_of_transactions_dict:
             array_of_transactions = self.num_of_transactions_dict[item]

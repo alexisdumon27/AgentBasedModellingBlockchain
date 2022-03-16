@@ -1,4 +1,4 @@
-from flask import Flask, after_this_request, jsonify
+from flask import Flask, after_this_request, jsonify, request
 import json
 import os
 
@@ -50,5 +50,6 @@ def sendDistributionData():
     json_url = os.path.join(SITE_ROOT, "wealthDistributionData.JSON")
     data = json.load(open(json_url))
     return jsonify(data)
+    
 if __name__ == "__main__":
     app.run(debug=True)
