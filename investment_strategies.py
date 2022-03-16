@@ -25,16 +25,20 @@ class Strategy:
     def __init__(self, strategy_name, exchange_rates_data):
         self.name = strategy_name
         self.exchange_rates_data = exchange_rates_data
-        # agent_risk_level
         pass
 
     def getAmountOfBuyingCurrency(self, exchange_rate, limit_price, max_amount_to_sell):
         # should buy amount proportional to exchange_rate and it should not exceed the max amount of the currency it can sell
+        print ("--> ", max_amount_to_sell)
         if exchange_rate > 1:
-            return (max_amount_to_sell / limit_price) - 0.1
+            if exchange_rate > limit_price:
+                return max_amount_to_sell / limit_price
+            else: return max_amount_to_sell / exchange_rate
         else:
             exchange_price = 1 / limit_price
-            return (max_amount_to_sell / exchange_price) - 0.1
+            if exchange_rate > exchange_price:
+                return max_amount_to_sell / exchange_price
+            else: return max_amount_to_sell / exchange_rate
         
     def getLimitPrice(self, exchange_rate):
         # https://arxiv.org/pdf/cond-mat/0103600.pdf
@@ -55,6 +59,8 @@ class Strategy:
     def tryToMakeOpenOrder(self, agent, round):
         """ wishes to exchange X for Y """
         currencies_in_wallet = agent.getCurrenciesInWalletWithPositiveBalance()
+        print (agent.unique_id ,": ", agent.wallet.items())
+        print (agent.unique_id ,": ", agent.getCurrenciesInWalletWithPositiveBalance())
         currencies_in_market = random.sample(agent.currency_market.getAvailableCurrencies(), len(agent.currency_market.getAvailableCurrencies()))
         exchanging_currencies = self.findCurrencyPairToInvest(currencies_in_market, currencies_in_wallet, round, agent.risk_level) 
         if exchanging_currencies == None: 
@@ -66,12 +72,13 @@ class Strategy:
             return self.sendOrderRequest(agent, buy_currency, sell_currency)
 
     def findCurrencyPairToInvest(self, currencies_in_market, currencies_in_wallet, round, agent_risk_level):
+        print ("Finding currency pairs to invest in ... ")
         for possible_selling_currency in currencies_in_wallet:
             possible_selling_currency_symbol = possible_selling_currency.symbol
-
+            print ("Selling: ", possible_selling_currency)
             for possible_buying_currency in currencies_in_market:
                 possible_buying_currency_symbol = possible_buying_currency.symbol
-                
+                print ("Buying: ", possible_buying_currency)
                 if possible_selling_currency_symbol == possible_buying_currency_symbol: continue
 
                 exchange_rate_symbol = possible_buying_currency_symbol + "/" + possible_selling_currency_symbol # is this the right way around ?
@@ -87,7 +94,8 @@ class Strategy:
 
         limit_price = self.getLimitPrice(exchange_rate)
         amount_of_buying_currency = self.getAmountOfBuyingCurrency(exchange_rate, limit_price, agent.wallet[sell_currency]) # AGENT WANTS TO BUY 10 of currency
-        
+        print ("exchange rate: ", exchange_rate, " and limit price: ", limit_price)
+        print (agent.unique_id, " just sold ", sell_currency, " for ", amount_of_buying_currency , " of ", buy_currency )
         expiration_time = random.choice(range(24, 168)) # 1 step == 1 hour --> 1 day to 7 days
 
         return Order("OPEN", buy_currency, sell_currency, amount_of_buying_currency, agent.round, agent, limit_price, expiration_time)
@@ -135,8 +143,7 @@ class RandomStrategy(Strategy):
 
     def tryToMakeOpenOrder(self, agent, round):
         """ wishes to exchange X for Y """
-        agentWallet = agent.wallet
-        currenciesInWallet = list(agentWallet.keys())
+        currenciesInWallet = agent.getCurrenciesInWalletWithPositiveBalance()
         sell_currency = random.choice(currenciesInWallet) # currency agent has in its wallet that he wants to exchange (selling this to buy)
 
         currencies = agent.currency_market.getAvailableCurrencies() # list of available currencies in the market
@@ -150,7 +157,7 @@ class RandomStrategy(Strategy):
         exchange_rate = agent.currency_market.getCurrenciesExchangeRate(exchange_symbol, agent.round)
 
         limit_price = self.getLimitPrice(exchange_rate)
-        
+        print ("do you come here ??? ")
         amount_of_buying_currency = self.getAmountOfBuyingCurrency(exchange_rate, limit_price, agent.wallet[sell_currency])
 
         expiration_time = random.choice(range(2,5))
