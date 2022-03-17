@@ -1,24 +1,24 @@
-from io import RawIOBase
 import random
-from tracemalloc import start
 from mesa import Model
 from mesa.time import RandomActivation, BaseScheduler
 from mesa.datacollection import DataCollector
-from numpy import number
 import pandas as pd
 from investment_strategies import MACDStrategy, MovingAverageStrategy, PivotPointStrategy, RSIStrategy, Strategy, RandomStrategy
 from agents import MarketAgent
 from currency_market import CurrencyMarket, Currency
-from dataCollectorMethods import *
 import json
 import webbrowser
+from dataVisualisationMethods import *
 
 exchange_rates = pd.read_csv('Data/exchange_rates.csv')
 
 class MarketModel(Model):
-    def __init__(self, number_of_agents, ratio_of_random_strategy_to_other, starting_round, ending_round, ratio_of_agents_engaged_each_turn):
-        self.round = starting_round # index keeping count of the round of simulation
-        self.num_of_agents = number_of_agents
+    def __init__(self, starting_date = 1, ratio_of_random_strategy_to_other = 0.5, ratio_of_agents_engaged_each_turn = 0.5, num_agents = 10):
+        self.round = self.dateToRoundNumber(starting_date) # index keeping count of the round of simulation
+        self.num_of_agents = num_agents
+        self.ratio_of_agents_engaged_each_turn = ratio_of_agents_engaged_each_turn
+        self.ratio_of_random_strategy_to_other = ratio_of_random_strategy_to_other
+
         ethereum = Currency("Ethereum", "ETH", "crypto", 100, exchange_rates['ETH/USD'])
         tether = Currency('Tether', "USDT", "fiat-backed", 100, exchange_rates['USDT/USD'])
         binance = Currency('Binance', "BNB", "crypto", 100, exchange_rates['BNB/USD'])
@@ -35,13 +35,38 @@ class MarketModel(Model):
         self.schedule = RandomActivation(self) # changed from RandomActivation
 
         self.list_of_agents = []
-        self.createAgents(number_of_agents, ratio_of_random_strategy_to_other)
+        self.createAgents()
 
-        self.ratio_of_agents_engaged_each_turn = ratio_of_agents_engaged_each_turn
-        while starting_round <= ending_round:
-            self.step()
+        self.datacollector = DataCollector(
+            model_reporters={
+                "num_transactions_total" : getTotalTransactions,
+                "num_transactions_ETH/USDT:USDT/ETH" : getTotalETH_USDTTransactions,
+                "num_transactions_ETH/BNB:BNB/ETH" : getTotalETH_BNBTransactions,
+                "num_transactions_ETH/BTC:BTC/ETH" : getTotalETH_BTCTransactions,
+                "num_transactions_BNB/BTC:BTC/BNB" : getTotalBNB_BTCTransactions,
+                "num_transactions_BNB/USDT:USDT/BNB" : getTotalBNB_USDTTransactions,
+                "num_transactions_BTC/USDT:USDT/BTC" : getTotalBTC_USDTTransactions,
+                "Random" : getRelativeTotalWealthRandom,
+                "Pivot Point": getRelativeTotalWealthPivotPoint,
+                "Moving Average": getRelativeTotalWealthMovingAverage,
+                "RSI": getRelativeTotalWealthRSI,
+                "MACD": getRelativeTotalWealthMACD,
+                "Wealthy 0": getWealthiestAgents0,
+                "Wealthy 1": getWealthiestAgents1,
+                "Wealthy 2": getWealthiestAgents2,
+                "Wealthy 3": getWealthiestAgents3,
+                "Wealthy 4": getWealthiestAgents4,
+                "Wealthy 5": getWealthiestAgents5,
+                "Wealthy 6": getWealthiestAgents6,
+                "Wealthy 7": getWealthiestAgents7,
+                "Wealthy 8": getWealthiestAgents8,
+                "Wealthy 9": getWealthiestAgents9,
+            }
+        )
 
-    def createAgents(self, num_agents, ratio_of_random_strategy_to_other):
+        self.running = True
+
+    def createAgents(self):
         random_strategy = RandomStrategy("random", exchange_rates)
         pivot_point_strategy = PivotPointStrategy("pivot_point", exchange_rates)
         moving_average_strategy = MovingAverageStrategy("moving_average", exchange_rates)
@@ -58,9 +83,9 @@ class MarketModel(Model):
             "macd" : [],
             "rsi": []
         }
-        num_of_random_agents = num_agents * ratio_of_random_strategy_to_other
+        num_of_random_agents = self.num_of_agents * self.ratio_of_random_strategy_to_other
         agent_number = 0
-        while agent_number < num_agents: 
+        while agent_number < self.num_of_agents: 
             risk_level = random.choice(risk_levels)
             a = None
             if agent_number < num_of_random_agents:
@@ -84,25 +109,28 @@ class MarketModel(Model):
             agent_number += 1
 
     def step(self):
-        print (self.round)
+        print ("Is it different to 0.5? :", self.ratio_of_agents_engaged_each_turn)
         num_of_agents_per_turn = round(self.num_of_agents * self.ratio_of_agents_engaged_each_turn)
-        list_of_chosen_agents = random.sample(self.list_of_agents, num_of_agents_per_turn)
-        for i in range(len(list_of_chosen_agents)):
-            list_of_chosen_agents[i].step() # runs the step method for all Agents
-        
-        self.currency_market.order_book.sortOrdersInOrderBook()
+        for i in range(num_of_agents_per_turn):
+            self.schedule.step() # runs the step method for all Agents
 
-        self.currency_market.price_clearing_mechanism() # do all transactions
+        self.currency_market.order_book.sortOrdersInOrderBook()
 
         self.dataGathering()
 
+        self.currency_market.price_clearing_mechanism() # do all transactions
+
+        self.datacollector.collect(self)
         self.round += 1 # go to the next round
     
+    def dateToRoundNumber(self, date):
+        return 27
+
     def dataGathering(self):
         order_book_data = self.currency_market.getOrderBook().orders
         simplified_order_book = self.simplifyOrderBook(order_book_data)
-        with open('orderBookData.JSON', 'w') as json_file:
-            json.dump(simplified_order_book, json_file)
+        # with open('orderBookData.JSON', 'w') as json_file:
+        #     json.dump(simplified_order_book, json_file)
         # if self.round == 999: self.getInitialOrderbookTable() to JSON
         transaction_data = {
             # num of transactions with each currency and total !!! works !!!!!!!!
@@ -114,16 +142,16 @@ class MarketModel(Model):
             "num_transactions_BNB/USDT:USDT/BNB" : self.currency_market.num_of_transactions_dict['BNB/USDT:USDT/BNB'],
             "num_transactions_BTC/USDT:USDT/BTC" : self.currency_market.num_of_transactions_dict['BTC/USDT:USDT/BTC']
         }
-        with open('transactionData.JSON', 'w') as json_file:
-            json.dump(transaction_data, json_file)
+        # with open('transactionData.JSON', 'w') as json_file:
+        #     json.dump(transaction_data, json_file)
 
         wealthiest_agents_data = self.getWealthiestAgentsInformation(self.getTenWealthiestAgents())
-        with open('wealthiestAgentsData.JSON', 'w') as json_file:
-            json.dump(wealthiest_agents_data, json_file)
+        # with open('wealthiestAgentsData.JSON', 'w') as json_file:
+        #     json.dump(wealthiest_agents_data, json_file)
 
         wealth_distribution_data = self.getWealthDistributionByStrategy()
-        with open('wealthDistributionData.JSON', 'w') as json_file:
-            json.dump(wealth_distribution_data, json_file)
+        # with open('wealthDistributionData.JSON', 'w') as json_file:
+        #     json.dump(wealth_distribution_data, json_file)
 
     def getTenWealthiestAgents(self):
         return sorted(self.schedule.agents, key=lambda x: x.currentUSDValueOfWallet, reverse=True)[:10] # sorts in descending order and keeps first 10
@@ -197,21 +225,19 @@ class MarketModel(Model):
         }
 # --------------------------------------------------------------------------
 
-######## CHOOSE PARAMETERS FOR SIMULATION ################
-number_of_agents = 500 # > 0
-ratio_of_random_strategy_to_other = 0.5 #  0 < x <= 1
-starting_round = 10 # >= 10
-ending_round = 1000 # > starting_round
-ratio_of_agents_engaged_each_turn = 0.5 #  0 < x <= 1
-###########################################################
+# import os 
 
-import os 
-
-if __name__ == "__main__":
-    cwd = os.getcwd()
+# if __name__ == "__main__":
+#     cwd = os.getcwd()
 
     # url = "file://" + cwd + "/index.html" # must be changed to own files location
     # webbrowser.open(url,new=2)
-    model = MarketModel(number_of_agents, ratio_of_random_strategy_to_other, starting_round, ending_round, ratio_of_agents_engaged_each_turn)
-    model.step()
+    # model = MarketModel()
+    # for i in range(2):
+    #     model.step()
+
+    # os.remove("transactionData.JSON")
+    # os.remove("/Users/alexisdumon/Desktop/PRJ/AgentBasedModellingBlockchain/wealthDistributionData.JSON")
+    # os.remove("/Users/alexisdumon/Desktop/PRJ/AgentBasedModellingBlockchain/wealthiestAgentsData.JSON")
+    # os.remove("/Users/alexisdumon/Desktop/PRJ/AgentBasedModellingBlockchain/orderBookData.JSON")
 
