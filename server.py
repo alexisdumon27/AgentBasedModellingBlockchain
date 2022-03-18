@@ -14,7 +14,7 @@ Four types of modules:
 
 class OrderBookModule(VisualizationElement):
     package_includes = []
-    local_includes = ["/Users/alexisdumon/Desktop/PRJ/AgentBasedModellingBlockchain/OrderBookModule.js"]
+    local_includes = ["OrderBookModule.js"]
 
     def __init__(self, exchange_symbol, height, width):
         self.height = height
@@ -22,15 +22,12 @@ class OrderBookModule(VisualizationElement):
         self.exchange_symbol = "" + exchange_symbol + "" # "ETH/USDT:USDT/ETH"
         new_element = "new OrderBookModule({}, {}, {})"
         new_element = new_element.format(exchange_symbol, height, width)
-
-        self.js_code = "elements.push(new OrderBookModule('ETH/USDT:USDT/ETH', 200, 500)););"
+        self.js_code = "elements.push(new OrderBookModule('ETH/USDT:USDT/ETH', 200, 500));"
         print (self.js_code)
 
     def render(self, model):
         order_book_data = model.currency_market.getOrderBook().orders
-        data = model.simplifyOrderBook(order_book_data)[self.exchange_symbol]
-        # print (data)
-        return data
+        return model.simplifyOrderBook(order_book_data)[self.exchange_symbol]
         
 
 orderbook_usdt_eth = OrderBookModule("ETH/USDT:USDT/ETH", 200, 500)
@@ -106,7 +103,7 @@ wealth_distribution_per_strategy = PieChartModule(
 )
 
 
-server = ModularServer(MarketModel, [transaction_chart, wealth_distribution_per_strategy, top_10_wealthiest_chart], "Crypto Market" , model_params)
+server = ModularServer(MarketModel, [orderbook_usdt_eth, transaction_chart, wealth_distribution_per_strategy, top_10_wealthiest_chart], "Crypto Market" , model_params)
 
 # https://mesa.readthedocs.io/_/downloads/en/doc_builds/pdf/
 
