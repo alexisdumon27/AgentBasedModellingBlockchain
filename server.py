@@ -2,6 +2,7 @@ from mesa import model
 from mesa.visualization.ModularVisualization import ModularServer, VisualizationElement
 from mesa.visualization.UserParam import UserSettableParameter
 from mesa.visualization.modules import CanvasGrid, ChartModule, PieChartModule, BarChartModule
+from numpy import char
 from model import MarketModel
 
 """
@@ -19,19 +20,27 @@ class OrderBookModule(VisualizationElement):
     def __init__(self, exchange_symbol, height, width):
         self.height = height
         self.width = width
-        self.exchange_symbol = "" + exchange_symbol + "" # "ETH/USDT:USDT/ETH"
-        new_element = "new OrderBookModule({}, {}, {})"
-        new_element = new_element.format(exchange_symbol, height, width)
-        self.js_code = "elements.push(new OrderBookModule('ETH/USDT:USDT/ETH', 200, 500));"
-        print (self.js_code)
+        self.js_code = "elements.push(new OrderBookModule('" + exchange_symbol + "', 200, 500));"
 
     def render(self, model):
         order_book_data = model.currency_market.getOrderBook().orders
         return model.simplifyOrderBook(order_book_data)[self.exchange_symbol]
-        
+
+chart_array = []
 
 orderbook_usdt_eth = OrderBookModule("ETH/USDT:USDT/ETH", 200, 500)
-# print (orderbook_usdt_eth)
+orderbook_usdt_btc = OrderBookModule("BTC/USDT:USDT/BTC", 200, 500)
+orderbook_usdt_bnb = OrderBookModule("BNB/USDT:USDT/BNB", 200, 500)
+orderbook_bnb_eth = OrderBookModule("ETH/BNB:BNB/ETH", 200, 500)
+orderbook_btc_eth = OrderBookModule("ETH/BTC:BTC/ETH", 200, 500)
+orderbook_btc_bnb = OrderBookModule("BNB/BTC:BTC/BNB", 200, 500)
+
+chart_array.append(orderbook_btc_bnb)
+chart_array.append(orderbook_bnb_eth)
+chart_array.append(orderbook_btc_eth)
+chart_array.append(orderbook_usdt_bnb)
+chart_array.append(orderbook_usdt_btc)
+chart_array.append(orderbook_usdt_eth)
 
 ############# USER PARAMETERS ########
 from datetime import date, timedelta
@@ -58,7 +67,6 @@ model_params = {
                                           choices=list_of_dates)   
 }
 
-
 ###### 1. Number of transactions chart ###########
 
 transaction_chart = ChartModule(
@@ -73,6 +81,7 @@ transaction_chart = ChartModule(
     ]
     , data_collector_name="datacollector") 
 
+chart_array.append(transaction_chart)
 ###### 2. Top 10 Wealthiest agents chart ############
 
 top_10_wealthiest_chart = BarChartModule(
@@ -90,7 +99,7 @@ top_10_wealthiest_chart = BarChartModule(
     ]
 )
 
-
+chart_array.append(top_10_wealthiest_chart)
 ###### 3. Relative Wealth Distribution per strategy ######
 wealth_distribution_per_strategy = PieChartModule(
     [
@@ -101,9 +110,9 @@ wealth_distribution_per_strategy = PieChartModule(
         {"Label": "MACD", "Color": "yellow"},
     ]
 )
+chart_array.append(wealth_distribution_per_strategy)
 
-
-server = ModularServer(MarketModel, [orderbook_usdt_eth, transaction_chart, wealth_distribution_per_strategy, top_10_wealthiest_chart], "Crypto Market" , model_params)
+server = ModularServer(MarketModel, chart_array, "Crypto Market" , model_params)
 
 # https://mesa.readthedocs.io/_/downloads/en/doc_builds/pdf/
 

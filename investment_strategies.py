@@ -101,7 +101,7 @@ class Strategy:
 
         exchange_rate_symbol = buy_currency.symbol + "/" + sell_currency.symbol
 
-        return self.shouldAgentCloseCurrentOrder(round, exchange_rate_symbol, agent.risk_level)
+        return self.shouldAgentCloseCurrentInvestment(round, exchange_rate_symbol, agent.risk_level)
     
     def makeCloseOrder(self, agent, round):
         """ wishes to exchange Y for X """
@@ -163,7 +163,7 @@ class PivotPointStrategy(Strategy):
         super().__init__(strategy_name, exchange_rates_data)
         self.exchange_rates_data = exchange_rates_data
     
-    def shouldAgentCloseCurrentOrder(self, round, symbol, agent_risk_level):
+    def shouldAgentCloseCurrentInvestment(self, round, symbol, agent_risk_level):
         """" Agent's strategy for when to close the position """
         # get support and the pivot points
         symbol_exchange_rate_data = self.exchange_rates_data[symbol]
@@ -283,7 +283,7 @@ class MovingAverageStrategy(Strategy):
         super().__init__(strategy_name, exchange_rates_data)
         self.exchange_rates_data = exchange_rates_data
     
-    def shouldAgentCloseCurrentOrder(self, round, symbol, agent_risk_level):
+    def shouldAgentCloseCurrentInvestment(self, round, symbol, agent_risk_level):
         """" Agent's strategy for when to close the position depends on risk_level the lower the tolerance the most likely it closes """
         if agent_risk_level == "averse": # will close if it sees sign weak or strong
             if self.isPriceMovementShowingStrongSell(symbol, round, 5) or self.isPriceMovementShowingWeakSell(symbol, round, 5):
@@ -550,7 +550,7 @@ class MACDStrategy(Strategy):
         super().__init__(strategy_name, exchange_rates_data)
         self.exchange_rates_data = exchange_rates_data
     
-    def shouldAgentCloseCurrentOrder(self, round, symbol, agent_risk_level):
+    def shouldAgentCloseCurrentInvestment(self, round, symbol, agent_risk_level):
         """" Agent's strategy for when to close the position """
         # get support and the pivot points
         if agent_risk_level == "averse":
@@ -704,7 +704,7 @@ class RSIStrategy(Strategy):
         super().__init__(strategy_name, exchange_rates_data)
         self.exchange_rates_data = exchange_rates_data
         
-    def shouldAgentCloseCurrentOrder(self, round, symbol, agent_risk_level):
+    def shouldAgentCloseCurrentInvestment(self, round, symbol, agent_risk_level):
         """" Agent's strategy for when to close the position """
 
         if agent_risk_level == "averse":

@@ -1,5 +1,5 @@
 var OrderBookModule = function(exchange_symbol, height, width) {
-
+    console.log("poopoo face !")
     console.log(exchange_symbol);
     console.log(height);
     console.log(width);
@@ -66,35 +66,6 @@ var OrderBookModule = function(exchange_symbol, height, width) {
     thead_1.appendChild(table_1_row_1);
 
     elementContainer.appendChild(table_container)
-
-    // create the TABLE using SVG if it does not work; here as a string
-
-    // let table = "<table border = '3'>"
-
-    // "<table border='3'><tr><td>row 1, cell 1</td><td>row 1, cell 2</td></tr><tr><td>row 2, cell 1</td><td>row 2, cell 2</td></tr></table>" +
-
-    // add the table to the DOM
-    // var data = "<svg xmlns='http://www.w3.org/2000/svg' width='200px' height='500px'>" +
-    //          "<foreignObject width='200px' height='500px'>" +
-    //            "<div xmlns='http://www.w3.org/1999/xhtml' style='font-size:20px'>" +
-    //               "<table border='3'><tr><td>row 1, cell 1</td><td>row 1, cell 2</td></tr><tr><td>row 2, cell 1</td><td>row 2, cell 2</td></tr></table>" +
-    //            "</div>" +
-    //          "</foreignObject>" +
-    //        "</svg>";
-
-    // var DOMURL = self.URL || self.webkitURL || self;
-    // var img = new Image();
-    // var svg = new Blob([data], {type: "image/svg+xml;charset=utf-8"});
-    // var url = DOMURL.createObjectURL(svg);
-    // img.onload = function() {
-    //     context.drawImage(img, 0, 0);
-    //     DOMURL.revokeObjectURL(url);
-    // };
-    // img.src = url;
-
-    // elementContainer.appendChild(canvas);
-
-
     this.render = function (data) {
         // DATA is exchange direction specific so ETH/USDT for example
         // do first direction then do second direction
