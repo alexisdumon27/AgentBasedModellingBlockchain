@@ -6,11 +6,7 @@ import pandas as pd
 from investment_strategies import MACDStrategy, MovingAverageStrategy, PivotPointStrategy, RSIStrategy, Strategy, RandomStrategy
 from agents import MarketAgent
 from currency_market import CurrencyMarket, Currency
-import json
-import webbrowser
 from dataVisualisationMethods import *
-
-exchange_rates = pd.read_csv('Data/exchange_rates.csv')
 
 class MarketModel(Model):
     def __init__(self, starting_date = 1, ratio_of_random_strategy_to_other = 0.5, ratio_of_agents_engaged_each_turn = 0.5, num_agents = 10):
@@ -18,19 +14,10 @@ class MarketModel(Model):
         self.num_of_agents = num_agents
         self.ratio_of_agents_engaged_each_turn = ratio_of_agents_engaged_each_turn
         self.ratio_of_random_strategy_to_other = ratio_of_random_strategy_to_other
-
-        ethereum = Currency("Ethereum", "ETH", "crypto", 100, exchange_rates['ETH/USD'])
-        tether = Currency('Tether', "USDT", "fiat-backed", 100, exchange_rates['USDT/USD'])
-        binance = Currency('Binance', "BNB", "crypto", 100, exchange_rates['BNB/USD'])
-        bitcoin = Currency('Bitcoin', "BTC", "crypto", 100, exchange_rates['BTC/USD'])
         
-        self.list_of_currencies = []
-        self.list_of_currencies.append(ethereum)
-        self.list_of_currencies.append(tether)
-        self.list_of_currencies.append(binance)
-        self.list_of_currencies.append(bitcoin)
+        exchange_rates = pd.read_csv('Data/exchange_rates.csv')
 
-        self.currency_market = CurrencyMarket(self.list_of_currencies, exchange_rates)
+        self.currency_market = CurrencyMarket(exchange_rates)
 
         self.schedule = RandomActivation(self) # changed from RandomActivation
 
@@ -118,7 +105,7 @@ class MarketModel(Model):
 
         self.dataGathering()
 
-        self.currency_market.price_clearing_mechanism() # do all transactions
+        self.currency_market.priceClearingMechanism() # do all transactions
 
         self.datacollector.collect(self)
         self.round += 1 # go to the next round

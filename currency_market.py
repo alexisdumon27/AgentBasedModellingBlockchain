@@ -6,8 +6,19 @@ class CurrencyMarket:
     """
         Object that contains information necessary for AGENTS to make orders and transact with one another
     """
-    def __init__(self, list_of_currencies, exchange_rates):
-        self.currencies = list_of_currencies
+    def __init__(self, exchange_rates):
+
+        ethereum = Currency("Ethereum", "ETH", "crypto", 100, exchange_rates['ETH/USD'])
+        tether = Currency('Tether', "USDT", "fiat-backed", 100, exchange_rates['USDT/USD'])
+        binance = Currency('Binance', "BNB", "crypto", 100, exchange_rates['BNB/USD'])
+        bitcoin = Currency('Bitcoin', "BTC", "crypto", 100, exchange_rates['BTC/USD'])
+        
+        self.currencies = []
+        self.currencies.append(ethereum)
+        self.currencies.append(tether)
+        self.currencies.append(binance)
+        self.currencies.append(bitcoin)
+
         self.exchange_rates = exchange_rates
         self.order_book = OrderBook()
         self.num_of_transactions_dict = { # for data collection !!!
@@ -103,7 +114,7 @@ class CurrencyMarket:
             del sell_orders[i]
 
     # https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0164603&type=printable <- for reordering orderbook
-    def price_clearing_mechanism(self):
+    def priceClearingMechanism(self):
         """ ............ """
         orderbook = self.getOrderBook().getOrders()
         self.num_of_transactions_this_round = 0
