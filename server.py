@@ -13,6 +13,10 @@ Four types of modules:
 4. Orderbooks <-- most important !!!!
 """
 
+# DISPLAY current day on the simulation through currentDayModule just TEXT
+
+# Change colors
+
 class OrderBookModule(VisualizationElement):
     package_includes = []
     local_includes = ["OrderBookModule.js"]
@@ -20,6 +24,7 @@ class OrderBookModule(VisualizationElement):
     def __init__(self, exchange_symbol, height, width):
         self.height = height
         self.width = width
+        self.exchange_symbol = exchange_symbol
         self.js_code = "elements.push(new OrderBookModule('" + exchange_symbol + "', 200, 500));"
 
     def render(self, model):
@@ -55,13 +60,13 @@ for i in range(delta.days + 1):
 
 model_params = {
     "num_agents": UserSettableParameter(
-        "slider", "Number of market agents", 50, 3, 100, 1, description= "Choose how many agents to include in model"
+        "slider", "Number of market agents", 50, 3, 400, 10, description= "Choose how many agents to include in model"
     ),
     "ratio_of_random_strategy_to_other": UserSettableParameter(
-        "slider", "Ratio of Random Strategy agents", 0.5, 0.1, 1, 0.1, description= "Choose ratio of random strategy agents relative to the total number of agents"
+        "slider", "Ratio of Random Strategy agents", 0.85, 0.1, 1, 0.1, description= "Choose ratio of random strategy agents relative to the total number of agents"
     ),
     "ratio_of_agents_engaged_each_turn": UserSettableParameter(
-        "slider", "Ratio of agents active per turn", 0.5, 0.1, 1, 0.1, description= "Choose ratio of agents relative active each turn relative to the total number of agents"
+        "slider", "Ratio of agents active per turn", 1, 0.1, 1, 0.1, description= "Choose ratio of agents relative active each turn relative to the total number of agents"
     ),
     "starting_date" : UserSettableParameter('choice', 'My Choice', value='Default choice',
                                           choices=list_of_dates)   
@@ -111,6 +116,20 @@ wealth_distribution_per_strategy = PieChartModule(
     ]
 )
 chart_array.append(wealth_distribution_per_strategy)
+
+#### 4. Who are the agents who have something in the orderbook ? ####
+# 
+orderbook_agents_per_strategy = BarChartModule(
+    [
+        {"Label": "Random orderbook", "Color": "#0000000"},
+        {"Label": "Pivot Point orderbook", "Color": "green"},
+        {"Label": "Moving Average orderbook", "Color": "blue"},
+        {"Label": "RSI orderbook", "Color": "purple"},
+        {"Label": "MACD orderbook", "Color": "yellow"},
+    ]
+)
+
+chart_array.append(orderbook_agents_per_strategy)
 
 server = ModularServer(MarketModel, chart_array, "Crypto Market" , model_params)
 

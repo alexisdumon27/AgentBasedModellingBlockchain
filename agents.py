@@ -26,6 +26,7 @@ class MarketAgent(Agent):
 
         self.initialUSDValueOfWallet = self.getUSDWalletValue()
         self.currentUSDValueOfWallet = self.getUSDWalletValue()
+        self.currentUSDValueOfGains = 0
     
     # start with $100 worth of all possible currencies
     def createWallet(self):
@@ -57,9 +58,16 @@ class MarketAgent(Agent):
             if self.current_order.expiration_time > 0:
                 self.current_order.expiration_time -= 1
             else: 
-                # UPDATE the limit_price of the order
-                self.updateCurrentOrderLimitPrice() # updates for agent
-                self.currency_market.order_book.updateAgentOrderLimitPriceInOrderBook(self, self.current_order.limit_price) # updates the orderbook with the agent's new limit price
+                if self.strategy.name == "random":
+                    # re-initialise try another order
+                    # remove previous order from order book
+                    self.currency_market.order_book.removeAgentOrder(self)
+                    self.has_made_open_order = False
+                    self.current_order = None
+                else:
+                    # UPDATE the limit_price of the order
+                    self.updateCurrentOrderLimitPrice() # updates for agent
+                    self.currency_market.order_book.updateAgentOrderLimitPriceInOrderBook(self, self.current_order.limit_price) # updates the orderbook with the agent's new limit price
         elif self.has_made_open_order and self.open_transaction_was_successfull and not self.has_made_closing_order and not self.closing_transaction_was_successfull:
             if self.strategy.closingConditionMet(self, self.round):
                 self.makeOrder("CLOSE") # current_order is also updated 
@@ -77,6 +85,7 @@ class MarketAgent(Agent):
             self.initialiseParameters()
         
         self.currentUSDValueOfWallet = self.getUSDWalletValue() # gets updated every round
+        self.currentUSDValueOfGains = self.currentUSDValueOfWallet - self.initialUSDValueOfWallet
         
     def hasACurrentInvestment(self):
         if self.current_investment == {"amount": 0, "bought_currency": None, "sold_currency": None}:

@@ -41,31 +41,81 @@ def getRelativeTotalWealthRSI(model):
     return sum(agent.currentUSDValueOfWallet for agent in rsi_agents) / len(rsi_agents)
 
 def getWealthiestAgents0(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfWallet, reverse=True)[:10][0].currentUSDValueOfWallet # sorts in descending order and keeps first 10
+    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][0].currentUSDValueOfGains # sorts in descending order and keeps first 10
 
 def getWealthiestAgents1(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfWallet, reverse=True)[:10][1].currentUSDValueOfWallet # sorts in descending order and keeps first 10
+    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][1].currentUSDValueOfGains # sorts in descending order and keeps first 10
 
 def getWealthiestAgents2(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfWallet, reverse=True)[:10][2].currentUSDValueOfWallet # sorts in descending order and keeps first 10
+    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][2].currentUSDValueOfGains # sorts in descending order and keeps first 10
 
 def getWealthiestAgents3(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfWallet, reverse=True)[:10][3].currentUSDValueOfWallet # sorts in descending order and keeps first 10
+    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][3].currentUSDValueOfGains # sorts in descending order and keeps first 10
 
 def getWealthiestAgents4(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfWallet, reverse=True)[:10][4].currentUSDValueOfWallet # sorts in descending order and keeps first 10
+    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][4].currentUSDValueOfGains # sorts in descending order and keeps first 10
 
 def getWealthiestAgents5(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfWallet, reverse=True)[:10][5].currentUSDValueOfWallet # sorts in descending order and keeps first 10
+    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][5].currentUSDValueOfGains # sorts in descending order and keeps first 10
 
 def getWealthiestAgents6(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfWallet, reverse=True)[:10][6].currentUSDValueOfWallet # sorts in descending order and keeps first 10
+    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][6].currentUSDValueOfGains # sorts in descending order and keeps first 10
 
 def getWealthiestAgents7(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfWallet, reverse=True)[:10][7].currentUSDValueOfWallet # sorts in descending order and keeps first 10
+    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][7].currentUSDValueOfGains # sorts in descending order and keeps first 10
 
 def getWealthiestAgents8(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfWallet, reverse=True)[:10][8].currentUSDValueOfWallet # sorts in descending order and keeps first 10
+    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][8].currentUSDValueOfGains # sorts in descending order and keeps first 10
 
 def getWealthiestAgents9(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfWallet, reverse=True)[:10][9].currentUSDValueOfWallet # sorts in descending order and keeps first 10
+    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][9].currentUSDValueOfGains # sorts in descending order and keeps first 10
+
+def getNumRandomOrderbook(model):
+    agents = model.agents_using_each_strategy_dict["random"]
+    total = 0
+    for i in range(len(agents)):
+        if agents[i].has_made_open_order and not agents[i].open_transaction_was_successfull:
+            total += 1
+        if agents[i].has_made_open_order and agents[i].open_transaction_was_successfull and agents[i].has_made_closing_order and not agents[i].closing_transaction_was_successfull:
+            total += 1
+    return total
+
+def getNumPivotPointOrderbook(model):
+    agents = model.agents_using_each_strategy_dict["pivot_point"]
+    total = 0
+    for i in range(len(agents)):
+        if agents[i].has_made_open_order and not agents[i].open_transaction_was_successfull:
+            total += 1
+        if agents[i].has_made_open_order and agents[i].open_transaction_was_successfull and agents[i].has_made_closing_order and not agents[i].closing_transaction_was_successfull:
+            total += 1
+    return total
+
+def getNumMovingAverageOrderbook(model):
+    agents = model.agents_using_each_strategy_dict["moving_average"]
+    total = 0
+    for i in range(len(agents)):
+        if agents[i].has_made_open_order and not agents[i].open_transaction_was_successfull:
+            total += 1
+        if agents[i].has_made_open_order and agents[i].open_transaction_was_successfull and agents[i].has_made_closing_order and not agents[i].closing_transaction_was_successfull:
+            total += 1
+    return total
+
+def getNumRSIOrderbook(model):
+    agents = model.agents_using_each_strategy_dict["rsi"]
+    total = 0
+    for i in range(len(agents)):
+        if agents[i].has_made_open_order and not agents[i].open_transaction_was_successfull:
+            total += 1
+        if agents[i].has_made_open_order and agents[i].open_transaction_was_successfull and agents[i].has_made_closing_order and not agents[i].closing_transaction_was_successfull:
+            total += 1
+    return total
+
+def getNumMACDOrderbook(model):
+    agents = model.agents_using_each_strategy_dict["macd"]
+    total = 0
+    for i in range(len(agents)):
+        if agents[i].has_made_open_order and not agents[i].open_transaction_was_successfull:
+            total += 1
+        if agents[i].has_made_open_order and agents[i].open_transaction_was_successfull and agents[i].has_made_closing_order and not agents[i].closing_transaction_was_successfull:
+            total += 1
+    return total

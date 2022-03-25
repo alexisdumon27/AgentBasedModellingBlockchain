@@ -15,9 +15,9 @@ class MarketModel(Model):
         self.ratio_of_agents_engaged_each_turn = ratio_of_agents_engaged_each_turn
         self.ratio_of_random_strategy_to_other = ratio_of_random_strategy_to_other
         
-        exchange_rates = pd.read_csv('Data/exchange_rates.csv')
+        self.exchange_rates = pd.read_csv('Data/exchange_rates.csv')
 
-        self.currency_market = CurrencyMarket(exchange_rates)
+        self.currency_market = CurrencyMarket(self.exchange_rates)
 
         self.schedule = RandomActivation(self) # changed from RandomActivation
 
@@ -48,17 +48,22 @@ class MarketModel(Model):
                 "Wealthy 7": getWealthiestAgents7,
                 "Wealthy 8": getWealthiestAgents8,
                 "Wealthy 9": getWealthiestAgents9,
+                "Random orderbook" : getNumRandomOrderbook,
+                "Pivot Point orderbook": getNumPivotPointOrderbook,
+                "Moving Average orderbook": getNumMovingAverageOrderbook,
+                "RSI orderbook": getNumRSIOrderbook,
+                "MACD orderbook": getNumMACDOrderbook,
             }
         )
 
         self.running = True
 
     def createAgents(self):
-        random_strategy = RandomStrategy("random", exchange_rates)
-        pivot_point_strategy = PivotPointStrategy("pivot_point", exchange_rates)
-        moving_average_strategy = MovingAverageStrategy("moving_average", exchange_rates)
-        macd_strategy = MACDStrategy('macd', exchange_rates)
-        rsi_strategy = RSIStrategy("rsi", exchange_rates)
+        random_strategy = RandomStrategy("random", self.exchange_rates)
+        pivot_point_strategy = PivotPointStrategy("pivot_point", self.exchange_rates)
+        moving_average_strategy = MovingAverageStrategy("moving_average", self.exchange_rates)
+        macd_strategy = MACDStrategy('macd', self.exchange_rates)
+        rsi_strategy = RSIStrategy("rsi", self.exchange_rates)
 
         risk_levels = ["averse", "neutral", "taker"]
 

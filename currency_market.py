@@ -248,6 +248,13 @@ class OrderBook:
         exchange_direction = self.getExchangeSymbol(buy_currency, sell_currency)
         self.orders[orderbook_key][exchange_direction][agent][-1] = new_limit_price
 
+    def removeAgentOrder(self, agent):
+        buy_currency = agent.current_order.buy_currency
+        sell_currency = agent.current_order.sell_currency
+        orderbook_key = self.getOrderBookKey(buy_currency, sell_currency)
+        exchange_direction = self.getExchangeSymbol(buy_currency, sell_currency)
+        del self.orders[orderbook_key][exchange_direction][agent]
+
     def printOrderBook(self):
         """ visual representation of order book """
         print(self.orders.items())

@@ -115,7 +115,7 @@ class Strategy:
         exchange_rate = agent.currency_market.getCurrenciesExchangeRate(symbol, agent.round)
         limit_price = self.getLimitPrice(exchange_rate)
 
-        expiration_time = random.choice(range(1, 24)) # want to close ASAP so willing to change much quicker
+        expiration_time = random.choice(range(2, 24)) # want to close ASAP so willing to change much quicker
         return Order("CLOSE", buy_currency, sell_currency, amount_of_buying_currency, round, agent, limit_price, expiration_time)
 
 class RandomStrategy(Strategy):
@@ -130,8 +130,7 @@ class RandomStrategy(Strategy):
 
     def closingConditionMet(self, agent, round):
         """" Agent's strategy for when to close the position """
-        number = random.choice([0,0,0,0,0,1]) # one in six chance
-        return 1 == number
+        return random.random() < 0.27
 
     def tryToMakeOpenOrder(self, agent, round):
         """ wishes to exchange X for Y """
@@ -151,7 +150,7 @@ class RandomStrategy(Strategy):
         limit_price = self.getLimitPrice(exchange_rate)
         amount_of_buying_currency = self.getAmountOfBuyingCurrency(exchange_rate, limit_price, agent.wallet[sell_currency])
 
-        expiration_time = random.choice(range(2,5))
+        expiration_time = random.choice(range(2, 24))
 
         return Order("OPEN", buy_currency, sell_currency, amount_of_buying_currency, round, agent, limit_price, expiration_time) # creates an ORDER
 
