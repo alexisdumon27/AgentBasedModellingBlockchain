@@ -1,3 +1,4 @@
+from cmath import inf
 from locale import currency
 import random
 from mesa import Agent
@@ -22,11 +23,13 @@ class MarketAgent(Agent):
         self.current_order = None
 
         self.wallet = {}
-        self.createWallet()
-
-        self.initialUSDValueOfWallet = self.getUSDWalletValue()
-        self.currentUSDValueOfWallet = self.getUSDWalletValue()
-        self.currentUSDValueOfGains = 0
+        if self.strategy.name == "random":
+            self.createWalletRandom()
+        else:
+            self.createWallet()
+            self.initialUSDValueOfWallet = self.getUSDWalletValue()
+            self.currentUSDValueOfWallet = self.getUSDWalletValue()
+            self.currentUSDValueOfGains = 0
     
     # start with $100 worth of all possible currencies
     def createWallet(self):
@@ -41,12 +44,41 @@ class MarketAgent(Agent):
             else: self.wallet[currency] = 0
             i += 1
 
+    def createWalletRandom(self):
+        for currency in self.currency_market.getAvailableCurrencies():
+            self.wallet[currency] = float(inf)
+
     # what happens during one round of the simulation for one agent
     ## a limited amount of agents get to perform their step actions per turn 
     def step(self):
         """ if it was chosen as a trading agent this turn; then it adds an order to the order book list """
         self.round = self.model.round
-        
+        if self.strategy.name == "random":
+            self.randomAgentStep()
+        else:
+            self.strategyAgentStep()
+    
+    def randomAgentStep(self):
+        """
+            1. initial -- nothing --> make an open order with probability 0.5
+            2. has an order in the orderbook --> wait until expiration time
+            3. a transaction has happened --> reinitialise
+        """
+        if self.current_order == None:
+            if random.random() < 0.5:
+                self.makeOrder("OPEN")
+                self.has_made_open_order = True
+        elif self.has_made_open_order and not self.open_transaction_was_successfull:
+            if self.current_order.expiration_time > 0:
+                self.current_order.expiration_time -= 1
+            else:
+                self.currency_market.order_book.removeAgentOrder(self)
+                self.has_made_open_order = False
+                self.current_order = None
+        elif self.has_made_open_order and self.open_transaction_was_successfull:
+            self.initialiseParameters()
+            
+    def strategyAgentStep(self):
         if not self.has_made_open_order and not self.has_made_closing_order and not self.has_made_closing_order and not self.closing_transaction_was_successfull:
             # check if it should make an order
             # Following their strategy should it make an order?
@@ -86,7 +118,7 @@ class MarketAgent(Agent):
         
         self.currentUSDValueOfWallet = self.getUSDWalletValue() # gets updated every round
         self.currentUSDValueOfGains = self.currentUSDValueOfWallet - self.initialUSDValueOfWallet
-        
+
     def hasACurrentInvestment(self):
         if self.current_investment == {"amount": 0, "bought_currency": None, "sold_currency": None}:
             return False

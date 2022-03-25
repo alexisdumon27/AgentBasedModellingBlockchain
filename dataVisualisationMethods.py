@@ -1,4 +1,3 @@
-
 def getTotalTransactions(model):
     return model.currency_market.num_of_transactions_dict['total'][-1]
 
@@ -20,9 +19,9 @@ def getTotalBNB_USDTTransactions(model):
 def getTotalBTC_USDTTransactions(model):
     return model.currency_market.num_of_transactions_dict['BTC/USDT:USDT/BTC'][-1]
 
-def getRelativeTotalWealthRandom(model):
-    random_agents = model.agents_using_each_strategy_dict["random"]
-    return sum(agent.currentUSDValueOfWallet for agent in random_agents) / len(random_agents)
+# def getRelativeTotalWealthRandom(model):
+#     random_agents = model.agents_using_each_strategy_dict["random"]
+#     return sum(agent.currentUSDValueOfWallet for agent in random_agents) / len(random_agents)
 
 def getRelativeTotalWealthPivotPoint(model):
     pivot_point_agents = model.agents_using_each_strategy_dict["pivot_point"]
@@ -41,42 +40,40 @@ def getRelativeTotalWealthRSI(model):
     return sum(agent.currentUSDValueOfWallet for agent in rsi_agents) / len(rsi_agents)
 
 def getWealthiestAgents0(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][0].currentUSDValueOfGains # sorts in descending order and keeps first 10
+    return sorted(model.list_of_agents_not_including_random, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][0].currentUSDValueOfGains # sorts in descending order and keeps first 10
 
 def getWealthiestAgents1(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][1].currentUSDValueOfGains # sorts in descending order and keeps first 10
+    return sorted(model.list_of_agents_not_including_random, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][1].currentUSDValueOfGains # sorts in descending order and keeps first 10
 
 def getWealthiestAgents2(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][2].currentUSDValueOfGains # sorts in descending order and keeps first 10
+    return sorted(model.list_of_agents_not_including_random, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][2].currentUSDValueOfGains # sorts in descending order and keeps first 10
 
 def getWealthiestAgents3(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][3].currentUSDValueOfGains # sorts in descending order and keeps first 10
+    return sorted(model.list_of_agents_not_including_random, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][3].currentUSDValueOfGains # sorts in descending order and keeps first 10
 
 def getWealthiestAgents4(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][4].currentUSDValueOfGains # sorts in descending order and keeps first 10
+    return sorted(model.list_of_agents_not_including_random, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][4].currentUSDValueOfGains # sorts in descending order and keeps first 10
 
 def getWealthiestAgents5(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][5].currentUSDValueOfGains # sorts in descending order and keeps first 10
+    return sorted(model.list_of_agents_not_including_random, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][5].currentUSDValueOfGains # sorts in descending order and keeps first 10
 
 def getWealthiestAgents6(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][6].currentUSDValueOfGains # sorts in descending order and keeps first 10
+    return sorted(model.list_of_agents_not_including_random, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][6].currentUSDValueOfGains # sorts in descending order and keeps first 10
 
 def getWealthiestAgents7(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][7].currentUSDValueOfGains # sorts in descending order and keeps first 10
+    return sorted(model.list_of_agents_not_including_random, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][7].currentUSDValueOfGains # sorts in descending order and keeps first 10
 
 def getWealthiestAgents8(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][8].currentUSDValueOfGains # sorts in descending order and keeps first 10
+    return sorted(model.list_of_agents_not_including_random, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][8].currentUSDValueOfGains # sorts in descending order and keeps first 10
 
 def getWealthiestAgents9(model):
-    return sorted(model.schedule.agents, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][9].currentUSDValueOfGains # sorts in descending order and keeps first 10
+    return sorted(model.list_of_agents_not_including_random, key=lambda x: x.currentUSDValueOfGains, reverse=True)[:10][9].currentUSDValueOfGains # sorts in descending order and keeps first 10
 
 def getNumRandomOrderbook(model):
     agents = model.agents_using_each_strategy_dict["random"]
     total = 0
     for i in range(len(agents)):
         if agents[i].has_made_open_order and not agents[i].open_transaction_was_successfull:
-            total += 1
-        if agents[i].has_made_open_order and agents[i].open_transaction_was_successfull and agents[i].has_made_closing_order and not agents[i].closing_transaction_was_successfull:
             total += 1
     return total
 

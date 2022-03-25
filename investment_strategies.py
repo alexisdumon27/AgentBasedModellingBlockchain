@@ -148,9 +148,11 @@ class RandomStrategy(Strategy):
         exchange_rate = agent.currency_market.getCurrenciesExchangeRate(exchange_symbol, agent.round)
 
         limit_price = self.getLimitPrice(exchange_rate)
-        amount_of_buying_currency = self.getAmountOfBuyingCurrency(exchange_rate, limit_price, agent.wallet[sell_currency])
 
-        expiration_time = random.choice(range(2, 24))
+        random_amount = random.randint(10,200)
+        amount_of_buying_currency = self.getAmountOfBuyingCurrency(exchange_rate, limit_price, random_amount) # AGENT WANTS TO BUY 10 of currency 
+
+        expiration_time = random.choice(range(4, 24))
 
         return Order("OPEN", buy_currency, sell_currency, amount_of_buying_currency, round, agent, limit_price, expiration_time) # creates an ORDER
 

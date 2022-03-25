@@ -60,7 +60,7 @@ for i in range(delta.days + 1):
 
 model_params = {
     "num_agents": UserSettableParameter(
-        "slider", "Number of market agents", 50, 3, 400, 10, description= "Choose how many agents to include in model"
+        "slider", "Number of market agents", 127, 67, 400, 10, description= "Choose how many agents to include in model"
     ),
     "ratio_of_random_strategy_to_other": UserSettableParameter(
         "slider", "Ratio of Random Strategy agents", 0.85, 0.1, 1, 0.1, description= "Choose ratio of random strategy agents relative to the total number of agents"
@@ -108,7 +108,7 @@ chart_array.append(top_10_wealthiest_chart)
 ###### 3. Relative Wealth Distribution per strategy ######
 wealth_distribution_per_strategy = PieChartModule(
     [
-        {"Label": "Random", "Color": "#0000000"},
+        # {"Label": "Random", "Color": "#0000000"},
         {"Label": "Pivot Point", "Color": "green"},
         {"Label": "Moving Average", "Color": "blue"},
         {"Label": "RSI", "Color": "purple"},
