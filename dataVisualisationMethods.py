@@ -116,3 +116,79 @@ def getNumMACDOrderbook(model):
         if agents[i].has_made_open_order and agents[i].open_transaction_was_successfull and agents[i].has_made_closing_order and not agents[i].closing_transaction_was_successfull:
             total += 1
     return total
+
+# PIVOT POINT with diff currency pair
+def getNumOfTransactionsPivotPointETHUSDT(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['pivot_point']["ETH/USDT:USDT/ETH"]
+
+def getNumOfTransactionsPivotPointETHBNB(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['pivot_point']["ETH/BNB:BNB/ETH"]
+
+def getNumOfTransactionsPivotPointETHBTC(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['pivot_point']["ETH/BTC:BTC/ETH"]
+
+def getNumOfTransactionsPivotPointBNBBTC(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['pivot_point']["BNB/BTC:BTC/BNB"]
+
+def getNumOfTransactionsPivotPointBNBUSDT(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['pivot_point']["BNB/USDT:USDT/BNB"]
+
+def getNumOfTransactionsPivotPointBTCUSDT(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['pivot_point']["BTC/USDT:USDT/BTC"]
+
+# MOVING AVERAGE with diff currency pair
+def getNumOfTransactionsMovingAverageETHUSDT(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['moving_average']["ETH/USDT:USDT/ETH"]
+
+def getNumOfTransactionsMovingAverageETHBNB(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['moving_average']["ETH/BNB:BNB/ETH"]
+
+def getNumOfTransactionsMovingAverageETHBTC(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['moving_average']["ETH/BTC:BTC/ETH"]
+
+def getNumOfTransactionsMovingAverageBNBBTC(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['moving_average']["BNB/BTC:BTC/BNB"]
+
+def getNumOfTransactionsMovingAverageBNBUSDT(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['moving_average']["BNB/USDT:USDT/BNB"]
+
+def getNumOfTransactionsMovingAverageBTCUSDT(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['moving_average']["BTC/USDT:USDT/BTC"]
+
+# RSI with diff currency pair
+def getNumOfTransactionsRSIETHUSDT(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['rsi']["ETH/USDT:USDT/ETH"]
+
+def getNumOfTransactionsRSIETHBNB(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['rsi']["ETH/BNB:BNB/ETH"]
+
+def getNumOfTransactionsRSIETHBTC(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['rsi']["ETH/BTC:BTC/ETH"]
+
+def getNumOfTransactionsRSIBNBBTC(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['rsi']["BNB/BTC:BTC/BNB"]
+
+def getNumOfTransactionsRSIBNBUSDT(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['rsi']["BNB/USDT:USDT/BNB"]
+
+def getNumOfTransactionsRSIBTCUSDT(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['rsi']["BTC/USDT:USDT/BTC"]
+
+# MACD with diff currency pair
+def getNumOfTransactionsMACDETHUSDT(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['macd']["ETH/USDT:USDT/ETH"]
+
+def getNumOfTransactionsMACDETHBNB(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['macd']["ETH/BNB:BNB/ETH"]
+
+def getNumOfTransactionsMACDETHBTC(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['macd']["ETH/BTC:BTC/ETH"]
+
+def getNumOfTransactionsMACDBNBBTC(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['macd']["BNB/BTC:BTC/BNB"]
+
+def getNumOfTransactionsMACDBNBUSDT(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['macd']["BNB/USDT:USDT/BNB"]
+
+def getNumOfTransactionsMACDBTCUSDT(model):
+    return model.currency_market.num_of_transactions_dict_by_strategy['macd']["BTC/USDT:USDT/BTC"]

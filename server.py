@@ -33,6 +33,8 @@ class OrderBookModule(VisualizationElement):
 
 chart_array = []
 
+##### 1. ORDERBOOKS ############
+
 orderbook_usdt_eth = OrderBookModule("ETH/USDT:USDT/ETH", 200, 500)
 orderbook_usdt_btc = OrderBookModule("BTC/USDT:USDT/BTC", 200, 500)
 orderbook_usdt_bnb = OrderBookModule("BNB/USDT:USDT/BNB", 200, 500)
@@ -46,6 +48,121 @@ chart_array.append(orderbook_btc_eth)
 chart_array.append(orderbook_usdt_bnb)
 chart_array.append(orderbook_usdt_btc)
 chart_array.append(orderbook_usdt_eth)
+
+###### 2. Number of transactions chart ###########
+transaction_chart = ChartModule(
+    [
+        {"Label": "num_transactions_total", "Color":"#00000"},
+        {"Label": "num_transactions_ETH/USDT:USDT/ETH" , "Color":"#00000"},
+        {"Label": "num_transactions_ETH/BNB:BNB/ETH" , "Color":"#00000"},
+        {"Label": "num_transactions_ETH/BTC:BTC/ETH" , "Color":"#00000"},
+        {"Label": "num_transactions_BNB/BTC:BTC/BNB", "Color":"#00000"},
+        {"Label": "num_transactions_BNB/USDT:USDT/BNB" , "Color":"#00000"},
+        {"Label": "num_transactions_BTC/USDT:USDT/BTC", "Color":"#00000"},
+    ]
+    , data_collector_name="datacollector") 
+
+chart_array.append(transaction_chart)
+
+###### 3. Top 10 Wealthiest agents chart ############
+top_10_wealthiest_chart = BarChartModule(
+    [
+        {"Label" : "Wealthy 0", "Color" : "#00000 "},
+        {"Label" : "Wealthy 1", "Color" : "#00000 "},
+        {"Label" : "Wealthy 2", "Color" : "#00000 "},
+        {"Label" : "Wealthy 3", "Color" : "#00000 "},
+        {"Label" : "Wealthy 4", "Color" : "#00000 "},
+        {"Label" : "Wealthy 5", "Color" : "#00000 "},
+        {"Label" : "Wealthy 6", "Color" : "#00000 "},
+        {"Label" : "Wealthy 7", "Color" : "#00000 "},
+        {"Label" : "Wealthy 8", "Color" : "#00000 "},
+        {"Label" : "Wealthy 9", "Color" : "#00000 "},
+    ]
+)
+
+chart_array.append(top_10_wealthiest_chart)
+
+###### 4. Relative Wealth Distribution per strategy ######
+wealth_distribution_per_strategy = PieChartModule(
+    [
+        {"Label": "Pivot Point", "Color": "green"},
+        {"Label": "Moving Average", "Color": "blue"},
+        {"Label": "RSI", "Color": "purple"},
+        {"Label": "MACD", "Color": "yellow"},
+    ]
+)
+chart_array.append(wealth_distribution_per_strategy)
+
+#### 5. Who are the agents who have something in the orderbook ? ####
+
+orderbook_agents_per_strategy = BarChartModule(
+    [
+        {"Label": "Random orderbook", "Color": "#0000000"},
+        {"Label": "Pivot Point orderbook", "Color": "green"},
+        {"Label": "Moving Average orderbook", "Color": "blue"},
+        {"Label": "RSI orderbook", "Color": "purple"},
+        {"Label": "MACD orderbook", "Color": "yellow"},
+    ]
+)
+chart_array.append(orderbook_agents_per_strategy)
+
+#### 6. number of transactions per strategy per currency pair (have diagram like bar chart)
+
+# 6.1
+pivot_point_transactions_chart = BarChartModule(
+    [
+        {"Label": "num_transactions_pivot_point_ETH/USDT:USDT/ETH" , "Color":"#00000"},
+        {"Label": "num_transactions_pivot_point_ETH/BNB:BNB/ETH" , "Color":"#00000"},
+        {"Label": "num_transactions_pivot_point_ETH/BTC:BTC/ETH" , "Color":"#00000"},
+        {"Label": "num_transactions_pivot_point_BNB/BTC:BTC/BNB", "Color":"#00000"},
+        {"Label": "num_transactions_pivot_point_BNB/USDT:USDT/BNB" , "Color":"#00000"},
+        {"Label": "num_transactions_pivot_point_BTC/USDT:USDT/BTC", "Color":"#00000"},
+    ]
+)
+
+# 6.2
+moving_average_transactions_chart = BarChartModule(
+    [
+        {"Label": "num_transactions_moving_average_ETH/USDT:USDT/ETH" , "Color":"#00000"},
+        {"Label": "num_transactions_moving_average_ETH/BNB:BNB/ETH" , "Color":"#00000"},
+        {"Label": "num_transactions_moving_average_ETH/BTC:BTC/ETH" , "Color":"#00000"},
+        {"Label": "num_transactions_moving_average_BNB/BTC:BTC/BNB", "Color":"#00000"},
+        {"Label": "num_transactions_moving_average_BNB/USDT:USDT/BNB" , "Color":"#00000"},
+        {"Label": "num_transactions_moving_average_BTC/USDT:USDT/BTC", "Color":"#00000"},
+    ]
+)
+
+# 6.3
+rsi_transactions_chart = BarChartModule(
+    [
+        {"Label": "num_transactions_rsi_ETH/USDT:USDT/ETH" , "Color":"#00000"},
+        {"Label": "num_transactions_rsi_ETH/BNB:BNB/ETH" , "Color":"#00000"},
+        {"Label": "num_transactions_rsi_ETH/BTC:BTC/ETH" , "Color":"#00000"},
+        {"Label": "num_transactions_rsi_BNB/BTC:BTC/BNB", "Color":"#00000"},
+        {"Label": "num_transactions_rsi_BNB/USDT:USDT/BNB" , "Color":"#00000"},
+        {"Label": "num_transactions_rsi_BTC/USDT:USDT/BTC", "Color":"#00000"},
+    ]
+)
+
+# 6.4
+macd_transactions_chart = BarChartModule(
+    [
+        {"Label": "num_transactions_macd_ETH/USDT:USDT/ETH" , "Color":"#00000"},
+        {"Label": "num_transactions_macd_ETH/BNB:BNB/ETH" , "Color":"#00000"},
+        {"Label": "num_transactions_macd_ETH/BTC:BTC/ETH" , "Color":"#00000"},
+        {"Label": "num_transactions_macd_BNB/BTC:BTC/BNB", "Color":"#00000"},
+        {"Label": "num_transactions_macd_BNB/USDT:USDT/BNB" , "Color":"#00000"},
+        {"Label": "num_transactions_macd_BTC/USDT:USDT/BTC", "Color":"#00000"},
+    ]
+)
+
+chart_array.append(pivot_point_transactions_chart)
+chart_array.append(moving_average_transactions_chart)
+chart_array.append(rsi_transactions_chart)
+chart_array.append(macd_transactions_chart)
+
+#### 7. record dates of when transactions took place for each currency pair for each strategy
+
 
 ############# USER PARAMETERS ########
 from datetime import date, timedelta
@@ -72,72 +189,6 @@ model_params = {
                                           choices=list_of_dates)   
 }
 
-###### 1. Number of transactions chart ###########
-
-transaction_chart = ChartModule(
-    [
-        {"Label": "num_transactions_total", "Color":"#00000"},
-        {"Label": "num_transactions_ETH/USDT:USDT/ETH" , "Color":"#00000"},
-        {"Label": "num_transactions_ETH/BNB:BNB/ETH" , "Color":"#00000"},
-        {"Label": "num_transactions_ETH/BTC:BTC/ETH" , "Color":"#00000"},
-        {"Label": "num_transactions_BNB/BTC:BTC/BNB", "Color":"#00000"},
-        {"Label": "num_transactions_BNB/USDT:USDT/BNB" , "Color":"#00000"},
-        {"Label": "num_transactions_BTC/USDT:USDT/BTC", "Color":"#00000"},
-    ]
-    , data_collector_name="datacollector") 
-
-chart_array.append(transaction_chart)
-###### 2. Top 10 Wealthiest agents chart ############
-
-top_10_wealthiest_chart = BarChartModule(
-    [
-        {"Label" : "Wealthy 0", "Color" : "#00000 "},
-        {"Label" : "Wealthy 1", "Color" : "#00000 "},
-        {"Label" : "Wealthy 2", "Color" : "#00000 "},
-        {"Label" : "Wealthy 3", "Color" : "#00000 "},
-        {"Label" : "Wealthy 4", "Color" : "#00000 "},
-        {"Label" : "Wealthy 5", "Color" : "#00000 "},
-        {"Label" : "Wealthy 6", "Color" : "#00000 "},
-        {"Label" : "Wealthy 7", "Color" : "#00000 "},
-        {"Label" : "Wealthy 8", "Color" : "#00000 "},
-        {"Label" : "Wealthy 9", "Color" : "#00000 "},
-    ]
-)
-
-chart_array.append(top_10_wealthiest_chart)
-###### 3. Relative Wealth Distribution per strategy ######
-wealth_distribution_per_strategy = PieChartModule(
-    [
-        # {"Label": "Random", "Color": "#0000000"},
-        {"Label": "Pivot Point", "Color": "green"},
-        {"Label": "Moving Average", "Color": "blue"},
-        {"Label": "RSI", "Color": "purple"},
-        {"Label": "MACD", "Color": "yellow"},
-    ]
-)
-chart_array.append(wealth_distribution_per_strategy)
-
-#### 4. Who are the agents who have something in the orderbook ? ####
-# 
-orderbook_agents_per_strategy = BarChartModule(
-    [
-        {"Label": "Random orderbook", "Color": "#0000000"},
-        {"Label": "Pivot Point orderbook", "Color": "green"},
-        {"Label": "Moving Average orderbook", "Color": "blue"},
-        {"Label": "RSI orderbook", "Color": "purple"},
-        {"Label": "MACD orderbook", "Color": "yellow"},
-    ]
-)
-
-chart_array.append(orderbook_agents_per_strategy)
-
 server = ModularServer(MarketModel, chart_array, "Crypto Market" , model_params)
 
 # https://mesa.readthedocs.io/_/downloads/en/doc_builds/pdf/
-
-# necessary for analysis
-# get orderbook with the different currency pairs
-# number of transaction for each currency pair
-# top 10 wealthiest agents and their strategies
-# top 10 wealthiest per strategy
-# ranking of most exchanged currency pairs <- stablecoin???

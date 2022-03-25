@@ -1,21 +1,22 @@
 var OrderBookModule = function(exchange_symbol, height, width) {
-    console.log("poopoo face !")
-    console.log(exchange_symbol);
-    console.log(height);
-    console.log(width);
-
     // https://stackoverflow.com/questions/13903952/can-i-draw-a-table-in-canvas-element
     // get element id
     var elementContainer = document.getElementById("elements")
 
     var table_container = document.createElement('div')
-
+    // table_container.style.width = "800px"
     let table_0 = document.createElement('table', );
     let thead_0 = document.createElement('thead');
     let tbody_0 = document.createElement('tbody');
     table_0.id = "table_0_" + exchange_symbol
     tbody_0.id = "tbody_0_" + exchange_symbol 
     table_0.style.border = "1px solid"
+    // console.log(document.getElementById(table_0.id))
+    // document.getElementById(table_0.id).style.width = "700 px"
+    // document.getElementById(table_0.id).style.height = "600 px"
+    // document.getElementById(table_0.id).style.overflow = "auto"
+    // document.getElementById(table_0.id).style.display = "block"
+    console.log(table_0)
     thead_0.style.border = "1px solid"
     tbody_0.style.border = "1px solid"
 
@@ -69,7 +70,6 @@ var OrderBookModule = function(exchange_symbol, height, width) {
     this.render = function (data) {
         // DATA is exchange direction specific so ETH/USDT for example
         // do first direction then do second direction
-        console.log(data);
         
         var element_0 = document.getElementById("tbody_0_" + exchange_symbol);
         if (element_0) {

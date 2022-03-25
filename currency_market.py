@@ -31,6 +31,37 @@ class CurrencyMarket:
             "BTC/USDT:USDT/BTC" : []
         }
 
+        self.num_of_transactions_dict_by_strategy = { # for data collection !!!
+            "pivot_point" : {
+                "ETH/USDT:USDT/ETH" : 0,
+                "ETH/BNB:BNB/ETH" : 0,
+                "ETH/BTC:BTC/ETH" : 0,
+                "BNB/BTC:BTC/BNB" : 0,
+                "BNB/USDT:USDT/BNB" : 0,
+                "BTC/USDT:USDT/BTC" : 0 },
+            "moving_average" : {
+                "ETH/USDT:USDT/ETH" : 0,
+                "ETH/BNB:BNB/ETH" : 0,
+                "ETH/BTC:BTC/ETH" : 0,
+                "BNB/BTC:BTC/BNB" : 0,
+                "BNB/USDT:USDT/BNB" : 0,
+                "BTC/USDT:USDT/BTC" : 0 },
+            "rsi" : {
+                "ETH/USDT:USDT/ETH" : 0,
+                "ETH/BNB:BNB/ETH" : 0,
+                "ETH/BTC:BTC/ETH" : 0,
+                "BNB/BTC:BTC/BNB" : 0,
+                "BNB/USDT:USDT/BNB" : 0,
+                "BTC/USDT:USDT/BTC" : 0 },
+            "macd" : {
+                "ETH/USDT:USDT/ETH" : 0,
+                "ETH/BNB:BNB/ETH" : 0,
+                "ETH/BTC:BTC/ETH" : 0,
+                "BNB/BTC:BTC/BNB" : 0,
+                "BNB/USDT:USDT/BNB" : 0,
+                "BTC/USDT:USDT/BTC" : 0 }
+        }
+
         
     def getAvailableCurrencies(self):
         return self.currencies
@@ -78,6 +109,11 @@ class CurrencyMarket:
 
                     self.num_of_transactions_dict['total'][-1] += 1 # add one to the last entry in the cumulative total array
                     self.num_of_transactions_dict[possible_currency_exchange][-1] += 1 # add one to the respective total array
+
+                    if agent_key.strategy.name != "random":
+                        self.num_of_transactions_dict_by_strategy[agent_key.strategy.name][possible_currency_exchange] += 1
+                    if other_agent_key.strategy.name != "random":
+                        self.num_of_transactions_dict_by_strategy[other_agent_key.strategy.name][possible_currency_exchange] += 1
 
                     # agent_key -- wants a bigger exchange; other_agent_key satisfied but not AgentKey
                     if self.isBuyOrderBiggerThanSellOrder(buy_order_values, sell_order_values, buy_order_amount_selling_other_currency, sell_order_amount_selling_other_currency): 

@@ -128,10 +128,6 @@ class RandomStrategy(Strategy):
     def __init__(self, strategy_name, exchange_rates_data):
         super().__init__(strategy_name, exchange_rates_data)
 
-    def closingConditionMet(self, agent, round):
-        """" Agent's strategy for when to close the position """
-        return random.random() < 0.27
-
     def tryToMakeOpenOrder(self, agent, round):
         """ wishes to exchange X for Y """
         currenciesInWallet = agent.getCurrenciesInWalletWithPositiveBalance()
