@@ -4,57 +4,73 @@ var OrderBookModule = function(exchange_symbol, height, width) {
     var elementContainer = document.getElementById("elements")
 
     var table_container = document.createElement('div')
-    table_container.style.width = "800px"
+
+    table_container.style.marginLeft = '-5px'
+    table_container.style.marginRight = '-5px'
+    table_container.style.display = "flex"
+    table_container.style.maxHeight = "127px"
+    table_container.style.minHeight = "127px"
+    table_container.style.overflow = "scroll"
 
     // Create TABLE 0 -------------
-    let table_0 = document.createElement('table', );
+    let table_0 = document.createElement('table');
+    table_0.style.borderCollapse = "collapse"
+    table_0.style.borderSpacing = "0"
+    table_0.style.width = "100%"
+    table_0.style.maxHeight = "100px"
     let thead_0 = document.createElement('thead');
     let tbody_0 = document.createElement('tbody');
     table_0.id = "table_0_" + exchange_symbol
     tbody_0.id = "tbody_0_" + exchange_symbol 
     
     // Style TABLE 0
-    table_0.style.position = "absolute;"
-    table_0.style.border = "1px solid"
-    table_0.style.float = "left;"
-    table_0.style.width = "50%"
-    table_0.style.borderCollapse = "collapse"
-
     thead_0.style.border = "1px solid"
     thead_0.style.backgroundColor = '#FF0000'
     tbody_0.style.border = "1px solid"
-    tbody_0.style.height = "200px"
-    tbody_0.style.overflow = "auto"
-    tbody_0.style.overflowY = "hidden"
+    tbody_0.style.height = "100%"
     
     // append styled TABLE 0
     table_0.appendChild(thead_0);
     table_0.appendChild(tbody_0);
-    table_container.appendChild(table_0);
+
+    let table_0_wrapper = document.createElement('div')
+    table_0_wrapper.style.float = "left"
+    table_0_wrapper.style.width = "50%"
+    table_0_wrapper.style.padding = "5px"
+    table_0_wrapper.style.border = "5px"
+    // table_0_wrapper.style.height = '200px'
+    table_0_wrapper.appendChild(table_0)
+    table_container.appendChild(table_0_wrapper);
+
 
     // Create TABLE 1 --------------
     let table_1 = document.createElement('table');
+    table_1.style.borderCollapse = "collapse"
+    table_1.style.borderSpacing = "0"
+    table_1.style.width = "100%"
+    table_0.style.maxHeight = "100px"
     let thead_1 = document.createElement('thead');
     let tbody_1 = document.createElement('tbody');
     tbody_1.id = "tbody_1_" + exchange_symbol 
 
     // Style TABLE 1
-    table_1.style.border = "1px solid"
-    table_1.style.float = "left"
-    table_1.style.width = "50%"
-    table_1.style.borderCollapse = "collapse"
-    
     thead_1.style.border = "1px solid"
     thead_1.style.backgroundColor = '#FFFFFF'
 
     tbody_1.style.border = "1px solid"
-    tbody_1.style.height = "200px"
-    tbody_1.style.overflow = "auto"
-    tbody_1.style.overflowY = "hidden"
+    tbody_1.style.height = "100%"
 
     table_1.appendChild(thead_1);
     table_1.appendChild(tbody_1);
-    table_container.appendChild(table_1);
+
+    let table_1_wrapper = document.createElement('div')
+    table_1_wrapper.style.float = "left"
+    table_1_wrapper.style.width = "50%"
+    table_1_wrapper.style.padding = "5px"
+    table_1_wrapper.appendChild(table_1)
+
+    table_container.appendChild(table_1_wrapper);
+
 
     // make table_0 header
     let table_0_row_1 = document.createElement('tr');
@@ -109,6 +125,7 @@ var OrderBookModule = function(exchange_symbol, height, width) {
             for (let j = 0; j < 100; j++) {
                 if (data_direction[j] == null) { break} 
                 let row = document.createElement('tr');
+                row.style.height = "100%"
                 let row_data_1 = document.createElement('td');
                 row_data_1.innerHTML = parseFloat(data_direction[j]['exchange_price']).toFixed(6);
                 let row_data_2 = document.createElement('td');
@@ -132,9 +149,9 @@ var OrderBookModule = function(exchange_symbol, height, width) {
     };
 
     this.reset = function () {
-        const divider = document.getElementById("div_" + exchange_symbol);
-        while (divider.firstChild) {
-            divider.removeChild(divider.firstChild);
+        // const divider = document.getElementById("div_" + exchange_symbol);
+        while (table_container.firstChild) {
+            table_container.removeChild(divider.firstChild);
         }
     };
 
