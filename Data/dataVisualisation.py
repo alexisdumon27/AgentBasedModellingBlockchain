@@ -26,7 +26,7 @@ symbols = ["ETH/USDT", "USDT/ETH",
 #     percent_change = ((new - old) / old) * 100
 #     print (i,") ", symbols[i], ": ", percent_change, "%", ", old:", old, ", new:", new) 
 
-### Difference between min and max (must be min left max right)
+### Difference between min and max
 # for i in range(12):
 #     data = exchange_rates[symbols[i]]
 #     min_index = data.idxmin()
@@ -40,35 +40,40 @@ symbols = ["ETH/USDT", "USDT/ETH",
 #     else:
 #         old_index = max_index
 #         new_index = min_index
+#     diff = data.iloc[new_index] - data.iloc[old_index]
 #     percent_change = ((data.iloc[new_index] - data.iloc[old_index]) / data.iloc[old_index]) * 100
-#     print (i,") ", symbols[i], ": ", percent_change, "%")
+#     print (i,") ", symbols[i], ": ", percent_change)
 
 ### maximum MIN-MAX Difference ENTIRE
 # for i in range(12):
 #     a = exchange_rates[symbols[i]]
 #     vmin = a[0]
 #     dmax = 0
+#     min_index = 0
+#     max_index = 0
 #     for j in range(len(a)):
 #         if (a[j] < vmin):
-#             vmin = a[i]
+#             vmin = a[j]
+#         elif (a[j] - vmin > dmax):
+#             min_index = vmin
+#             max_index = j
+#             dmax = a[j] - vmin
+#             percentage_change = (dmax / vmin) * 100
+#     print(i,") ", symbols[i], ": ", percentage_change)
+
+### maximum MIN-MAX Difference First Two MONTHS
+# for i in range(12):
+#     new_index = exchange_rates.index[exchange_rates['date'] == "2020-02-28 23:54:00"].tolist()
+#     a = exchange_rates[symbols[i]].iloc[0:new_index[0]]
+#     vmin = a[0]
+#     dmax = 0
+#     for j in range(len(a)):
+#         if (a[j] < vmin):
+#             vmin = a[j]
 #         elif (a[j] - vmin > dmax):
 #             dmax = a[j] - vmin
 #             percentage_change = (dmax / vmin) * 100
 #     print(i,") ", symbols[i], ": ", percentage_change, "diff: ", dmax)
-
-### maximum MIN-MAX Difference First Two MONTHS
-for i in range(12):
-    new_index = exchange_rates.index[exchange_rates['date'] == "2020-02-28 23:54:00"].tolist()
-    a = exchange_rates[symbols[i]].iloc[0:new_index[0]]
-    vmin = a[0]
-    dmax = 0
-    for j in range(len(a)):
-        if (a[j] < vmin):
-            vmin = a[i]
-        elif (a[j] - vmin > dmax):
-            dmax = a[j] - vmin
-            percentage_change = (dmax / vmin) * 100
-    print(i,") ", symbols[i], ": ", percentage_change, "diff: ", dmax)
 
 ###### First Two months Percent change = ((new - old) / old) * 100
 # for i in range(12):
@@ -78,6 +83,31 @@ for i in range(12):
 #     new = exchange_rates[symbols[i]].iloc[new_index[0]]
 #     percent_change = ((new - old) / old) * 100
 #     print (i,") ", symbols[i], ": ", percent_change, "%", ", old:", old, ", new:", new) 
+
+###### number of Positive Hours (entire data)
+# for i in range(12):
+#     data = exchange_rates[symbols[i]]
+#     total = 0
+#     for j in range(len(data)):
+#         if j + 1 == len(data):
+#             break
+#         if data.iloc[j] < data.iloc[j+1]:
+#             total += 1
+#     print(i,") ", symbols[i], ": ", total, ", length: ", len(data))
+
+
+
+###### number of positive hours (two months)
+for i in range(12):
+    end_index = exchange_rates.index[exchange_rates['date'] == "2020-02-28 23:54:00"].tolist()
+    data = exchange_rates[symbols[i]].iloc[0:end_index[0]]
+    total = 0
+    for j in range(len(data)):
+        if j + 1 == len(data):
+            break
+        if data.iloc[j] < data.iloc[j+1]:
+            total += 1
+    print(i,") ", symbols[i], ": ", total, ", length: ", len(data))
 
 ### Difference between min and max (must be min left max right) FIRST TWO MONTHS
 # for i in range(12):
