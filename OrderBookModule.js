@@ -5,12 +5,15 @@ var OrderBookModule = function(exchange_symbol, height, width) {
 
     
     var table_container = document.createElement('div')
+    table_container.style.backgroundColor = "#202E35"
     table_container.style.marginLeft = '-5px'
     table_container.style.marginRight = '-5px'
     table_container.style.paddingTop = '10px'
+    table_container.style.border = "0.5px solid grey"
     table_container.style.display = "flex"
-    table_container.style.maxHeight = "127px"
-    table_container.style.minHeight = "127px"
+    table_container.style.maxHeight = "227px"
+    table_container.style.minHeight = "227px"
+    
     // table_container.style.overflow = "auto"
 
     // Create TABLE 0 -------------
@@ -22,21 +25,19 @@ var OrderBookModule = function(exchange_symbol, height, width) {
     // Add Title to table_0
     let currency_pairs = exchange_symbol.split(":")
     var title_0 = document.createElement('caption')
-    title_0.innerHTML = currency_pairs[0] + " orders"
+    title_0.style.fontSize = "20px"
+    title_0.innerHTML = "ORDERBOOK <div style = 'font-size:15px'>" + currency_pairs[0] + "</div>"
     table_0.appendChild(title_0)
     let thead_0 = document.createElement('thead');
-    // thead_0.style.position = "sticky"
-    // thead_0.style.top = "0"
     let tbody_0 = document.createElement('tbody');
     tbody_0.style.display = "block;"
     table_0.id = "table_0_" + exchange_symbol
     tbody_0.id = "tbody_0_" + exchange_symbol 
     
-    
 
     // Style TABLE 0
     thead_0.style.border = "1px solid"
-    thead_0.style.backgroundColor = '#FF0000'
+    // thead_0.style.backgroundColor = '#FF0000'
     tbody_0.style.border = "1px solid"
     tbody_0.style.height = "100%"
     
@@ -61,7 +62,9 @@ var OrderBookModule = function(exchange_symbol, height, width) {
     table_1.style.width = "100%"
     table_0.style.maxHeight = "100px"
     var title_1 = document.createElement('caption')
-    title_1.innerHTML = currency_pairs[1] + " orders"
+    title_1.style.fontSize = "20px"
+    title_1.style.paddingTop = "36px"
+    title_1.innerHTML = "<div style = 'font-size:15px'>" + currency_pairs[0] + "</div>"
     table_1.appendChild(title_1)
     let thead_1 = document.createElement('thead');
     // thead_1.style.position = "sticky"
@@ -72,8 +75,6 @@ var OrderBookModule = function(exchange_symbol, height, width) {
 
     // Style TABLE 1
     thead_1.style.border = "1px solid"
-    thead_1.style.backgroundColor = '#FFFFFF'
-
     tbody_1.style.border = "1px solid"
     tbody_1.style.height = "100%"
 
@@ -93,11 +94,14 @@ var OrderBookModule = function(exchange_symbol, height, width) {
     // make table_0 header
     let table_0_row_1 = document.createElement('tr');
     let table_0_heading_1 = document.createElement('th');
-    table_0_heading_1.innerHTML = "Amount" ;
+    table_0_heading_1.innerHTML = "AMOUNT" ;
+    table_0_heading_1.style.color = "#d5d9e0"
     let table_0_heading_2 = document.createElement('th');
-    table_0_heading_2.innerHTML = "Exchange Price";
+    table_0_heading_2.innerHTML = "EXCHANGE PRICE";
+    table_0_heading_2.style.color = "#d5d9e0"
     let table_0_heading_3 = document.createElement('th');
-    table_0_heading_3.innerHTML = "Limit Price";
+    table_0_heading_3.innerHTML = "LIMIT PRICE";
+    table_0_heading_3.style.color = "#d5d9e0"
 
     table_0_row_1.appendChild(table_0_heading_1);
     table_0_row_1.appendChild(table_0_heading_2);
@@ -106,16 +110,20 @@ var OrderBookModule = function(exchange_symbol, height, width) {
 
     // make table_1 header
     let table_1_row_1 = document.createElement('tr');
+    table_1_row_1.style.color = "#f0f2f5"
     let table_1_heading_1 = document.createElement('th');
-    table_1_heading_1.innerHTML = "Amount";
+    table_1_heading_1.innerHTML = "AMOUNT";
+    // table_1_heading_1.style.color = "#d5d9e0"
     let table_1_heading_2 = document.createElement('th');
-    table_1_heading_2.innerHTML = "Exchange Price";
+    table_1_heading_2.innerHTML = "EXCHANGE PRICE";
+    // table_1_heading_2.style.color = "#d5d9e0"
     let table_1_heading_3 = document.createElement('th');
-    table_1_heading_3.innerHTML = "Limit Price";
+    table_1_heading_3.innerHTML = "LIMIT PRICE";
+    // table_1_heading_3.style.color = "#d5d9e0"
 
-    table_1_row_1.appendChild(table_1_heading_1);
-    table_1_row_1.appendChild(table_1_heading_2);
     table_1_row_1.appendChild(table_1_heading_3);
+    table_1_row_1.appendChild(table_1_heading_2);
+    table_1_row_1.appendChild(table_1_heading_1);
     thead_1.appendChild(table_1_row_1);
 
     elementContainer.appendChild(table_container)
@@ -156,6 +164,7 @@ var OrderBookModule = function(exchange_symbol, height, width) {
                 }                 
                 let row = document.createElement('tr');
                 row.style.height = "20px"
+                row.style.color = "#f0f2f5"
                 let row_data_1 = document.createElement('td');
                 let row_data_2 = document.createElement('td');
                 let row_data_3 = document.createElement('td');

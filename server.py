@@ -53,12 +53,12 @@ chart_array.append(orderbook_usdt_eth)
 transaction_chart = ChartModule(
     [
         {"Label": "num_transactions_total", "Color":"#00000"},
-        {"Label": "num_transactions_ETH/USDT:USDT/ETH" , "Color":"#00000"},
-        {"Label": "num_transactions_ETH/BNB:BNB/ETH" , "Color":"#00000"},
-        {"Label": "num_transactions_ETH/BTC:BTC/ETH" , "Color":"#00000"},
-        {"Label": "num_transactions_BNB/BTC:BTC/BNB", "Color":"#00000"},
-        {"Label": "num_transactions_BNB/USDT:USDT/BNB" , "Color":"#00000"},
-        {"Label": "num_transactions_BTC/USDT:USDT/BTC", "Color":"#00000"},
+        {"Label": "num_transactions_ETH/USDT:USDT/ETH" , "Color":"#8fa6c9"},
+        {"Label": "num_transactions_ETH/BNB:BNB/ETH" , "Color":"#ad8fc9"},
+        {"Label": "num_transactions_ETH/BTC:BTC/ETH" , "Color":"#b6e0bb"},
+        {"Label": "num_transactions_BNB/BTC:BTC/BNB", "Color":"#d9e0b6"},
+        {"Label": "num_transactions_BNB/USDT:USDT/BNB" , "Color":"#e0c7b6"},
+        {"Label": "num_transactions_BTC/USDT:USDT/BTC", "Color":"##e0b6cf"},
     ]
     , data_collector_name="datacollector") 
 
@@ -67,16 +67,16 @@ chart_array.append(transaction_chart)
 ###### 3. Top 10 Wealthiest agents chart ############
 top_10_wealthiest_chart = BarChartModule(
     [
-        {"Label" : "Wealthy 0", "Color" : "#00000 "},
-        {"Label" : "Wealthy 1", "Color" : "#00000 "},
-        {"Label" : "Wealthy 2", "Color" : "#00000 "},
-        {"Label" : "Wealthy 3", "Color" : "#00000 "},
-        {"Label" : "Wealthy 4", "Color" : "#00000 "},
-        {"Label" : "Wealthy 5", "Color" : "#00000 "},
-        {"Label" : "Wealthy 6", "Color" : "#00000 "},
-        {"Label" : "Wealthy 7", "Color" : "#00000 "},
-        {"Label" : "Wealthy 8", "Color" : "#00000 "},
-        {"Label" : "Wealthy 9", "Color" : "#00000 "},
+        {"Label" : "Wealthy 0", "Color" : "#02cf05 "},
+        {"Label" : "Wealthy 1", "Color" : "#19bd1b "},
+        {"Label" : "Wealthy 2", "Color" : "#3dbf3f "},
+        {"Label" : "Wealthy 3", "Color" : "#5cbf5d "},
+        {"Label" : "Wealthy 4", "Color" : "#79c77a "},
+        {"Label" : "Wealthy 5", "Color" : "#87c788 "},
+        {"Label" : "Wealthy 6", "Color" : "#9dc79e "},
+        {"Label" : "Wealthy 7", "Color" : "#b5c7b5 "},
+        {"Label" : "Wealthy 8", "Color" : "#c6cfc6 "},
+        {"Label" : "Wealthy 9", "Color" : "#bdbdbd "},
     ]
 )
 
@@ -85,10 +85,10 @@ chart_array.append(top_10_wealthiest_chart)
 ###### 4. Relative Wealth Distribution per strategy ######
 wealth_distribution_per_strategy = PieChartModule(
     [
-        {"Label": "Pivot Point", "Color": "green"},
-        {"Label": "Moving Average", "Color": "blue"},
-        {"Label": "RSI", "Color": "purple"},
-        {"Label": "MACD", "Color": "yellow"},
+        {"Label": "Pivot Point", "Color": "#bab3b3"},
+        {"Label": "Moving Average", "Color": "#afd197"},
+        {"Label": "RSI", "Color": "#72cfc7"},
+        {"Label": "MACD", "Color": "#c2a4db"},
     ]
 )
 chart_array.append(wealth_distribution_per_strategy)
@@ -98,10 +98,10 @@ chart_array.append(wealth_distribution_per_strategy)
 orderbook_agents_per_strategy = BarChartModule(
     [
         {"Label": "Random orderbook", "Color": "#0000000"},
-        {"Label": "Pivot Point orderbook", "Color": "green"},
-        {"Label": "Moving Average orderbook", "Color": "blue"},
-        {"Label": "RSI orderbook", "Color": "purple"},
-        {"Label": "MACD orderbook", "Color": "yellow"},
+        {"Label": "Pivot Point orderbook", "Color": "bab3b3"},
+        {"Label": "Moving Average orderbook", "Color": "afd197"},
+        {"Label": "RSI orderbook", "Color": "72cfc7"},
+        {"Label": "MACD orderbook", "Color": "c2a4db"},
     ]
 )
 chart_array.append(orderbook_agents_per_strategy)
