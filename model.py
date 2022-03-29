@@ -19,7 +19,7 @@ class MarketModel(Model):
 
         self.currency_market = CurrencyMarket(self.exchange_rates)
 
-        self.schedule = RandomActivation(self) # changed from RandomActivation
+        self.schedule = RandomActivation(self)
 
         self.list_of_agents_not_including_random = []
         self.createAgents()
@@ -33,6 +33,12 @@ class MarketModel(Model):
                 "num_transactions_BNB/BTC:BTC/BNB" : getTotalBNB_BTCTransactions,
                 "num_transactions_BNB/USDT:USDT/BNB" : getTotalBNB_USDTTransactions,
                 "num_transactions_BTC/USDT:USDT/BTC" : getTotalBTC_USDTTransactions,
+                "transaction_dates_ETH/USDT:USDT/ETH" : getDatesETH_USDTTransactions,
+                "transaction_dates_ETH/BNB:BNB/ETH" : getDatesETH_BNBTransactions,
+                "transaction_dates_ETH/BTC:BTC/ETH" : getDatesETH_BTCTransactions,
+                "transaction_dates_BNB/BTC:BTC/BNB" : getDatesBNB_BTCTransactions,
+                "transaction_dates_BNB/USDT:USDT/BNB" : getDatesBNB_USDTTransactions,
+                "transaction_dates_BTC/USDT:USDT/BTC" : getDatesBTC_USDTTransactions,
                 "Pivot Point": getRelativeTotalWealthPivotPoint,
                 "Moving Average": getRelativeTotalWealthMovingAverage,
                 "RSI": getRelativeTotalWealthRSI,
@@ -125,7 +131,6 @@ class MarketModel(Model):
             agent_number += 1
 
     def step(self):
-        print ("Is it different to 0.5? :", self.ratio_of_agents_engaged_each_turn)
         num_of_agents_per_turn = round(self.num_of_agents * self.ratio_of_agents_engaged_each_turn)
         for i in range(num_of_agents_per_turn):
             self.schedule.step() # runs the step method for all Agents

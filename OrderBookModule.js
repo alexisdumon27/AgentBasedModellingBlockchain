@@ -3,14 +3,15 @@ var OrderBookModule = function(exchange_symbol, height, width) {
     // get element id
     var elementContainer = document.getElementById("elements")
 
+    
     var table_container = document.createElement('div')
-
     table_container.style.marginLeft = '-5px'
     table_container.style.marginRight = '-5px'
+    table_container.style.paddingTop = '10px'
     table_container.style.display = "flex"
     table_container.style.maxHeight = "127px"
     table_container.style.minHeight = "127px"
-    table_container.style.overflow = "scroll"
+    // table_container.style.overflow = "auto"
 
     // Create TABLE 0 -------------
     let table_0 = document.createElement('table');
@@ -18,11 +19,21 @@ var OrderBookModule = function(exchange_symbol, height, width) {
     table_0.style.borderSpacing = "0"
     table_0.style.width = "100%"
     table_0.style.maxHeight = "100px"
+    // Add Title to table_0
+    let currency_pairs = exchange_symbol.split(":")
+    var title_0 = document.createElement('caption')
+    title_0.innerHTML = currency_pairs[0] + " orders"
+    table_0.appendChild(title_0)
     let thead_0 = document.createElement('thead');
+    // thead_0.style.position = "sticky"
+    // thead_0.style.top = "0"
     let tbody_0 = document.createElement('tbody');
+    tbody_0.style.display = "block;"
     table_0.id = "table_0_" + exchange_symbol
     tbody_0.id = "tbody_0_" + exchange_symbol 
     
+    
+
     // Style TABLE 0
     thead_0.style.border = "1px solid"
     thead_0.style.backgroundColor = '#FF0000'
@@ -38,7 +49,7 @@ var OrderBookModule = function(exchange_symbol, height, width) {
     table_0_wrapper.style.width = "50%"
     table_0_wrapper.style.padding = "5px"
     table_0_wrapper.style.border = "5px"
-    // table_0_wrapper.style.height = '200px'
+    table_0_wrapper.style.overflow = "auto"
     table_0_wrapper.appendChild(table_0)
     table_container.appendChild(table_0_wrapper);
 
@@ -49,8 +60,14 @@ var OrderBookModule = function(exchange_symbol, height, width) {
     table_1.style.borderSpacing = "0"
     table_1.style.width = "100%"
     table_0.style.maxHeight = "100px"
+    var title_1 = document.createElement('caption')
+    title_1.innerHTML = currency_pairs[1] + " orders"
+    table_1.appendChild(title_1)
     let thead_1 = document.createElement('thead');
+    // thead_1.style.position = "sticky"
+    // thead_1.style.top = "0"
     let tbody_1 = document.createElement('tbody');
+    tbody_1.style.display = "block;"
     tbody_1.id = "tbody_1_" + exchange_symbol 
 
     // Style TABLE 1
@@ -67,6 +84,7 @@ var OrderBookModule = function(exchange_symbol, height, width) {
     table_1_wrapper.style.float = "left"
     table_1_wrapper.style.width = "50%"
     table_1_wrapper.style.padding = "5px"
+    table_1_wrapper.style.overflow = "auto"
     table_1_wrapper.appendChild(table_1)
 
     table_container.appendChild(table_1_wrapper);
@@ -75,7 +93,7 @@ var OrderBookModule = function(exchange_symbol, height, width) {
     // make table_0 header
     let table_0_row_1 = document.createElement('tr');
     let table_0_heading_1 = document.createElement('th');
-    table_0_heading_1.innerHTML = "Amount 0" ;
+    table_0_heading_1.innerHTML = "Amount" ;
     let table_0_heading_2 = document.createElement('th');
     table_0_heading_2.innerHTML = "Exchange Price";
     let table_0_heading_3 = document.createElement('th');
@@ -89,7 +107,7 @@ var OrderBookModule = function(exchange_symbol, height, width) {
     // make table_1 header
     let table_1_row_1 = document.createElement('tr');
     let table_1_heading_1 = document.createElement('th');
-    table_1_heading_1.innerHTML = "Amount 1";
+    table_1_heading_1.innerHTML = "Amount";
     let table_1_heading_2 = document.createElement('th');
     table_1_heading_2.innerHTML = "Exchange Price";
     let table_1_heading_3 = document.createElement('th');
@@ -120,24 +138,36 @@ var OrderBookModule = function(exchange_symbol, height, width) {
         }
 
         let exchange_symbols = exchange_symbol.split(":")
+        
+        var number_of_rows = 0
+        // console.log(data[exchange_symbols[0]])
+        // find one with most rows of data
+        if (Object.keys(data[exchange_symbols[0]]).length > Object.keys(data[exchange_symbols[1]]).length) {
+            number_of_rows = Object.keys(data[exchange_symbols[0]]).length
+        } else {
+            number_of_rows = Object.keys(data[exchange_symbols[1]]).length
+        }
+        console.log(number_of_rows)
         for (let i = 0; i < 2; i++) {
             data_direction = data[exchange_symbols[i]];
-            for (let j = 0; j < 100; j++) {
-                if (data_direction[j] == null) { break} 
+            for (let j = 0; j < number_of_rows; j++) {
+                if (data_direction[j] == null) { 
+                    break
+                }                 
                 let row = document.createElement('tr');
-                row.style.height = "100%"
+                row.style.height = "20px"
                 let row_data_1 = document.createElement('td');
-                row_data_1.innerHTML = parseFloat(data_direction[j]['exchange_price']).toFixed(6);
                 let row_data_2 = document.createElement('td');
-                row_data_2.innerHTML = parseFloat(data_direction[j]['exchange_price']).toFixed(6);
                 let row_data_3 = document.createElement('td');
+                row_data_1.innerHTML = parseFloat(data_direction[j]['exchange_price']).toFixed(6);
+                row_data_2.innerHTML = parseFloat(data_direction[j]['exchange_price']).toFixed(6);
                 row_data_3.innerHTML = parseFloat(data_direction[j]['limit_price']).toFixed(6);
-                
-                // edit the style here too as new elements ...
-
                 row.appendChild(row_data_1);
                 row.appendChild(row_data_2);
                 row.appendChild(row_data_3);
+                // edit the style here too as new elements ...
+
+                
 
                 if (i == 0) {
                     tbody_0.appendChild(row);

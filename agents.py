@@ -135,16 +135,25 @@ class MarketAgent(Agent):
         self.current_order = None
         self.current_investment = {"amount": 0, "bought_currency": None, "sold_currency":None}
 
-    def makeOrder(self, orderType):
-        if orderType == "OPEN":
-            possibleOrder = self.strategy.tryToMakeOpenOrder(self, self.round)
-        elif orderType == "CLOSE":
-            possibleOrder = self.strategy.makeCloseOrder(self, self.round)
+    def makeOrder(self, order_type):
+        possible_order = None
+        if order_type == "OPEN":
+            possible_order = self.strategy.tryToMakeOpenOrder(self, self.round)
+        elif order_type == "CLOSE":
+            possible_order = self.strategy.makeCloseOrder(self, self.round)
         
         # was it a good time to make an order?
-        if possibleOrder != None:
-            self.current_order = possibleOrder
+        if possible_order != None:
+            self.current_order = possible_order
             self.currency_market.getOrderBook().addOrder(self.current_order)
+            if self.strategy.name != "random":
+                buy_currency = self.current_order.buy_currency
+                sell_currency = self.current_order.sell_currency
+                symbol = buy_currency.symbol + "/" + sell_currency.symbol
+                if order_type == "OPEN":
+                    self.currency_market.open_order_by_currency_pair[symbol] += 1
+                else:
+                    self.currency_market.close_order_by_currency_pair[symbol] += 1
 
     def getCurrenciesInWalletWithPositiveBalance(self):
         currency_balance_above_zero = []

@@ -62,6 +62,45 @@ class CurrencyMarket:
                 "BTC/USDT:USDT/BTC" : 0 }
         }
 
+        self.transaction_dates_dict_by_strategy ={
+            "ETH/USDT:USDT/ETH" : [],
+            "ETH/BNB:BNB/ETH" : [],
+            "ETH/BTC:BTC/ETH" : [],
+            "BNB/BTC:BTC/BNB" : [],
+            "BNB/USDT:USDT/BNB" : [],
+            "BTC/USDT:USDT/BTC" : []
+        }
+
+        self.open_order_by_currency_pair = {
+            "ETH/USDT": 0,
+            "USDT/ETH" : 0,
+            "ETH/BNB" : 0,
+            "BNB/ETH" : 0,
+            "ETH/BTC": 0,
+            "BTC/ETH" : 0,
+            "BNB/BTC" : 0,
+            "BTC/BNB" : 0,
+            "BNB/USDT": 0,
+            "USDT/BNB" : 0,
+            "BTC/USDT": 0,
+            "USDT/BTC" : 0
+        }
+        self.close_order_by_currency_pair = {
+            "ETH/USDT": 0,
+            "USDT/ETH" : 0,
+            "ETH/BNB" : 0,
+            "BNB/ETH" : 0,
+            "ETH/BTC": 0,
+            "BTC/ETH" : 0,
+            "BNB/BTC" : 0,
+            "BTC/BNB" : 0,
+            "BNB/USDT": 0,
+            "USDT/BNB" : 0,
+            "BTC/USDT": 0,
+            "USDT/BTC" : 0
+        }
+        # average time between order and transaction ?
+
         
     def getAvailableCurrencies(self):
         return self.currencies
@@ -107,13 +146,16 @@ class CurrencyMarket:
                     buy_order_amount_selling_other_currency = amount * avg_price 
                     sell_order_amount_selling_other_currency = other_amount / avg_price
 
-                    self.num_of_transactions_dict['total'][-1] += 1 # add one to the last entry in the cumulative total array
-                    self.num_of_transactions_dict[possible_currency_exchange][-1] += 1 # add one to the respective total array
-
-                    if agent_key.strategy.name != "random":
-                        self.num_of_transactions_dict_by_strategy[agent_key.strategy.name][possible_currency_exchange] += 1
-                    if other_agent_key.strategy.name != "random":
-                        self.num_of_transactions_dict_by_strategy[other_agent_key.strategy.name][possible_currency_exchange] += 1
+                    # One of the agents has to not be random for it to count!
+                    
+                    if not (other_agent_key.strategy.name == "random" and agent_key.strategy.name == "random"):
+                        self.num_of_transactions_dict['total'][-1] += 1 # add one to the last entry in the cumulative total array
+                        self.num_of_transactions_dict[possible_currency_exchange][-1] += 1 # add one to the respective total array
+                        self.transaction_dates_dict_by_strategy[possible_currency_exchange].append(agent_key.round)
+                        if agent_key.strategy.name != "random":
+                            self.num_of_transactions_dict_by_strategy[agent_key.strategy.name][possible_currency_exchange] += 1
+                        if other_agent_key.strategy.name != "random":
+                            self.num_of_transactions_dict_by_strategy[other_agent_key.strategy.name][possible_currency_exchange] += 1
 
                     # agent_key -- wants a bigger exchange; other_agent_key satisfied but not AgentKey
                     if self.isBuyOrderBiggerThanSellOrder(buy_order_values, sell_order_values, buy_order_amount_selling_other_currency, sell_order_amount_selling_other_currency): 
