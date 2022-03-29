@@ -145,7 +145,7 @@ class MarketModel(Model):
     def dateToRoundNumber(self, date):
         return 27
 
-    # desperatily needs to be cleaned !!! Perhaps BLEACHED!!!
+    # Called in server.py for OrderbookModule.js
     def simplifyOrderBook(self, order_book_data):
         orders = {
             "ETH/USDT:USDT/ETH" : { 'ETH/USDT' : {}, 'USDT/ETH' : {} },
@@ -168,6 +168,8 @@ class MarketModel(Model):
                         temp = {"amount":amount, "limit_price":limit_price, "exchange_price": exchange_price}
                         orders[item[0]][order][i] = temp
                         i += 1
+        # Sort the orders ... 
+        
         return orders
 
 

@@ -63,12 +63,18 @@ class CurrencyMarket:
         }
 
         self.transaction_dates_dict_by_strategy ={
-            "ETH/USDT:USDT/ETH" : [],
-            "ETH/BNB:BNB/ETH" : [],
-            "ETH/BTC:BTC/ETH" : [],
-            "BNB/BTC:BTC/BNB" : [],
-            "BNB/USDT:USDT/BNB" : [],
-            "BTC/USDT:USDT/BTC" : []
+            "ETH/USDT": [],
+            "USDT/ETH" : [],
+            "ETH/BNB" : [],
+            "BNB/ETH" : [],
+            "ETH/BTC": [],
+            "BTC/ETH" : [],
+            "BNB/BTC" : [],
+            "BTC/BNB" : [],
+            "BNB/USDT": [],
+            "USDT/BNB" : [],
+            "BTC/USDT": [],
+            "USDT/BTC" : []
         }
 
         self.open_order_by_currency_pair = {
@@ -98,6 +104,61 @@ class CurrencyMarket:
             "USDT/BNB" : 0,
             "BTC/USDT": 0,
             "USDT/BTC" : 0
+        }
+
+        self.num_of_orders_dict_by_strategy = { # for data collection !!!
+            "pivot_point" : {
+                "ETH/USDT": 0,
+                "USDT/ETH" : 0,
+                "ETH/BNB" : 0,
+                "BNB/ETH" : 0,
+                "ETH/BTC": 0,
+                "BTC/ETH" : 0,
+                "BNB/BTC" : 0,
+                "BTC/BNB" : 0,
+                "BNB/USDT": 0,
+                "USDT/BNB" : 0,
+                "BTC/USDT": 0,
+                "USDT/BTC" : 0 },
+            "moving_average" : {
+                "ETH/USDT": 0,
+                "USDT/ETH" : 0,
+                "ETH/BNB" : 0,
+                "BNB/ETH" : 0,
+                "ETH/BTC": 0,
+                "BTC/ETH" : 0,
+                "BNB/BTC" : 0,
+                "BTC/BNB" : 0,
+                "BNB/USDT": 0,
+                "USDT/BNB" : 0,
+                "BTC/USDT": 0,
+                "USDT/BTC" : 0 },
+            "rsi" : {
+                "ETH/USDT": 0,
+                "USDT/ETH" : 0,
+                "ETH/BNB" : 0,
+                "BNB/ETH" : 0,
+                "ETH/BTC": 0,
+                "BTC/ETH" : 0,
+                "BNB/BTC" : 0,
+                "BTC/BNB" : 0,
+                "BNB/USDT": 0,
+                "USDT/BNB" : 0,
+                "BTC/USDT": 0,
+                "USDT/BTC" : 0 },
+            "macd" : {
+                "ETH/USDT": 0,
+                "USDT/ETH" : 0,
+                "ETH/BNB" : 0,
+                "BNB/ETH" : 0,
+                "ETH/BTC": 0,
+                "BTC/ETH" : 0,
+                "BNB/BTC" : 0,
+                "BTC/BNB" : 0,
+                "BNB/USDT": 0,
+                "USDT/BNB" : 0,
+                "BTC/USDT": 0,
+                "USDT/BTC" : 0 }
         }
         # average time between order and transaction ?
 
@@ -151,7 +212,10 @@ class CurrencyMarket:
                     if not (other_agent_key.strategy.name == "random" and agent_key.strategy.name == "random"):
                         self.num_of_transactions_dict['total'][-1] += 1 # add one to the last entry in the cumulative total array
                         self.num_of_transactions_dict[possible_currency_exchange][-1] += 1 # add one to the respective total array
+                        
                         self.transaction_dates_dict_by_strategy[possible_currency_exchange].append(agent_key.round)
+                        # needs to be changed to adding to both ETH/USDT and USDT/ETH
+
                         if agent_key.strategy.name != "random":
                             self.num_of_transactions_dict_by_strategy[agent_key.strategy.name][possible_currency_exchange] += 1
                         if other_agent_key.strategy.name != "random":

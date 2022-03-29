@@ -154,6 +154,7 @@ class MarketAgent(Agent):
                     self.currency_market.open_order_by_currency_pair[symbol] += 1
                 else:
                     self.currency_market.close_order_by_currency_pair[symbol] += 1
+                self.currency_market.num_of_orders_dict_by_strategy[self.strategy.name][symbol] += 1
 
     def getCurrenciesInWalletWithPositiveBalance(self):
         currency_balance_above_zero = []

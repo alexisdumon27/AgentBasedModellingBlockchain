@@ -192,3 +192,21 @@ def getNumOfTransactionsMACDBNBUSDT(model):
 
 def getNumOfTransactionsMACDBTCUSDT(model):
     return model.currency_market.num_of_transactions_dict_by_strategy['macd']["BTC/USDT:USDT/BTC"]
+
+def getDatesETH_USDTTransactions(model):
+    return model.currency_market.transaction_dates_dict_by_strategy['ETH/USDT:USDT/ETH']
+
+def getDatesETH_BNBTransactions(model):
+    return model.currency_market.transaction_dates_dict_by_strategy['ETH/BNB:BNB/ETH']
+
+def getDatesETH_BTCTransactions(model):
+    return model.currency_market.transaction_dates_dict_by_strategy['ETH/BTC:BTC/ETH']
+
+def getDatesBNB_BTCTransactions(model):
+    return model.currency_market.transaction_dates_dict_by_strategy['BNB/BTC:BTC/BNB']
+
+def getDatesBNB_USDTTransactions(model):
+    return model.currency_market.transaction_dates_dict_by_strategy['BNB/USDT:USDT/BNB']
+
+def getDatesBTC_USDTTransactions(model):
+    return model.currency_market.transaction_dates_dict_by_strategy['BTC/USDT:USDT/BTC']
