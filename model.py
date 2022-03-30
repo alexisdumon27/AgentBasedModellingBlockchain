@@ -10,7 +10,7 @@ from dataVisualisationMethods import *
 
 class MarketModel(Model):
     def __init__(self, starting_date = 1, ratio_of_random_strategy_to_other = 0.5, ratio_of_agents_engaged_each_turn = 0.5, num_agents = 10):
-        self.round = self.dateToRoundNumber(starting_date) # index keeping count of the round of simulation
+        self.round = starting_date # index keeping count of the round of simulation
         self.num_of_agents = num_agents
         self.ratio_of_agents_engaged_each_turn = ratio_of_agents_engaged_each_turn
         self.ratio_of_random_strategy_to_other = ratio_of_random_strategy_to_other
@@ -33,12 +33,12 @@ class MarketModel(Model):
                 "num_transactions_BNB/BTC:BTC/BNB" : getTotalBNB_BTCTransactions,
                 "num_transactions_BNB/USDT:USDT/BNB" : getTotalBNB_USDTTransactions,
                 "num_transactions_BTC/USDT:USDT/BTC" : getTotalBTC_USDTTransactions,
-                "transaction_dates_ETH/USDT:USDT/ETH" : getDatesETH_USDTTransactions,
-                "transaction_dates_ETH/BNB:BNB/ETH" : getDatesETH_BNBTransactions,
-                "transaction_dates_ETH/BTC:BTC/ETH" : getDatesETH_BTCTransactions,
-                "transaction_dates_BNB/BTC:BTC/BNB" : getDatesBNB_BTCTransactions,
-                "transaction_dates_BNB/USDT:USDT/BNB" : getDatesBNB_USDTTransactions,
-                "transaction_dates_BTC/USDT:USDT/BTC" : getDatesBTC_USDTTransactions,
+                # "transaction_dates_ETH/USDT:USDT/ETH" : getDatesETH_USDTTransactions,
+                # "transaction_dates_ETH/BNB:BNB/ETH" : getDatesETH_BNBTransactions,
+                # "transaction_dates_ETH/BTC:BTC/ETH" : getDatesETH_BTCTransactions,
+                # "transaction_dates_BNB/BTC:BTC/BNB" : getDatesBNB_BTCTransactions,
+                # "transaction_dates_BNB/USDT:USDT/BNB" : getDatesBNB_USDTTransactions,
+                # "transaction_dates_BTC/USDT:USDT/BTC" : getDatesBTC_USDTTransactions,
                 "Pivot Point": getRelativeTotalWealthPivotPoint,
                 "Moving Average": getRelativeTotalWealthMovingAverage,
                 "RSI": getRelativeTotalWealthRSI,
@@ -169,7 +169,7 @@ class MarketModel(Model):
                         orders[item[0]][order][i] = temp
                         i += 1
         # Sort the orders ... 
-        
+
         return orders
 
 

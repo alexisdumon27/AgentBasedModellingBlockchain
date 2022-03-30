@@ -30,6 +30,8 @@ class MarketAgent(Agent):
             self.initialUSDValueOfWallet = self.getUSDWalletValue()
             self.currentUSDValueOfWallet = self.getUSDWalletValue()
             self.currentUSDValueOfGains = 0
+            self.num_of_open_orders = 0
+            self.num_of_close_orders = 0
     
     # start with $100 worth of all possible currencies
     def createWallet(self):
@@ -150,11 +152,10 @@ class MarketAgent(Agent):
                 buy_currency = self.current_order.buy_currency
                 sell_currency = self.current_order.sell_currency
                 symbol = buy_currency.symbol + "/" + sell_currency.symbol
-                if order_type == "OPEN":
-                    self.currency_market.open_order_by_currency_pair[symbol] += 1
-                else:
-                    self.currency_market.close_order_by_currency_pair[symbol] += 1
-                self.currency_market.num_of_orders_dict_by_strategy[self.strategy.name][symbol] += 1
+                self.currency_market.num_of_orders_by_currency_pairs[symbol] += 1
+                    
+                self.currency_market.order_dates_by_strategy_by_currency[self.strategy.name][symbol].append(self.round)
+                self.currency_market.num_of_orders_dict_by_strategy_by_currency[self.strategy.name][symbol] += 1
 
     def getCurrenciesInWalletWithPositiveBalance(self):
         currency_balance_above_zero = []
