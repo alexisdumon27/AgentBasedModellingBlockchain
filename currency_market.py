@@ -32,10 +32,10 @@ class CurrencyMarket:
         }
 
         self.num_of_orders_by_currency_pairs = {
-            "ETH/USDT": 0,"USDT/ETH" : 0,"ETH/BNB" : 0,"BNB/ETH" : 0,"ETH/BTC": 0,"BTC/ETH" : 0,"BNB/BTC" : 0,"BTC/BNB" : 0,"BNB/USDT": 0,"USDT/BNB" : 0,"BTC/USDT": 0,"USDT/BTC" : 0 
+            "ETH/USDT": [],"USDT/ETH" : [],"ETH/BNB" : [],"BNB/ETH" : [],"ETH/BTC": [],"BTC/ETH" : [],"BNB/BTC" : [],"BTC/BNB" : [],"BNB/USDT": [],"USDT/BNB" : [],"BTC/USDT": [],"USDT/BTC" : [] 
         }
 
-        self.num_of_transactions_dict_by_strategy = {
+        self.num_of_transactions_dict_by_strategy = { # although not array is part of data.collector so its state is captured every round : )
             "pivot_point" : {
                 "ETH/USDT:USDT/ETH" : 0,
                 "ETH/BNB:BNB/ETH" : 0,
@@ -67,36 +67,6 @@ class CurrencyMarket:
         }
 
         self.num_of_orders_dict_by_strategy_by_currency = {
-            "pivot_point" : {
-                "ETH/USDT": 0,"USDT/ETH" : 0,"ETH/BNB" : 0,"BNB/ETH" : 0,"ETH/BTC": 0,"BTC/ETH" : 0,"BNB/BTC" : 0,"BTC/BNB" : 0,"BNB/USDT": 0,"USDT/BNB" : 0,"BTC/USDT": 0,"USDT/BTC" : 0 
-            },
-            "moving_average" : {
-                "ETH/USDT": 0,"USDT/ETH" : 0,"ETH/BNB" : 0,"BNB/ETH" : 0,"ETH/BTC": 0,"BTC/ETH" : 0,"BNB/BTC" : 0,"BTC/BNB" : 0,"BNB/USDT": 0,"USDT/BNB" : 0,"BTC/USDT": 0,"USDT/BTC" : 0 
-            },
-            "rsi" : {
-                "ETH/USDT": 0,"USDT/ETH" : 0,"ETH/BNB" : 0,"BNB/ETH" : 0,"ETH/BTC": 0,"BTC/ETH" : 0,"BNB/BTC" : 0,"BTC/BNB" : 0,"BNB/USDT": 0,"USDT/BNB" : 0,"BTC/USDT": 0,"USDT/BTC" : 0 
-            },
-            "macd" : {
-                "ETH/USDT": 0,"USDT/ETH" : 0,"ETH/BNB" : 0,"BNB/ETH" : 0,"ETH/BTC": 0,"BTC/ETH" : 0,"BNB/BTC" : 0,"BTC/BNB" : 0,"BNB/USDT": 0,"USDT/BNB" : 0,"BTC/USDT": 0,"USDT/BTC" : 0 
-            }
-        }
-
-        self.transaction_dates_dict_by_strategy = {
-            "pivot_point" : {
-                "ETH/USDT:USDT/ETH" : [], "ETH/BNB:BNB/ETH" : [], "ETH/BTC:BTC/ETH" : [], "BNB/BTC:BTC/BNB" : [], "BNB/USDT:USDT/BNB" : [], "BTC/USDT:USDT/BTC" : []
-            },
-            "moving_average" : {
-                "ETH/USDT:USDT/ETH" : [], "ETH/BNB:BNB/ETH" : [], "ETH/BTC:BTC/ETH" : [], "BNB/BTC:BTC/BNB" : [], "BNB/USDT:USDT/BNB" : [], "BTC/USDT:USDT/BTC" : []
-            },
-            "rsi" : {
-                "ETH/USDT:USDT/ETH" : [], "ETH/BNB:BNB/ETH" : [], "ETH/BTC:BTC/ETH" : [], "BNB/BTC:BTC/BNB" : [], "BNB/USDT:USDT/BNB" : [], "BTC/USDT:USDT/BTC" : []
-            },
-            "macd" : {
-                "ETH/USDT:USDT/ETH" : [], "ETH/BNB:BNB/ETH" : [], "ETH/BTC:BTC/ETH" : [], "BNB/BTC:BTC/BNB" : [], "BNB/USDT:USDT/BNB" : [], "BTC/USDT:USDT/BTC" : []
-            },
-        }
-        
-        self.order_dates_by_strategy_by_currency = {
             "pivot_point" : {
                 "ETH/USDT": [],"USDT/ETH" : [],"ETH/BNB" : [],"BNB/ETH" : [],"ETH/BTC": [],"BTC/ETH" : [],"BNB/BTC" : [],"BTC/BNB" : [],"BNB/USDT": [],"USDT/BNB" : [],"BTC/USDT": [],"USDT/BTC" : [] 
             },

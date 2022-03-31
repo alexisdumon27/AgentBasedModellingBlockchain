@@ -10,6 +10,7 @@ from dataVisualisationMethods import *
 
 class MarketModel(Model):
     def __init__(self, starting_date = 1, ratio_of_random_strategy_to_other = 0.5, ratio_of_agents_engaged_each_turn = 0.5, num_agents = 10):
+        self.starting_date = starting_date
         self.round = starting_date # index keeping count of the round of simulation
         self.num_of_agents = num_agents
         self.ratio_of_agents_engaged_each_turn = ratio_of_agents_engaged_each_turn
@@ -131,6 +132,9 @@ class MarketModel(Model):
             agent_number += 1
 
     def step(self):
+
+        self.addNewRoundToDataCollector()
+
         num_of_agents_per_turn = round(self.num_of_agents * self.ratio_of_agents_engaged_each_turn)
         for i in range(num_of_agents_per_turn):
             self.schedule.step() # runs the step method for all Agents
@@ -141,9 +145,22 @@ class MarketModel(Model):
 
         self.datacollector.collect(self)
         self.round += 1 # go to the next round
+
     
-    def dateToRoundNumber(self, date):
-        return 27
+    def addNewRoundToDataCollector(self):
+        for key in self.currency_market.num_of_orders_by_currency_pairs:
+            array = self.currency_market.num_of_orders_by_currency_pairs[key]
+            if len(array) == 0:
+                array.append(0)
+            else: array.append(array[-1])
+        
+        for strategy_key in self.currency_market.num_of_orders_dict_by_strategy_by_currency:
+            strategy_values = self.currency_market.num_of_orders_dict_by_strategy_by_currency[strategy_key]
+            for symbol_key in strategy_values:
+                array = strategy_values[symbol_key]
+                if len(array) == 0:
+                    array.append(0)
+                else: array.append(array[-1])
 
     # Called in server.py for OrderbookModule.js
     def simplifyOrderBook(self, order_book_data):
