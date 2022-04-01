@@ -146,7 +146,7 @@ class RandomStrategy(Strategy):
         limit_price = self.getLimitPrice(exchange_rate)
 
         random_amount = random.randint(10,200)
-        amount_of_buying_currency = self.getAmountOfBuyingCurrency(exchange_rate, limit_price, random_amount) # AGENT WANTS TO BUY 10 of currency 
+        amount_of_buying_currency = self.getAmountOfBuyingCurrency(exchange_rate, limit_price, random_amount)
 
         expiration_time = random.choice(range(4, 24))
 

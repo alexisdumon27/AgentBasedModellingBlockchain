@@ -21,6 +21,7 @@ class CurrencyMarket:
 
         self.exchange_rates = exchange_rates
         self.order_book = OrderBook()
+
         self.num_of_transactions_dict = {
             "total" : [],
             "ETH/USDT:USDT/ETH" : [],
@@ -80,9 +81,6 @@ class CurrencyMarket:
                 "ETH/USDT": [],"USDT/ETH" : [],"ETH/BNB" : [],"BNB/ETH" : [],"ETH/BTC": [],"BTC/ETH" : [],"BNB/BTC" : [],"BTC/BNB" : [],"BNB/USDT": [],"USDT/BNB" : [],"BTC/USDT": [],"USDT/BTC" : [] 
             }
         }
-
-        # average time between order and transaction ?
-
         
     def getAvailableCurrencies(self):
         return self.currencies
@@ -136,10 +134,8 @@ class CurrencyMarket:
                         
                         if agent_key.strategy.name != "random":
                             self.num_of_transactions_dict_by_strategy[agent_key.strategy.name][possible_currency_exchange] += 1
-                            self.transaction_dates_dict_by_strategy[agent_key.strategy.name][possible_currency_exchange].append(agent_key.round)
                         if other_agent_key.strategy.name != "random":
                             self.num_of_transactions_dict_by_strategy[other_agent_key.strategy.name][possible_currency_exchange] += 1
-                            self.transaction_dates_dict_by_strategy[other_agent_key.strategy.name][possible_currency_exchange].append(agent_key.round)
 
                     # agent_key -- wants a bigger exchange; other_agent_key satisfied but not AgentKey
                     if self.isBuyOrderBiggerThanSellOrder(buy_order_values, sell_order_values, buy_order_amount_selling_other_currency, sell_order_amount_selling_other_currency): 
@@ -158,7 +154,7 @@ class CurrencyMarket:
                         other_agent_key.updateCurrentState(other_order, buy_order_amount_selling_other_currency, amount, current_order_amount = 1)
 
                         # update agent_key's order in the order_book -- removes amount sold by other_agent_key
-                        self.order_book.updateOrder(other_order, buy_order_amount_selling_other_currency) # will be left with smallet amount remaining
+                        self.order_book.updateOrder(other_order, buy_order_amount_selling_other_currency) # will be left with smallest amount remaining
 
                         # agent_key's order has been fulfilled completely // it is added to the list of keys to delete
                         buying_orders_keys_to_delete.append(agent_key)
