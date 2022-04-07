@@ -19,7 +19,7 @@ The following libraries need to be installed in order for the code to run:
 - matplotlib
 - mesa
 
-These can be installed on one's local machine or through any virtual environmen such as Conda.
+These can be installed on one's local machine or through any virtual environment such as Conda.
 
 ## How to run
 
