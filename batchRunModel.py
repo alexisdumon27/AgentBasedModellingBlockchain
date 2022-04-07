@@ -1,9 +1,8 @@
-from model import MarketModel
 import pandas as pd
 from Visualisation.dataVisualisationMethods import *
 from mesa.batchrunner import BatchRunner
+from Model.model import MarketModel
 import time
-import matplotlib.pyplot as plt
 
 symbols = [
     "ETH/USDT",

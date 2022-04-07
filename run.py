@@ -1,4 +1,4 @@
-from server import server
+from Visualisation.server import server
 
 server.launch()
 
