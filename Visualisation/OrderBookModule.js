@@ -1,9 +1,6 @@
 var OrderBookModule = function(exchange_symbol, height, width) {
-    // https://stackoverflow.com/questions/13903952/can-i-draw-a-table-in-canvas-element
-    // get element id
-    var elementContainer = document.getElementById("elements")
-
     
+    var elementContainer = document.getElementById("elements")
     var table_container = document.createElement('div')
     table_container.style.backgroundColor = "#202E35"
     table_container.style.marginLeft = '-5px'
@@ -13,8 +10,6 @@ var OrderBookModule = function(exchange_symbol, height, width) {
     table_container.style.display = "flex"
     table_container.style.maxHeight = "227px"
     table_container.style.minHeight = "227px"
-    
-    // table_container.style.overflow = "auto"
 
     // Create TABLE 0 -------------
     let table_0 = document.createElement('table');
@@ -148,7 +143,7 @@ var OrderBookModule = function(exchange_symbol, height, width) {
         let exchange_symbols = exchange_symbol.split(":")
         
         var number_of_rows = 0
-        // console.log(data[exchange_symbols[0]])
+
         // find one with most rows of data
         if (Object.keys(data[exchange_symbols[0]]).length > Object.keys(data[exchange_symbols[1]]).length) {
             number_of_rows = Object.keys(data[exchange_symbols[0]]).length

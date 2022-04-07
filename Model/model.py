@@ -9,6 +9,9 @@ from Model.currency_market import CurrencyMarket
 from Visualisation.dataVisualisationMethods import *
 
 class MarketModel(Model):
+    """
+        Main class of the simulation which instantiates directly or indirectly all other objects
+    """
     def __init__(self, starting_date = 1, ratio_of_random_strategy_to_other = 0.5, ratio_of_agents_engaged_each_turn = 0.5, num_agents = 10):
         self.starting_date = starting_date
         self.round = starting_date # index keeping count of the round of simulation
@@ -25,6 +28,7 @@ class MarketModel(Model):
         self.list_of_agents_not_including_random = []
         self.createAgents()
 
+        # MESA object
         self.datacollector = DataCollector(
             model_reporters={
                 "num_transactions_total" : getTotalTransactions,
@@ -82,6 +86,7 @@ class MarketModel(Model):
 
         self.running = True
 
+    # create the agents by giving them a strategy and a random risk level
     def createAgents(self):
         random_strategy = RandomStrategy("random", self.exchange_rates)
         pivot_point_strategy = PivotPointStrategy("pivot_point", self.exchange_rates)
@@ -125,6 +130,7 @@ class MarketModel(Model):
             self.schedule.add(a)
             agent_number += 1
 
+    # what should happen in the simulation at every step
     def step(self):
 
         self.addNewRoundToDataCollector()
@@ -133,14 +139,11 @@ class MarketModel(Model):
         for i in range(num_of_agents_per_turn):
             self.schedule.step() # runs the step method for all Agents
 
-        self.currency_market.order_book.sortOrdersInOrderBook()
-
         self.currency_market.priceClearingMechanism() # do all transactions
 
         self.datacollector.collect(self)
         self.round += 1 # go to the next round
 
-    
     def addNewRoundToDataCollector(self):
         for key in self.currency_market.num_of_orders_by_currency_pairs:
             array = self.currency_market.num_of_orders_by_currency_pairs[key]
@@ -157,6 +160,7 @@ class MarketModel(Model):
                 else: array.append(array[-1])
 
     # Called in server.py for OrderbookModule.js
+    # Makes the orderbook into an easier data structure for the server to display
     def simplifyOrderBook(self, order_book_data):
         orders = {
             "ETH/USDT:USDT/ETH" : { 'ETH/USDT' : {}, 'USDT/ETH' : {} },
@@ -179,8 +183,6 @@ class MarketModel(Model):
                         temp = {"amount":amount, "limit_price":limit_price, "exchange_price": exchange_price}
                         orders[item[0]][order][i] = temp
                         i += 1
-        # Sort the orders ... 
-
         return orders
 
 

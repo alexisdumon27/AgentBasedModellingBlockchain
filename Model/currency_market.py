@@ -32,64 +32,34 @@ class CurrencyMarket:
             "ETH/USDT": [],"USDT/ETH" : [],"ETH/BNB" : [],"BNB/ETH" : [],"ETH/BTC": [],"BTC/ETH" : [],"BNB/BTC" : [],"BTC/BNB" : [],"BNB/USDT": [],"USDT/BNB" : [],"BTC/USDT": [],"USDT/BTC" : [] 
         }
 
-        self.num_of_transactions_dict_by_strategy = { # although not array is part of data.collector so its state is captured every round : )
-            "pivot_point" : {
-                "ETH/USDT:USDT/ETH" : 0,
-                "ETH/BNB:BNB/ETH" : 0,
-                "ETH/BTC:BTC/ETH" : 0,
-                "BNB/BTC:BTC/BNB" : 0,
-                "BNB/USDT:USDT/BNB" : 0,
-                "BTC/USDT:USDT/BTC" : 0 },
-            "moving_average" : {
-                "ETH/USDT:USDT/ETH" : 0,
-                "ETH/BNB:BNB/ETH" : 0,
-                "ETH/BTC:BTC/ETH" : 0,
-                "BNB/BTC:BTC/BNB" : 0,
-                "BNB/USDT:USDT/BNB" : 0,
-                "BTC/USDT:USDT/BTC" : 0 },
-            "rsi" : {
-                "ETH/USDT:USDT/ETH" : 0,
-                "ETH/BNB:BNB/ETH" : 0,
-                "ETH/BTC:BTC/ETH" : 0,
-                "BNB/BTC:BTC/BNB" : 0,
-                "BNB/USDT:USDT/BNB" : 0,
-                "BTC/USDT:USDT/BTC" : 0 },
-            "macd" : {
-                "ETH/USDT:USDT/ETH" : 0,
-                "ETH/BNB:BNB/ETH" : 0,
-                "ETH/BTC:BTC/ETH" : 0,
-                "BNB/BTC:BTC/BNB" : 0,
-                "BNB/USDT:USDT/BNB" : 0,
-                "BTC/USDT:USDT/BTC" : 0 }
+        self.num_of_transactions_dict_by_strategy = { 
+            "pivot_point" : {"ETH/USDT:USDT/ETH" : 0,"ETH/BNB:BNB/ETH" : 0,"ETH/BTC:BTC/ETH" : 0,"BNB/BTC:BTC/BNB" : 0,"BNB/USDT:USDT/BNB" : 0,"BTC/USDT:USDT/BTC" : 0 },
+            "moving_average" : {"ETH/USDT:USDT/ETH" : 0,"ETH/BNB:BNB/ETH" : 0,"ETH/BTC:BTC/ETH" : 0,"BNB/BTC:BTC/BNB" : 0,"BNB/USDT:USDT/BNB" : 0,"BTC/USDT:USDT/BTC" : 0 },
+            "rsi" : {"ETH/USDT:USDT/ETH" : 0,"ETH/BNB:BNB/ETH" : 0,"ETH/BTC:BTC/ETH" : 0,"BNB/BTC:BTC/BNB" : 0,"BNB/USDT:USDT/BNB" : 0,"BTC/USDT:USDT/BTC" : 0 },
+            "macd" : {"ETH/USDT:USDT/ETH" : 0,"ETH/BNB:BNB/ETH" : 0,"ETH/BTC:BTC/ETH" : 0,"BNB/BTC:BTC/BNB" : 0,"BNB/USDT:USDT/BNB" : 0,"BTC/USDT:USDT/BTC" : 0 }
         }
 
         self.num_of_orders_dict_by_strategy_by_currency = {
-            "pivot_point" : {
-                "ETH/USDT": [],"USDT/ETH" : [],"ETH/BNB" : [],"BNB/ETH" : [],"ETH/BTC": [],"BTC/ETH" : [],"BNB/BTC" : [],"BTC/BNB" : [],"BNB/USDT": [],"USDT/BNB" : [],"BTC/USDT": [],"USDT/BTC" : [] 
-            },
-            "moving_average" : {
-                "ETH/USDT": [],"USDT/ETH" : [],"ETH/BNB" : [],"BNB/ETH" : [],"ETH/BTC": [],"BTC/ETH" : [],"BNB/BTC" : [],"BTC/BNB" : [],"BNB/USDT": [],"USDT/BNB" : [],"BTC/USDT": [],"USDT/BTC" : [] 
-            },
-            "rsi" : {
-                "ETH/USDT": [],"USDT/ETH" : [],"ETH/BNB" : [],"BNB/ETH" : [],"ETH/BTC": [],"BTC/ETH" : [],"BNB/BTC" : [],"BTC/BNB" : [],"BNB/USDT": [],"USDT/BNB" : [],"BTC/USDT": [],"USDT/BTC" : [] 
-            },
-            "macd" : {
-                "ETH/USDT": [],"USDT/ETH" : [],"ETH/BNB" : [],"BNB/ETH" : [],"ETH/BTC": [],"BTC/ETH" : [],"BNB/BTC" : [],"BTC/BNB" : [],"BNB/USDT": [],"USDT/BNB" : [],"BTC/USDT": [],"USDT/BTC" : [] 
-            }
+            "pivot_point" : {"ETH/USDT": [],"USDT/ETH" : [],"ETH/BNB" : [],"BNB/ETH" : [],"ETH/BTC": [],"BTC/ETH" : [],"BNB/BTC" : [],"BTC/BNB" : [],"BNB/USDT": [],"USDT/BNB" : [],"BTC/USDT": [],"USDT/BTC" : [] },
+            "moving_average" : {"ETH/USDT": [],"USDT/ETH" : [],"ETH/BNB" : [],"BNB/ETH" : [],"ETH/BTC": [],"BTC/ETH" : [],"BNB/BTC" : [],"BTC/BNB" : [],"BNB/USDT": [],"USDT/BNB" : [],"BTC/USDT": [],"USDT/BTC" : [] },
+            "rsi" : {"ETH/USDT": [],"USDT/ETH" : [],"ETH/BNB" : [],"BNB/ETH" : [],"ETH/BTC": [],"BTC/ETH" : [],"BNB/BTC" : [],"BTC/BNB" : [],"BNB/USDT": [],"USDT/BNB" : [],"BTC/USDT": [],"USDT/BTC" : [] },
+            "macd" : {"ETH/USDT": [],"USDT/ETH" : [],"ETH/BNB" : [],"BNB/ETH" : [],"ETH/BTC": [],"BTC/ETH" : [],"BNB/BTC" : [],"BTC/BNB" : [],"BNB/USDT": [],"USDT/BNB" : [],"BTC/USDT": [],"USDT/BTC" : [] }
         }
-        
+    
+    # get list of currency object available in the currency market
     def getAvailableCurrencies(self):
         return self.currencies
     
+    # returns the order book
     def getOrderBook(self):
         return self.order_book
 
+    # get a currencies exchange rate
     def getCurrenciesExchangeRate(self, symbol, round):
         return self.exchange_rates[symbol][round]
 
+    # matches buy and selling orders for a particular currency pair
     def matchBuyAndSellOrders(self, buy_orders, sell_orders, possible_currency_exchange):
-        # which is buy_orders and sell_orders is arbitrary -- does not make a difference
-
         buying_orders_keys_to_delete = [] # lists of the keys of the orders to delete
         selling_orders_keys_to_delete = []
 
@@ -167,9 +137,8 @@ class CurrencyMarket:
         for i in selling_orders_keys_to_delete:
             del sell_orders[i]
 
-    # https://journals.plos.org/plosone/article/file?id=10.1371/journal.pone.0164603&type=printable <- for reordering orderbook
+    # performs matching buying and selling currency pairs for all currency pairs
     def priceClearingMechanism(self):
-        """ ............ """
         orderbook = self.getOrderBook().getOrders()
         self.num_of_transactions_this_round = 0
         self.addNewRoundToNumOfTransactionsDict()
@@ -181,12 +150,14 @@ class CurrencyMarket:
             
             self.matchBuyAndSellOrders(exchange_direction_0_orders, exchange_direction_1_orders, possible_currency_exchange)
 
+    # helper method that helps data collection component
     def addNewRoundToNumOfTransactionsDict(self):
         for item in self.num_of_transactions_dict:
             array_of_transactions = self.num_of_transactions_dict[item]
             if len(array_of_transactions) == 0: array_of_transactions.append(0)
             else: array_of_transactions.append(array_of_transactions[-1])
 
+    # checks if an order is for a higher amount than another
     def isBuyOrderBiggerThanSellOrder(self, buy_order_values, sell_order_values, buy_order_amount_selling, sell_order_amount_amount_selling):
         amount = buy_order_values[0]
         other_amount = sell_order_values[0]
@@ -196,7 +167,9 @@ class CurrencyMarket:
             return False
 
 class Currency:
-
+    """
+        this class puts into a data structure the data for each currency
+    """
     def __init__(self, name, conversion_symbol, type, amount_in_circulation, data):
         self.name = name
         self.symbol = conversion_symbol
@@ -205,8 +178,6 @@ class Currency:
         self.data = data # data = exchange_rates['symbol/USD']
         self.transactions = 0
 
-    # necessary to find the price in USD
-    # maybe better if I do not pass the data as a parameter ... 
     def getPriceAtRound(self, round):
         return self.data[round]
     
@@ -268,6 +239,7 @@ class OrderBook:
 
         self.orders[orderbook_key][exchange_direction][agent] = [amount, buy_currency, sell_currency, order_type, limit_price]
 
+    # returns the key to an orderbook entry
     def getOrderBookKey(self, buy_currency, sell_currency):
         buy_currency_symbol = buy_currency.symbol
         sell_currency_symbol = sell_currency.symbol
@@ -277,24 +249,19 @@ class OrderBook:
             if exhange_symbol in symbols:
                 return key
 
+    # returns the exchange symbol for two currencies
     def getExchangeSymbol(self, buy_currency, sell_currency):
         return buy_currency.symbol + "/" + sell_currency.symbol
 
-    def sortOrdersInOrderBook(self):
-        # DOES NOT WORK YET
-        # for exchange_symbols in self.orders.keys():
-        #     currency_pair_orders = self.orders[exchange_symbols]
-        #     currency_pair_orders["buy"] = {k: v for k, v in sorted(currency_pair_orders["buy"].items(), key=lambda item: item[1][-1], reverse = True)}
-        #     currency_pair_orders["sell"] = {k: v for k, v in sorted(currency_pair_orders["sell"].items(), key=lambda item: item[1][-1], reverse = False)}
-        return 27
-
+    # gets the orders
     def getOrders(self):
         return self.orders
-    
+
+    # updates an order
     def updateOrder(self, order, amount):
-        # it receives an order array from the orderbook [amount, buy_currency, sell_currency, orderType, limit_price] ... 
         order[1][0] -= amount
     
+    # updates an agents order by changing the limit price in the order book
     def updateAgentOrderLimitPriceInOrderBook(self, agent, new_limit_price):
         buy_currency = agent.current_order.buy_currency
         sell_currency = agent.current_order.sell_currency
@@ -302,13 +269,10 @@ class OrderBook:
         exchange_direction = self.getExchangeSymbol(buy_currency, sell_currency)
         self.orders[orderbook_key][exchange_direction][agent][-1] = new_limit_price
 
+    # removes an agent's order after it has been fully executed
     def removeAgentOrder(self, agent):
         buy_currency = agent.current_order.buy_currency
         sell_currency = agent.current_order.sell_currency
         orderbook_key = self.getOrderBookKey(buy_currency, sell_currency)
         exchange_direction = self.getExchangeSymbol(buy_currency, sell_currency)
         del self.orders[orderbook_key][exchange_direction][agent]
-
-    def printOrderBook(self):
-        """ visual representation of order book """
-        print(self.orders.items())

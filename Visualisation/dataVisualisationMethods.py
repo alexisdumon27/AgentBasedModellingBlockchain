@@ -19,10 +19,6 @@ def getTotalBNB_USDTTransactions(model):
 def getTotalBTC_USDTTransactions(model):
     return model.currency_market.num_of_transactions_dict['BTC/USDT:USDT/BTC'][-1]
 
-# def getRelativeTotalWealthRandom(model):
-#     random_agents = model.agents_using_each_strategy_dict["random"]
-#     return sum(agent.currentUSDValueOfWallet for agent in random_agents) / len(random_agents)
-
 def getRelativeTotalWealthPivotPoint(model):
     pivot_point_agents = model.agents_using_each_strategy_dict["pivot_point"]
     return sum(agent.currentUSDValueOfWallet for agent in pivot_point_agents) / len(pivot_point_agents)
@@ -192,57 +188,4 @@ def getNumOfTransactionsMACDBNBUSDT(model):
 
 def getNumOfTransactionsMACDBTCUSDT(model):
     return model.currency_market.num_of_transactions_dict_by_strategy['macd']["BTC/USDT:USDT/BTC"]
-
-# def getDatesETH_USDTTransactions(model):
-#     return model.currency_market.transaction_dates_dict['ETH/USDT:USDT/ETH']
-
-# def getDatesETH_BNBTransactions(model):
-#     return model.currency_market.transaction_dates_dict['ETH/BNB:BNB/ETH']
-
-# def getDatesETH_BTCTransactions(model):
-#     return model.currency_market.transaction_dates_dict['ETH/BTC:BTC/ETH']
-
-# def getDatesBNB_BTCTransactions(model):
-#     return model.currency_market.transaction_dates_dict['BNB/BTC:BTC/BNB']
-
-# def getDatesBNB_USDTTransactions(model):
-#     return model.currency_market.transaction_dates_dict['BNB/USDT:USDT/BNB']
-
-# def getDatesBTC_USDTTransactions(model):
-#     return model.currency_market.transaction_dates_dict['BTC/USDT:USDT/BTC']
-
-# def getDatesETH_USDTTransactions(model):
-#     return model.currency_market.transaction_dates_dict_by_strategy['ETH/USDT']
-
-# def getDatesUSDT_ETHTransactions(model):
-#     return model.currency_market.transaction_dates_dict_by_strategy['USDT/ETH']
     
-# def getDatesETH_BNBTransactions(model):
-#     return model.currency_market.transaction_dates_dict_by_strategy['ETH/BNB']
-
-# def getDatesBNB_ETHTransactions(model):
-#     return model.currency_market.transaction_dates_dict_by_strategy['BNB/ETH']
-
-# def getDatesETH_BTCTransactions(model):
-#     return model.currency_market.transaction_dates_dict_by_strategy['ETH/BTC']
-
-# def getDatesBTC_ETHTransactions(model):
-#     return model.currency_market.transaction_dates_dict_by_strategy['BTC/ETH']
-
-# def getDatesBNB_BTCTransactions(model):
-#     return model.currency_market.transaction_dates_dict_by_strategy['BNB/BTC']
-
-# def getDatesBTC_BNBTransactions(model):
-#     return model.currency_market.transaction_dates_dict_by_strategy['BTC/BNB']
-
-# def getDatesBNB_USDTTransactions(model):
-#     return model.currency_market.transaction_dates_dict_by_strategy['BNB/USDT']
-
-# def getDatesUSDT_BNBTransactions(model):
-#     return model.currency_market.transaction_dates_dict_by_strategy['USDT/BNB']
-
-# def getDatesBTC_USDTTransactions(model):
-#     return model.currency_market.transaction_dates_dict_by_strategy['BTC/USDT']
-
-# def getDatesUSDT_BTCTransactions(model):
-#     return model.currency_market.transaction_dates_dict_by_strategy['USDT/BTC']

@@ -3,9 +3,9 @@ import pandas_ta as ta
 from datetime import datetime
 """
     This file is meant to be run once the raw data files from https://www.cryptoarchive.com.au/downloads
-    and from yahoo.com have been downloaded and placed into the rawCSVs folder. Its purpose is to clean and merge
-    all the datafiles into one useful .csv file which can be downloaded into a pandas dataframe and accessed easily 
-    during the simulation.
+    and from https://www.finance.yahoo.com have been downloaded and placed into the rawCSVs folder. Its purpose is 
+    to clean and merge all the datafiles into one useful .csv file which can be downloaded into a pandas dataframe
+    and accessed easily during the simulation.
 """
 
 # READS THE DOWLOADED FILES INTO PANDAS DATAFRAMES

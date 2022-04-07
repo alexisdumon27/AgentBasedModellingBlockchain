@@ -12,15 +12,15 @@ class Order:
         self.buy_currency = buy_currency # currency agent wants to buy
         self.sell_currency = sell_currency # currency agent will sell in order to buy
         self.amount_of_buying_currency = amount_of_buying_currency # amount of buy currency agent wants to own :: DEPEND ON EXCHANGE_RATE
-        self.timestep = round # 
-        self.agent = agent #
+        self.timestep = round 
+        self.agent = agent 
         self.expiration_time = expiration_time
         self.limit_price = limit_price
 
 class Strategy:
     """
-        this will eventually be a superclass whose children have different implementations of the four methods
-        each children will therefore represent a different type of strategy
+        Superclass whose children have different implementations of the four methods
+        each children represents a different type of strategy
     """
     def __init__(self, strategy_name, exchange_rates_data):
         self.name = strategy_name
@@ -28,7 +28,6 @@ class Strategy:
         pass
 
     def getAmountOfBuyingCurrency(self, exchange_rate, limit_price, max_amount_to_sell):
-        # should buy amount proportional to exchange_rate and it should not exceed the max amount of the currency it can sell
         if exchange_rate > 1:
             if exchange_rate > limit_price:
                 return max_amount_to_sell / limit_price
